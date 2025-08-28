@@ -1,4 +1,12 @@
 services:
+  frontend:
+    build:
+      context: frontend/survivor_pool
+      dockerfile: web/Dockerfile
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
   backend:
     build:
       context: backend
