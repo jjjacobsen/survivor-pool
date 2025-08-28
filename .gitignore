@@ -229,3 +229,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Mac related
+.DS_Store
