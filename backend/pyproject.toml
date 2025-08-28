@@ -8,3 +8,25 @@ dependencies = [
     "fastapi>=0.116.1",
     "uvicorn>=0.35.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.10",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort (import sorting)
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "C4",  # flake8-comprehensions
+    "N",   # pep8-naming (naming conventions)
+    "S",   # flake8-bandit (security issues)
+    "T20", # flake8-print (catches leftover print statements)
+    "RUF", # Ruff-specific rules
+    "SIM", # flake8-simplify
+    "PTH", # flake8-use-pathlib
+]
