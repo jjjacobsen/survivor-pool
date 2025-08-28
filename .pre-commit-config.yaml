@@ -37,3 +37,18 @@ repos:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: dart-format
+        name: dart format
+        entry: dart format
+        language: system
+        types: [dart]
+        files: frontend/survivor_pool/
+      - id: flutter-analyze
+        name: flutter analyze
+        entry: bash -c 'cd frontend/survivor_pool && flutter analyze'
+        language: system
+        files: frontend/survivor_pool/
+        pass_filenames: false
