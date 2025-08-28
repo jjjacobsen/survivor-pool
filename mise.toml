@@ -14,3 +14,12 @@ bootstrap = { run = [
 "dev:frontend" = { run = [
     "cd frontend/survivor_pool && flutter run -d web-server",
 ], description = "Start frontend server" }
+
+"dev:mongo" = { run = [
+    "docker run --name dev-mongo -d -p 27017:27017 -v dev-mongo-data:/data/db mongo:8.0",
+    "docker logs -f dev-mongo",
+], description = "Start MongoDB for development" }
+
+prod = { run = [
+    "docker compose up -d",
+], description = "Start production services" }
