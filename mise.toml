@@ -1,2 +1,16 @@
 [tools]
 flutter = "3.35"
+
+[tasks]
+bootstrap = { run = [
+    "cd backend && uv sync",
+    "cd frontend/survivor_pool && flutter pub get",
+], description = "Install all project dependencies" }
+
+"dev:backend" = { run = [
+    "cd backend && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
+], description = "Start backend server" }
+
+"dev:frontend" = { run = [
+    "cd frontend/survivor_pool && flutter run -d web-server",
+], description = "Start frontend server" }
