@@ -31,6 +31,11 @@ class UserResponse(BaseModel):
     created_at: datetime
 
 
+class UserLoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
 @app.get("/")
 def read_root():
     return {"message": "Hello, FastAPI + uv + MongoDB!"}
@@ -48,6 +53,10 @@ def health_check():
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 
 @app.post("/users", response_model=UserResponse)
@@ -93,4 +102,35 @@ def create_user(user_data: UserCreateRequest):
         display_name=user_data.display_name,
         account_status="active",
         created_at=user_doc["created_at"],
+    )
+
+
+@app.post("/users/login", response_model=UserResponse)
+def login_user(user_data: UserLoginRequest):
+    user = users_collection.find_one({"email": user_data.email})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+        )
+
+    if not verify_password(user_data.password, user["password_hash"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+        )
+
+    if user["account_status"] != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is not active",
+        )
+
+    return UserResponse(
+        id=str(user["_id"]),
+        username=user["username"],
+        email=user["email"],
+        display_name=user["display_name"],
+        account_status=user["account_status"],
+        created_at=user["created_at"],
     )
