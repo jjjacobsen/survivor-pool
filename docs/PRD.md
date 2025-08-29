@@ -2,7 +2,7 @@
 
 ## Overview
 
-A web-based elimination pool application for the TV show Survivor, where players pick contestants they believe won't be eliminated each week. The last player standing wins the pool.
+An elimination pool application for the TV show Survivor, where players pick contestants they believe won't be eliminated each week. The last player standing wins the pool.
 
 ## Core Game Rules
 
