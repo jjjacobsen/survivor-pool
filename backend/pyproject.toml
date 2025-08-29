@@ -10,6 +10,7 @@ dependencies = [
     "pymongo>=4.14.1",
     "bcrypt>=4.2.1",
     "pydantic[email]>=2.10.3",
+    "sendgrid>=6.11.0",
 ]
 
 [dependency-groups]
