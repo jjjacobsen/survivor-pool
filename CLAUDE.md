@@ -1,0 +1,2 @@
+- When developing I'm running the frontend and backend with hot reload so just make changes to the code and I can see if those changes worked or not
+- Read docs/PRD.md to get a high-level understanding of the app / project
