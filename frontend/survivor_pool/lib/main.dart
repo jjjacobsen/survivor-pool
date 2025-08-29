@@ -114,7 +114,7 @@ class _LoginPageState extends State<LoginPage>
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const DashboardPage()),
+            MaterialPageRoute(builder: (context) => const HomePage()),
           );
         }
       } else {
@@ -344,15 +344,15 @@ class _LoginPageState extends State<LoginPage>
   }
 }
 
-class DashboardPage extends StatelessWidget {
-  const DashboardPage({super.key});
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('Survivor Pool Dashboard'),
+        title: const Text('Survivor Pool Home'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
