@@ -129,11 +129,9 @@ An elimination pool application for the TV show Survivor, where players pick con
 
 ### Frontend Technology
 
-- Flutter web application for initial release
-- Responsive design for mobile and desktop
-- Progressive web app capabilities
-- Future mobile app deployment (iOS/Android)
-- Future desktop app deployment (MacOS/Windows)
+- Flutter application for all platforms: web, iOS, Android, MacOS, Windows
+- Main target is for mobile app and design
+- Responsive, modern UI/UX design
 
 ### Backend Technology
 
