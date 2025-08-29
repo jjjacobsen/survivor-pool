@@ -14,9 +14,8 @@ A web-based elimination pool application for the TV show Survivor, where players
 
 ## User Types
 
-- **Pool Members**: Regular users who join pools and make picks
-- **Pool Creators**: Users who create and manage pools
-- **System Admin**: Manages contestant data and season progression
+- **Normal User**: Can join pools, make picks, and create their own pools. Any user can create a pool and invite anybody on the app to join these pools.
+- **System Admin**: Manages contestant data, season progression, and overall system maintenance
 
 ## Data Requirements
 
@@ -28,10 +27,10 @@ A web-based elimination pool application for the TV show Survivor, where players
 
 ### Pool Management
 
-- Pool creation with names and season association
+- Pool creation with names and season association (any user can create pools)
 - Pool membership tracking
 - Pool status management (active, completed)
-- Creator permissions for pool management
+- Pool creator permissions for managing their own pools
 
 ### Contestant Database
 
