@@ -34,19 +34,19 @@ class SurvivorPoolApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LandingPage(),
+      home: const LoginPage(),
     );
   }
 }
 
-class LandingPage extends StatefulWidget {
-  const LandingPage({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  State<LandingPage> createState() => _LandingPageState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LandingPageState extends State<LandingPage>
+class _LoginPageState extends State<LoginPage>
     with SingleTickerProviderStateMixin {
   bool _isLoginMode = true;
   bool _isLoading = false;
@@ -384,7 +384,7 @@ class DashboardPage extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LandingPage()),
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
                 );
               },
               child: const Text('Logout'),

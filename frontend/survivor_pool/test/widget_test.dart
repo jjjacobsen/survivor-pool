@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:survivor_pool/main.dart';
 
 void main() {
-  testWidgets('Landing page loads', (WidgetTester tester) async {
+  testWidgets('Login page loads', (WidgetTester tester) async {
     await tester.pumpWidget(const SurvivorPoolApp());
     await tester.pump();
     expect(find.text('Survivor Pool'), findsOneWidget);
