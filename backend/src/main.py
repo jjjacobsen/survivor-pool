@@ -37,7 +37,6 @@ class UserResponse(BaseModel):
     email: str
     display_name: str
     account_status: str
-    is_admin: bool
     created_at: datetime
 
 
@@ -93,7 +92,6 @@ def create_user(user_data: UserCreateRequest):
         "password_hash": hashed_password,
         "display_name": user_data.display_name,
         "account_status": "active",
-        "is_admin": False,
         "created_at": datetime.now(),
     }
 
@@ -112,7 +110,6 @@ def create_user(user_data: UserCreateRequest):
         email=user_data.email,
         display_name=user_data.display_name,
         account_status="active",
-        is_admin=False,
         created_at=user_doc["created_at"],
     )
 
@@ -144,6 +141,5 @@ def login_user(user_data: UserLoginRequest):
         email=user["email"],
         display_name=user["display_name"],
         account_status=user["account_status"],
-        is_admin=user["is_admin"],
         created_at=user["created_at"],
     )

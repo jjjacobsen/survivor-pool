@@ -14,8 +14,7 @@ An elimination pool application for the TV show Survivor, where players pick con
 
 ## User Types
 
-- **Normal User**: Can join pools, make picks, and create their own pools. Any user can create a pool and invite anybody on the app to join these pools.
-- **System Admin**: Manages contestant data, season progression, and overall system maintenance
+- **User**: All users have the same account type. Users can join pools, make picks, and create their own pools. Any user can create a pool and invite anybody on the app to join these pools. Pool creators have control over their own pools, including managing contestants and season progression for their pools.
 
 ## Data Requirements
 
@@ -118,12 +117,12 @@ An elimination pool application for the TV show Survivor, where players pick con
 - Historical data preservation
 - Real-time data synchronization
 
-### Admin Interface
+### Pool Creator Interface
 
-- Contestant management (add/remove/update)
-- Season setup and configuration
-- Elimination processing
-- System monitoring and maintenance
+- Contestant management for their pools (add/remove/update)
+- Season setup and configuration for their pools
+- Elimination processing for their pools
+- Pool-specific monitoring and maintenance
 
 ## Technical Architecture
 
@@ -164,7 +163,7 @@ An elimination pool application for the TV show Survivor, where players pick con
 - Basic pool creation and joining
 - Weekly pick submissions
 - Simple leaderboard display
-- Admin contestant management
+- Pool creator contestant management
 
 ### Phase 2: Enhanced User Experience
 
