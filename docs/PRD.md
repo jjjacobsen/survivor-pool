@@ -198,7 +198,6 @@ An elimination pool application for the TV show Survivor, where players pick con
 - Multi-season support
 - Private pool customization options
 - Social sharing and invitations
-- Integration with Survivor episode schedules
 - Advanced statistical analysis tools
 - Tournament-style elimination formats
 

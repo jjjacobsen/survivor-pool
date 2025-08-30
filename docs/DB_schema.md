@@ -66,24 +66,16 @@ Single source of truth for all Survivor season data. This data represents immuta
     // ... all 18 contestants
   ],
 
-  episodes: [
+  eliminations: [
     {
-      episode_number: 1,
-      air_date: ISODate("2024-09-18"),
-      title: "One Million Dollars",
-      eliminated_contestant_id: null, // no elimination in premiere
-      immune_contestants: [],
-      tribe_changes: []
+      week: 1,
+      eliminated_contestant_id: null // no elimination in premiere
     },
     {
-      episode_number: 2,
-      air_date: ISODate("2024-09-25"),
-      title: "Scorpio Energy",
-      eliminated_contestant_id: "aysha_welch",
-      immune_contestants: ["teeny_chirichillo"],
-      tribe_changes: []
+      week: 2,
+      eliminated_contestant_id: "aysha_welch"
     }
-    // Episodes added as they air - represents what actually happened
+    // Eliminations added as they happen - represents what actually happened
   ],
 
   tribes: [
@@ -119,7 +111,7 @@ Clean game containers that reference season data. No embedded cast data.
   created_at: ISODate("..."),
   current_week: 3,
   settings: {
-    pick_deadline_hours: 2, // hours before episode airs
+    pick_deadline_hours: 2, // hours before weekly deadline
     max_members: 50,
     late_pick_penalty: false
     // other pool-specific configuration
@@ -137,7 +129,6 @@ Individual pick tracking for users in pools. Each document represents one user's
   userId: ObjectId("..."), // reference to users collection
   poolId: ObjectId("..."), // reference to pools collection
   week: 3,
-  episode_number: 3,
   contestant_id: "teeny_chirichillo",
   pick_date: ISODate("..."),
   pick_deadline: ISODate("..."),
@@ -149,7 +140,25 @@ Individual pick tracking for users in pools. Each document represents one user's
 }
 ```
 
-### 5. `pool_memberships` Collection (Enhanced Junction Collection)
+### 5. `advantages` Collection
+
+Tracks dynamic advantage possession (immunity idols, vote steals, etc.) for contestants.
+
+```javascript
+{
+  _id: ObjectId("..."),
+  seasonId: ObjectId("..."), // reference to seasons collection
+  contestant_id: "teeny_chirichillo",
+  advantage_type: "hidden_immunity_idol", // hidden_immunity_idol, vote_steal, extra_vote, etc.
+  obtained_week: 3,
+  status: "active", // active, played, expired, transferred
+  played_week: null,
+  transferred_to: null, // contestant_id if advantage was given to someone else
+  notes: "Found at reward challenge" // optional context
+}
+```
+
+### 6. `pool_memberships` Collection (Enhanced Junction Collection)
 
 Manages the many-to-many relationship between users and pools, with added game status tracking.
 
@@ -247,7 +256,14 @@ db.picks.find({
   poolId: poolId
 }, {contestant_id: 1})
 
+// Get current advantages for strategic info
+db.advantages.find({
+  seasonId: seasonId,
+  status: "active"
+})
+
 // Filter contestants not yet eliminated and not previously picked
+// Include advantage info for each available contestant
 ```
 
 ### Submit a new pick
@@ -259,7 +275,6 @@ db.picks.insertOne({
   userId: userId,
   poolId: poolId,
   week: currentWeek,
-  episode_number: episodeNumber,
   contestant_id: contestantId,
   pick_date: new Date(),
   pick_deadline: deadlineDate,
@@ -267,15 +282,14 @@ db.picks.insertOne({
 })
 ```
 
-### Process elimination (when episode airs)
+### Process elimination (when week ends)
 
 ```javascript
 // Update all picks for the eliminated contestant
 db.picks.updateMany(
   {
     poolId: poolId,
-    episode_number: episodeNumber,
-    contestant_id: eliminatedContestantId,
+      contestant_id: eliminatedContestantId,
     result: "pending"
   },
   {
@@ -358,7 +372,6 @@ Recommended indexes for optimal query performance:
 // On picks collection
 db.picks.createIndex({ userId: 1, poolId: 1 })
 db.picks.createIndex({ poolId: 1, week: 1 })
-db.picks.createIndex({ poolId: 1, episode_number: 1 })
 db.picks.createIndex({ poolId: 1, contestant_id: 1 })
 db.picks.createIndex({ result: 1 })
 
@@ -380,6 +393,11 @@ db.users.createIndex({ default_pool: 1 })
 db.seasons.createIndex({ season_number: 1 })
 db.seasons.createIndex({ season_name: 1 })
 db.seasons.createIndex({ "contestants.id": 1 })
+
+// On advantages collection
+db.advantages.createIndex({ seasonId: 1, status: 1 })
+db.advantages.createIndex({ seasonId: 1, contestant_id: 1 })
+db.advantages.createIndex({ advantage_type: 1 })
 ```
 
 ## Design Pattern Notes
