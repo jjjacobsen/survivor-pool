@@ -6,7 +6,7 @@ This document describes the MongoDB schema design for the survivor pool applicat
 
 ## Collections
 
-### 1. `users` Collection (Existing)
+### 1. `users` Collection
 
 Stores user account information.
 
@@ -14,7 +14,8 @@ Stores user account information.
 {
   _id: ObjectId("..."),
   name: "John Doe",
-  email: "john@example.com"
+  email: "john@example.com",
+  default_pool: ObjectId("..."), // reference to pools collection, null if no pools joined
   // ... other user fields
 }
 ```
@@ -165,6 +166,7 @@ Manages the many-to-many relationship between users and pools. This is the recom
 - **Users ↔ Pools**: Many-to-many relationship managed through the `pool_memberships` junction collection
 - **Pool Owner**: One-to-many relationship via `ownerId` field in pools collection
 - **Season Templates ↔ Pools**: One-to-many relationship via `season_template_id` field in pools collection
+- **Default Pool**: One-to-one relationship via `default_pool` field in users collection (init: null)
 - **Cast Data**: Embedded within each pool (copied from season template, then modified independently)
 - A user can be a member of multiple pools
 - A pool can have multiple members
@@ -250,6 +252,21 @@ db.pools.updateOne(
 )
 ```
 
+### Get user's default pool
+
+```javascript
+db.users.findOne({_id: userId}, {default_pool: 1})
+```
+
+### Update user's default pool
+
+```javascript
+db.users.updateOne(
+  {_id: userId},
+  {$set: {default_pool: poolId}}
+)
+```
+
 ## Benefits of This Design
 
 ### Template/Instance Pattern Benefits
@@ -288,6 +305,9 @@ db.pools.createIndex({ ownerId: 1 })
 db.pools.createIndex({ season_template_id: 1 })
 db.pools.createIndex({ "cast.contestants.id": 1 }) // for contestant lookups
 db.pools.createIndex({ "cast.contestants.status": 1 }) // for active/eliminated queries
+
+// On users collection
+db.users.createIndex({ default_pool: 1 }) // for default pool lookups
 
 // On season_templates collection
 db.season_templates.createIndex({ season_number: 1 })
