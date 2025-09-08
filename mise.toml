@@ -1,5 +1,6 @@
 [tools]
 flutter = "3.35"
+python = "3.13"
 
 [tasks]
 bootstrap = { run = [
