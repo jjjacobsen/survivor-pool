@@ -38,6 +38,7 @@ class UserResponse(BaseModel):
     display_name: str
     account_status: str
     created_at: datetime
+    default_pool: str | None = None
 
 
 class UserLoginRequest(BaseModel):
@@ -93,6 +94,7 @@ def create_user(user_data: UserCreateRequest):
         "display_name": user_data.display_name,
         "account_status": "active",
         "created_at": datetime.now(),
+        "default_pool": None,
     }
 
     # Insert user into database
@@ -111,6 +113,7 @@ def create_user(user_data: UserCreateRequest):
         display_name=user_data.display_name,
         account_status="active",
         created_at=user_doc["created_at"],
+        default_pool=None,
     )
 
 
@@ -142,4 +145,7 @@ def login_user(user_data: UserLoginRequest):
         display_name=user["display_name"],
         account_status=user["account_status"],
         created_at=user["created_at"],
+        default_pool=(
+            str(user.get("default_pool")) if user.get("default_pool") else None
+        ),
     )
