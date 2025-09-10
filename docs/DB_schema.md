@@ -10,6 +10,11 @@ This document describes the MongoDB schema design for the survivor pool applicat
 - **Zero Duplication**: Shared data is referenced, not copied
 - **Clean Separation**: Pools are game containers, seasons are data, picks are user actions
 - **MongoDB Best Practices**: Proper use of references for shared data, embedding for ownership
+- **Embed Static TV Facts**: All immutable show facts for a season live inside a single season document (contestants, tribe timeline, eliminations, advantages)
+
+## Terminology
+
+- We use "week" instead of "episode" everywhere. They are synonymous for this app; "week" is chosen for consistency and clarity.
 
 ## Collections
 
@@ -30,7 +35,7 @@ Stores user account information.
 
 ### 2. `seasons` Collection
 
-Single source of truth for all Survivor season data. This data represents immutable facts about what actually happened on the show.
+Single source of truth for all Survivor season data. This data represents immutable facts about what actually happened on the show. All static TV facts are embedded in the season document.
 
 ```javascript
 {
@@ -42,6 +47,7 @@ Single source of truth for all Survivor season data. This data represents immuta
   format: "new_era",
   created_at: ISODate("..."),
 
+  // Cast roster (immutable identity + static bio)
   contestants: [
     {
       id: "teeny_chirichillo",
@@ -63,37 +69,56 @@ Single source of truth for all Survivor season data. This data represents immuta
       bio: "Bringing strategic thinking and quick decision making...",
       initial_tribe: "Lavo"
     }
-    // ... all 18 contestants
+    // ... all contestants
   ],
 
+  // Eliminations as they aired (week-based)
   eliminations: [
+    { week: 1, eliminated_contestant_id: null },
+    { week: 2, eliminated_contestant_id: "aysha_welch" }
+    // ...
+  ],
+
+  // Tribe state over time; first entry represents initial tribes
+  tribe_timeline: [
     {
       week: 1,
-      eliminated_contestant_id: null // no elimination in premiere
+      event: "start", // start | swap | merge
+      tribes: [
+        { name: "Lavo", color: "red", members: ["teeny_chirichillo", "kishan_patel", "rome_cooney", "aysha_welch", "sol_yi", "genevieve_mushaluk"] },
+        { name: "Gata", color: "yellow", members: ["sam_layco", "sierra_wright", "rachel_lamont", "anika_dhar", "andy_rueda", "jon_lovett"] },
+        { name: "Tuku", color: "blue", members: ["caroline_vidmar", "sue_smey", "gabe_ortis", "kyle_ostwald", "tiyana_hallums", "terran_causey"] }
+      ]
     },
     {
-      week: 2,
-      eliminated_contestant_id: "aysha_welch"
+      week: 5,
+      event: "swap",
+      tribes: [
+        // updated tribes and memberships after swap
+      ]
+    },
+    {
+      week: 7,
+      event: "merge",
+      tribes: [
+        { name: "Mergia", color: "green", members: [/* all remaining contestants */] }
+      ]
     }
-    // Eliminations added as they happen - represents what actually happened
   ],
 
-  tribes: [
+  // Advantages timeline for the season (possession/use status)
+  advantages: [
     {
-      name: "Lavo",
-      color: "red",
-      initial_members: ["teeny_chirichillo", "kishan_patel", "rome_cooney", "aysha_welch", "sol_yi", "genevieve_mushaluk"]
-    },
-    {
-      name: "Gata",
-      color: "yellow",
-      initial_members: ["sam_layco", "sierra_wright", "rachel_lamont", "anika_dhar", "andy_rueda", "jon_lovett"]
-    },
-    {
-      name: "Tuku",
-      color: "blue",
-      initial_members: ["caroline_vidmar", "sue_smey", "gabe_ortis", "kyle_ostwald", "tiyana_hallums", "terran_causey"]
+      id: "idol_teeny_1",
+      advantage_type: "hidden_immunity_idol", // hidden_immunity_idol, vote_steal, extra_vote, etc.
+      contestant_id: "teeny_chirichillo", // holder when obtained
+      obtained_week: 3,
+      status: "active", // active | played | expired | transferred
+      played_week: null,
+      transferred_to: null, // contestant_id if transferred
+      notes: "Found at reward challenge"
     }
+    // ... additional advantages as they occur
   ]
 }
 ```
@@ -140,25 +165,7 @@ Individual pick tracking for users in pools. Each document represents one user's
 }
 ```
 
-### 5. `advantages` Collection
-
-Tracks dynamic advantage possession (immunity idols, vote steals, etc.) for contestants.
-
-```javascript
-{
-  _id: ObjectId("..."),
-  seasonId: ObjectId("..."), // reference to seasons collection
-  contestant_id: "teeny_chirichillo",
-  advantage_type: "hidden_immunity_idol", // hidden_immunity_idol, vote_steal, extra_vote, etc.
-  obtained_week: 3,
-  status: "active", // active, played, expired, transferred
-  played_week: null,
-  transferred_to: null, // contestant_id if advantage was given to someone else
-  notes: "Found at reward challenge" // optional context
-}
-```
-
-### 6. `pool_memberships` Collection (Enhanced Junction Collection)
+### 5. `pool_memberships` Collection (Enhanced Junction Collection)
 
 Manages the many-to-many relationship between users and pools, with added game status tracking.
 
@@ -247,23 +254,48 @@ db.pool_memberships.aggregate([
 ### Get available contestants for user in pool
 
 ```javascript
-// Get all contestants from season
-db.seasons.findOne({_id: seasonId}, {contestants: 1})
+// Get season facts (contestants, eliminations, advantages)
+const season = db.seasons.findOne({_id: seasonId}, {contestants: 1, eliminations: 1, advantages: 1})
 
-// Get user's previous picks to exclude
-db.picks.find({
-  userId: userId,
-  poolId: poolId
-}, {contestant_id: 1})
+// Get user's previous picks to exclude (in this pool)
+const priorPicks = db.picks.find({ userId, poolId }, { contestant_id: 1 }).toArray().map(p => p.contestant_id)
 
-// Get current advantages for strategic info
-db.advantages.find({
-  seasonId: seasonId,
-  status: "active"
-})
+// Compute available contestants client-side or with aggregation
+// Optionally project active advantages only using $filter
+db.seasons.aggregate([
+  { $match: { _id: seasonId } },
+  {
+    $project: {
+      contestants: 1,
+      eliminations: 1,
+      active_advantages: {
+        $filter: {
+          input: "$advantages",
+          as: "a",
+          cond: { $eq: ["$$a.status", "active"] }
+        }
+      }
+    }
+  }
+])
 
 // Filter contestants not yet eliminated and not previously picked
-// Include advantage info for each available contestant
+```
+
+### Update season facts (when week ends)
+
+```javascript
+// Record elimination on the season document
+db.seasons.updateOne(
+  { _id: seasonId },
+  { $push: { eliminations: { week: currentWeek, eliminated_contestant_id: eliminatedContestantId } } }
+)
+
+// Mark an advantage as played/transferred/expired on the season document
+db.seasons.updateOne(
+  { _id: seasonId, "advantages.id": advantageId },
+  { $set: { "advantages.$.status": "played", "advantages.$.played_week": currentWeek } }
+)
 ```
 
 ### Submit a new pick
@@ -394,10 +426,10 @@ db.seasons.createIndex({ season_number: 1 })
 db.seasons.createIndex({ season_name: 1 })
 db.seasons.createIndex({ "contestants.id": 1 })
 
-// On advantages collection
-db.advantages.createIndex({ seasonId: 1, status: 1 })
-db.advantages.createIndex({ seasonId: 1, contestant_id: 1 })
-db.advantages.createIndex({ advantage_type: 1 })
+// On seasons collection (additional nested indexes)
+db.seasons.createIndex({ "advantages.contestant_id": 1 })
+db.seasons.createIndex({ "advantages.status": 1 })
+// Note: Avoid compound indexes across multiple fields of the same array (multikey restriction)
 ```
 
 ## Design Pattern Notes
@@ -405,7 +437,7 @@ db.advantages.createIndex({ advantage_type: 1 })
 This schema follows MongoDB best practices:
 
 - **Reference Pattern**: Used for shared data (seasons) accessed by multiple entities (pools)
-- **Embedded Pattern**: Still used appropriately (contestants within seasons, settings within pools)
+- **Embedded Pattern**: Used for immutable show facts (contestants, eliminations, tribe timeline, advantages within seasons; settings within pools)
 - **Junction Collection Pattern**: Clean many-to-many with additional status tracking
 - **Computed Pattern**: Cached scores and available contestants for performance
 
