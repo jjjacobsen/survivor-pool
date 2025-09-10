@@ -22,6 +22,7 @@ services:
     image: mongo:8.0
     volumes:
       - mongo_data:/data/db
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     restart: unless-stopped
 
 volumes:
