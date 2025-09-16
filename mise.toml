@@ -13,7 +13,7 @@ bootstrap = { run = [
 ], description = "Start backend server" }
 
 "dev:frontend" = { run = [
-    "cd frontend/survivor_pool && flutter run -d 'iPhone 16 Pro Max'",
+    "cd frontend/survivor_pool && flutter run -d 'iPhone 17 Pro Max'",
 ], description = "Start frontend server" }
 
 "dev:mongo" = { run = [
