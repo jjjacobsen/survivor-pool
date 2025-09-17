@@ -1,10 +1,12 @@
 import os
 from datetime import datetime
+from typing import Any
 
 import bcrypt
+from bson import ObjectId
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from pymongo import MongoClient
 
 app = FastAPI()
@@ -22,6 +24,9 @@ MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
 client = MongoClient(MONGO_URL)
 db = client.survivor_pool
 users_collection = db.users
+pools_collection = db.pools
+pool_memberships_collection = db.pool_memberships
+seasons_collection = db.seasons
 
 
 class UserCreateRequest(BaseModel):
@@ -46,6 +51,24 @@ class UserLoginRequest(BaseModel):
     password: str
 
 
+class PoolCreateRequest(BaseModel):
+    name: str
+    season_id: str
+    owner_id: str
+    invite_user_ids: list[str] = Field(default_factory=list)
+
+
+class PoolResponse(BaseModel):
+    id: str
+    name: str
+    owner_id: str
+    season_id: str
+    created_at: datetime
+    current_week: int
+    settings: dict[str, Any] = Field(default_factory=dict)
+    invited_user_ids: list[str] = Field(default_factory=list)
+
+
 @app.get("/")
 def read_root():
     return {"message": "Hello, FastAPI + uv + MongoDB!"}
@@ -67,6 +90,15 @@ def hash_password(password: str) -> str:
 
 def verify_password(password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("utf-8"))
+
+
+def parse_object_id(value: str, field_name: str) -> ObjectId:
+    if not ObjectId.is_valid(value):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid {field_name}",
+        )
+    return ObjectId(value)
 
 
 @app.post("/users", response_model=UserResponse)
@@ -148,4 +180,100 @@ def login_user(user_data: UserLoginRequest):
         default_pool=(
             str(user.get("default_pool")) if user.get("default_pool") else None
         ),
+    )
+
+
+@app.post("/pools", response_model=PoolResponse, status_code=status.HTTP_201_CREATED)
+def create_pool(pool_data: PoolCreateRequest):
+    name = pool_data.name.strip()
+    if not name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pool name is required",
+        )
+
+    owner_id = parse_object_id(pool_data.owner_id, "owner_id")
+    if not users_collection.find_one({"_id": owner_id}):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Owner not found"
+        )
+
+    season_id = parse_object_id(pool_data.season_id, "season_id")
+    if not seasons_collection.find_one({"_id": season_id}):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Season not found"
+        )
+
+    now = datetime.now()
+    pool_doc = {
+        "name": name,
+        "ownerId": owner_id,
+        "seasonId": season_id,
+        "created_at": now,
+        "current_week": 1,
+        "settings": {},
+    }
+
+    pool_result = pools_collection.insert_one(pool_doc)
+    pool_id = pool_result.inserted_id
+    if not pool_id:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create pool",
+        )
+
+    pool_memberships_collection.insert_one(
+        {
+            "poolId": pool_id,
+            "userId": owner_id,
+            "role": "owner",
+            "joinedAt": now,
+            "status": "active",
+            "eliminated_week": None,
+            "eliminated_date": None,
+            "total_picks": 0,
+            "score": 0,
+            "available_contestants": [],
+        }
+    )
+
+    invited_user_ids: list[str] = []
+    seen_invites = {pool_data.owner_id}
+    for invitee in pool_data.invite_user_ids:
+        if invitee in seen_invites:
+            continue
+        seen_invites.add(invitee)
+        invitee_id = parse_object_id(invitee, "invite_user_ids")
+        if not users_collection.find_one({"_id": invitee_id}):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invited user not found",
+            )
+        pool_memberships_collection.update_one(
+            {"poolId": pool_id, "userId": invitee_id},
+            {
+                "$setOnInsert": {
+                    "role": "member",
+                    "joinedAt": None,
+                    "status": "invited",
+                    "eliminated_week": None,
+                    "eliminated_date": None,
+                    "total_picks": 0,
+                    "score": 0,
+                    "available_contestants": [],
+                }
+            },
+            upsert=True,
+        )
+        invited_user_ids.append(invitee)
+
+    return PoolResponse(
+        id=str(pool_id),
+        name=name,
+        owner_id=pool_data.owner_id,
+        season_id=pool_data.season_id,
+        created_at=now,
+        current_week=1,
+        settings=pool_doc["settings"],
+        invited_user_ids=invited_user_ids,
     )
