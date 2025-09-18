@@ -6,6 +6,36 @@ void main() {
   runApp(const SurvivorPoolApp());
 }
 
+class AppUser {
+  final String id;
+  final String username;
+  final String email;
+  final String displayName;
+  final String? defaultPoolId;
+
+  const AppUser({
+    required this.id,
+    required this.username,
+    required this.email,
+    required this.displayName,
+    this.defaultPoolId,
+  });
+
+  factory AppUser.fromJson(Map<String, dynamic> json) {
+    final username = json['username'] as String? ?? '';
+    final displayName = json['display_name'] as String?;
+    return AppUser(
+      id: json['id'] as String? ?? '',
+      username: username,
+      email: json['email'] as String? ?? '',
+      displayName: (displayName != null && displayName.isNotEmpty)
+          ? displayName
+          : username,
+      defaultPoolId: json['default_pool'] as String?,
+    );
+  }
+}
+
 class SurvivorPoolApp extends StatelessWidget {
   const SurvivorPoolApp({super.key});
 
@@ -112,9 +142,11 @@ class _LoginPageState extends State<LoginPage>
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final user = AppUser.fromJson(data);
         if (mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomePage()),
+            MaterialPageRoute(builder: (context) => HomePage(user: user)),
           );
         }
       } else {
@@ -345,51 +377,142 @@ class _LoginPageState extends State<LoginPage>
 }
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  final AppUser user;
+
+  const HomePage({super.key, required this.user});
+
+  void _showComingSoon(BuildContext context, String action) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$action coming soon.')));
+  }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasDefaultPool =
+        user.defaultPoolId != null && user.defaultPoolId!.isNotEmpty;
+    final greetingName = user.displayName.isNotEmpty
+        ? user.displayName
+        : user.username;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('Survivor Pool Home'),
-        backgroundColor: Theme.of(context).primaryColor,
+        title: Text('Welcome, $greetingName'),
+        backgroundColor: theme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+                (route) => false,
+              );
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.celebration,
-              size: 80,
-              color: Theme.of(context).primaryColor,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Welcome to Survivor Pool!',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Your pools and game data will appear here.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              },
-              child: const Text('Logout'),
-            ),
-          ],
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: hasDefaultPool
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Default Pool',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: theme.primaryColor.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.flag_circle,
+                          color: theme.primaryColor,
+                          size: 36,
+                        ),
+                        title: const Text(
+                          'You are set to this pool by default',
+                        ),
+                        subtitle: Text(
+                          user.defaultPoolId!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Pool details will appear here once the experience is ready.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                )
+              : Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.group_add_outlined,
+                          size: 80,
+                          color: theme.primaryColor,
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'No pools yet',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Join an existing pool or create a new one to get started.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () =>
+                                _showComingSoon(context, 'Join pool'),
+                            child: const Text('Join a Pool'),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () =>
+                                _showComingSoon(context, 'Create pool'),
+                            child: const Text('Create Pool Now'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
         ),
       ),
     );
