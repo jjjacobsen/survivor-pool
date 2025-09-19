@@ -245,12 +245,12 @@
           email: account.email,
           password_hash: spacePasswordHash,
           display_name: account.display_name,
-          account_status: "active",
-          default_pool: null
+          account_status: "active"
         },
         $setOnInsert: {
           _id: account.id,
-          created_at: now
+          created_at: now,
+          default_pool: null
         }
       },
       { upsert: true }
