@@ -75,6 +75,10 @@ class SeasonResponse(BaseModel):
     season_number: int | None = None
 
 
+class UserDefaultPoolUpdate(BaseModel):
+    default_pool: str | None = None
+
+
 @app.get("/")
 def read_root():
     return {"message": "Hello, FastAPI + uv + MongoDB!"}
@@ -273,6 +277,11 @@ def create_pool(pool_data: PoolCreateRequest):
         )
         invited_user_ids.append(invitee)
 
+    users_collection.update_one(
+        {"_id": owner_id},
+        {"$set": {"default_pool": pool_id}},
+    )
+
     return PoolResponse(
         id=str(pool_id),
         name=name,
@@ -303,3 +312,90 @@ def list_seasons():
         )
         for season in seasons
     ]
+
+
+@app.patch("/users/{user_id}/default_pool", response_model=UserResponse)
+def update_default_pool(user_id: str, payload: UserDefaultPoolUpdate):
+    user_oid = parse_object_id(user_id, "user_id")
+
+    user = users_collection.find_one({"_id": user_oid})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    update_doc: dict[str, Any]
+    if payload.default_pool is None:
+        update_doc = {"$set": {"default_pool": None}}
+    else:
+        pool_oid = parse_object_id(payload.default_pool, "default_pool")
+        pool = pools_collection.find_one({"_id": pool_oid})
+        if not pool:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Pool not found",
+            )
+
+        membership = pool_memberships_collection.find_one(
+            {"poolId": pool_oid, "userId": user_oid}
+        )
+        if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User is not a member of this pool",
+            )
+
+        update_doc = {"$set": {"default_pool": pool_oid}}
+
+    users_collection.update_one({"_id": user_oid}, update_doc)
+
+    updated_user = users_collection.find_one({"_id": user_oid})
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user",
+        )
+
+    return UserResponse(
+        id=user_id,
+        username=updated_user["username"],
+        email=updated_user["email"],
+        display_name=updated_user["display_name"],
+        account_status=updated_user["account_status"],
+        created_at=updated_user["created_at"],
+        default_pool=(
+            str(updated_user.get("default_pool"))
+            if updated_user.get("default_pool")
+            else None
+        ),
+    )
+
+
+@app.get("/users/{user_id}/pools", response_model=list[PoolResponse])
+def list_user_pools(user_id: str):
+    user_oid = parse_object_id(user_id, "user_id")
+
+    memberships = pool_memberships_collection.find({"userId": user_oid})
+    pool_ids = {membership["poolId"] for membership in memberships}
+    if not pool_ids:
+        return []
+
+    pools = pools_collection.find({"_id": {"$in": list(pool_ids)}})
+
+    responses: list[PoolResponse] = []
+    for pool in pools:
+        responses.append(
+            PoolResponse(
+                id=str(pool["_id"]),
+                name=pool.get("name", ""),
+                owner_id=(str(pool.get("ownerId")) if pool.get("ownerId") else ""),
+                season_id=(str(pool.get("seasonId")) if pool.get("seasonId") else ""),
+                created_at=pool.get("created_at", datetime.now()),
+                current_week=pool.get("current_week", 1),
+                settings=pool.get("settings", {}),
+                invited_user_ids=[],
+            )
+        )
+
+    return responses
