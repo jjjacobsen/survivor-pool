@@ -181,7 +181,7 @@ class _LoginPageState extends State<LoginPage>
       final url = _isLoginMode ? '/users/login' : '/users';
       final body = _isLoginMode
           ? {
-              'email': _emailController.text,
+              'identifier': _emailController.text,
               'password': _passwordController.text,
             }
           : {
@@ -331,16 +331,22 @@ class _LoginPageState extends State<LoginPage>
                             ],
                             TextFormField(
                               controller: _emailController,
-                              decoration: const InputDecoration(
-                                labelText: 'Email',
-                                prefixIcon: Icon(Icons.email),
+                              decoration: InputDecoration(
+                                labelText: _isLoginMode
+                                    ? 'Email or Username'
+                                    : 'Email',
+                                prefixIcon: const Icon(Icons.email),
                               ),
-                              keyboardType: TextInputType.emailAddress,
+                              keyboardType: _isLoginMode
+                                  ? TextInputType.text
+                                  : TextInputType.emailAddress,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Please enter your email';
+                                  return _isLoginMode
+                                      ? 'Please enter your email or username'
+                                      : 'Please enter your email';
                                 }
-                                if (!value.contains('@')) {
+                                if (!_isLoginMode && !value.contains('@')) {
                                   return 'Please enter a valid email';
                                 }
                                 return null;
