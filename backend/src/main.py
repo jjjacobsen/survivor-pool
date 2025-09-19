@@ -69,6 +69,12 @@ class PoolResponse(BaseModel):
     invited_user_ids: list[str] = Field(default_factory=list)
 
 
+class SeasonResponse(BaseModel):
+    id: str
+    season_name: str
+    season_number: int | None = None
+
+
 @app.get("/")
 def read_root():
     return {"message": "Hello, FastAPI + uv + MongoDB!"}
@@ -277,3 +283,23 @@ def create_pool(pool_data: PoolCreateRequest):
         settings=pool_doc["settings"],
         invited_user_ids=invited_user_ids,
     )
+
+
+@app.get("/seasons", response_model=list[SeasonResponse])
+def list_seasons():
+    seasons = seasons_collection.find(
+        {},
+        {
+            "season_name": 1,
+            "season_number": 1,
+        },
+    ).sort("season_number", -1)
+
+    return [
+        SeasonResponse(
+            id=str(season["_id"]),
+            season_name=season.get("season_name", ""),
+            season_number=season.get("season_number"),
+        )
+        for season in seasons
+    ]
