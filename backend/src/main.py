@@ -47,7 +47,7 @@ class UserResponse(BaseModel):
 
 
 class UserLoginRequest(BaseModel):
-    email: EmailStr
+    identifier: str
     password: str
 
 
@@ -161,17 +161,26 @@ def create_user(user_data: UserCreateRequest):
 
 @app.post("/users/login", response_model=UserResponse)
 def login_user(user_data: UserLoginRequest):
-    user = users_collection.find_one({"email": user_data.email})
+    identifier = user_data.identifier.strip()
+    if not identifier:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Identifier is required",
+        )
+
+    user = users_collection.find_one(
+        {"$or": [{"email": identifier}, {"username": identifier}]}
+    )
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect username/email or password",
         )
 
     if not verify_password(user_data.password, user["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect username/email or password",
         )
 
     if user["account_status"] != "active":
