@@ -36,6 +36,8 @@ bootstrap = { run = [
     "echo 'All development services stopped'",
 ], description = "Stop all development services" }
 
+"dev:attach" = { run = ["tmux attach -t survivor-dev"], description = "Attach to tmux session" }
+
 prod = { run = [
     "docker compose up -d",
 ], description = "Start production services" }
