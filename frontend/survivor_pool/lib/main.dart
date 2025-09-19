@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -68,6 +69,28 @@ class SeasonOption {
       return 'Season $number - $name';
     }
     return name.isNotEmpty ? name : 'Unknown season';
+  }
+}
+
+class PoolOption {
+  final String id;
+  final String name;
+  final String seasonId;
+
+  const PoolOption({
+    required this.id,
+    required this.name,
+    required this.seasonId,
+  });
+
+  factory PoolOption.fromJson(Map<String, dynamic> json) {
+    final rawId = json['id'] ?? json['_id'];
+    final seasonId = json['season_id'] ?? json['seasonId'] ?? '';
+    return PoolOption(
+      id: (rawId as String?) ?? '',
+      name: json['name'] as String? ?? 'Untitled Pool',
+      seasonId: (seasonId as String?) ?? '',
+    );
   }
 }
 
@@ -423,11 +446,17 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<SeasonOption> _seasons = [];
   bool _isLoadingSeasons = false;
+  List<PoolOption> _pools = [];
+  bool _isLoadingPools = false;
+  String? _defaultPoolId;
+  bool _isUpdatingDefault = false;
 
   @override
   void initState() {
     super.initState();
+    _defaultPoolId = widget.user.defaultPoolId;
     _fetchSeasons();
+    _loadPools();
   }
 
   void _showComingSoon(String action) {
@@ -503,6 +532,53 @@ class _HomePageState extends State<HomePage> {
     return success;
   }
 
+  Future<void> _loadPools() async {
+    if (_isLoadingPools) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingPools = true;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:8000/users/${widget.user.id}/pools'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is List) {
+          final items =
+              data
+                  .whereType<Map<String, dynamic>>()
+                  .map(PoolOption.fromJson)
+                  .where((pool) => pool.id.isNotEmpty)
+                  .toList()
+                ..sort((a, b) => a.name.compareTo(b.name));
+
+          if (mounted) {
+            setState(() {
+              _pools = items;
+              if (_defaultPoolId != null &&
+                  !_pools.any((pool) => pool.id == _defaultPoolId)) {
+                _defaultPoolId = null;
+              }
+            });
+          }
+        }
+      }
+    } catch (_) {
+      // Ignore errors; the selector UI will remain unchanged.
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingPools = false;
+        });
+      }
+    }
+  }
+
   Future<bool> _ensureSeasonsLoaded() async {
     if (_seasons.isNotEmpty) {
       return true;
@@ -527,7 +603,7 @@ class _HomePageState extends State<HomePage> {
 
     final messenger = ScaffoldMessenger.of(context);
 
-    final created = await showDialog<bool>(
+    final created = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _CreatePoolDialog(
@@ -538,27 +614,105 @@ class _HomePageState extends State<HomePage> {
       ),
     );
 
-    if (created == true) {
+    if (created != null) {
+      final newPool = PoolOption.fromJson(created);
+      if (newPool.id.isNotEmpty) {
+        setState(() {
+          _pools = [..._pools.where((pool) => pool.id != newPool.id), newPool]
+            ..sort((a, b) => a.name.compareTo(b.name));
+          _defaultPoolId = newPool.id;
+        });
+      }
+
       messenger.showSnackBar(
-        const SnackBar(content: Text('Pool created successfully.')),
+        SnackBar(content: Text('Pool "${newPool.name}" created.')),
       );
+
+      unawaited(_loadPools());
+    }
+  }
+
+  Future<void> _updateDefaultPool(String? poolId) async {
+    if (_isUpdatingDefault || _defaultPoolId == poolId) {
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    final previous = _defaultPoolId;
+
+    setState(() {
+      _isUpdatingDefault = true;
+      _defaultPoolId = poolId;
+    });
+
+    try {
+      final response = await http.patch(
+        Uri.parse('http://localhost:8000/users/${widget.user.id}/default_pool'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'default_pool': poolId}),
+      );
+
+      if (response.statusCode != 200) {
+        if (mounted) {
+          setState(() {
+            _defaultPoolId = previous;
+          });
+        }
+        messenger.showSnackBar(
+          SnackBar(content: Text(_parseErrorMessage(response.body))),
+        );
+      } else {
+        final decoded = json.decode(response.body);
+        final serverDefault = decoded is Map<String, dynamic>
+            ? decoded['default_pool'] as String?
+            : null;
+        if (mounted) {
+          setState(() {
+            _defaultPoolId = serverDefault;
+          });
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _defaultPoolId = previous;
+        });
+      }
+      messenger.showSnackBar(SnackBar(content: Text('Network error: $error')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingDefault = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final user = widget.user;
-    final hasDefaultPool =
-        user.defaultPoolId != null && user.defaultPoolId!.isNotEmpty;
-    final greetingName = user.displayName.isNotEmpty
-        ? user.displayName
-        : user.username;
+    final safeDefaultPoolId =
+        (_defaultPoolId != null &&
+            _pools.any((pool) => pool.id == _defaultPoolId))
+        ? _defaultPoolId
+        : null;
+
+    final selectedPool = safeDefaultPoolId == null
+        ? null
+        : _pools.firstWhere(
+            (pool) => pool.id == safeDefaultPoolId,
+            orElse: () => PoolOption(
+              id: safeDefaultPoolId,
+              name: 'Unknown Pool',
+              seasonId: '',
+            ),
+          );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text('Welcome, $greetingName'),
+        titleSpacing: 12,
+        title: _buildDefaultPoolSelector(theme, safeDefaultPoolId),
         backgroundColor: theme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -577,52 +731,10 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: hasDefaultPool
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Default Pool',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(
-                          color: theme.primaryColor.withValues(alpha: 0.2),
-                        ),
-                      ),
-                      child: ListTile(
-                        leading: Icon(
-                          Icons.flag_circle,
-                          color: theme.primaryColor,
-                          size: 36,
-                        ),
-                        title: const Text(
-                          'You are set to this pool by default',
-                        ),
-                        subtitle: Text(
-                          user.defaultPoolId!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Pool details will appear here once the experience is ready.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                )
+          child: _isLoadingPools && _pools.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : _defaultPoolId != null && selectedPool != null
+              ? PoolPlaceholder(pool: selectedPool)
               : Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 420),
@@ -636,7 +748,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          'No pools yet',
+                          _pools.isEmpty ? 'No pools yet' : 'Select a pool',
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -644,7 +756,9 @@ class _HomePageState extends State<HomePage> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Join an existing pool or create a new one to get started.',
+                          _pools.isEmpty
+                              ? 'Join an existing pool or create a new one to get started.'
+                              : 'Choose a default pool from the dropdown above to view its details.',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.grey[600],
                           ),
@@ -682,6 +796,194 @@ class _HomePageState extends State<HomePage> {
                 ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDefaultPoolSelector(ThemeData theme, String? selectedPoolId) {
+    final textStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: Colors.white,
+      fontWeight: FontWeight.w600,
+    );
+
+    final allPools = <({String? id, String label})>[
+      (id: null, label: 'Home'),
+      ..._pools.map((pool) => (id: pool.id, label: pool.name)),
+    ];
+
+    final items = allPools
+        .map(
+          (entry) => _buildPoolMenuItem(
+            entry.id,
+            entry.label,
+            theme,
+            isSelected: selectedPoolId == entry.id,
+          ),
+        )
+        .toList();
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 280),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.24),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.35),
+              width: 1.2,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String?>(
+                      value: selectedPoolId,
+                      isExpanded: true,
+                      items: items,
+                      onChanged: _isUpdatingDefault
+                          ? null
+                          : (value) => _updateDefaultPool(value),
+                      style: textStyle,
+                      dropdownColor: theme.colorScheme.surface,
+                      iconEnabledColor: Colors.white,
+                      menuMaxHeight: 320,
+                      borderRadius: BorderRadius.circular(12),
+                      selectedItemBuilder: (context) => allPools
+                          .map(
+                            (entry) => Row(
+                              children: [
+                                Icon(
+                                  entry.id == null
+                                      ? Icons.home_outlined
+                                      : Icons.flag_outlined,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    entry.label,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: textStyle,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                          .toList(),
+                      hint: Text('Select pool', style: textStyle),
+                    ),
+                  ),
+                ),
+                if (_isUpdatingDefault || _isLoadingPools) ...[
+                  const SizedBox(width: 8),
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  DropdownMenuItem<String?> _buildPoolMenuItem(
+    String? id,
+    String label,
+    ThemeData theme, {
+    bool isSelected = false,
+  }) {
+    return DropdownMenuItem<String?>(
+      value: id,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primary.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          children: [
+            Icon(
+              id == null ? Icons.home_outlined : Icons.flag_outlined,
+              size: 18,
+              color: isSelected ? theme.colorScheme.primary : Colors.grey[700],
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class PoolPlaceholder extends StatelessWidget {
+  final PoolOption pool;
+
+  const PoolPlaceholder({super.key, required this.pool});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          pool.name,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: theme.primaryColor.withValues(alpha: 0.2)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Pool dashboard coming soon for ${pool.name}.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Season: ${pool.seasonId.isEmpty ? 'TBD' : pool.seasonId}",
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -746,8 +1048,11 @@ class _CreatePoolDialogState extends State<_CreatePoolDialog> {
 
       if (response.statusCode == 201) {
         shouldReset = false;
+        final decoded = json.decode(response.body);
         if (mounted) {
-          Navigator.of(context).pop(true);
+          Navigator.of(
+            context,
+          ).pop(decoded is Map<String, dynamic> ? decoded : null);
         }
         return;
       }
@@ -820,9 +1125,7 @@ class _CreatePoolDialogState extends State<_CreatePoolDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isSubmitting
-              ? null
-              : () => Navigator.of(context).pop(false),
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
         ElevatedButton(
