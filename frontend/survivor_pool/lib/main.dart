@@ -36,6 +36,41 @@ class AppUser {
   }
 }
 
+class SeasonOption {
+  final String id;
+  final String name;
+  final int? number;
+
+  const SeasonOption({required this.id, required this.name, this.number});
+
+  factory SeasonOption.fromJson(Map<String, dynamic> json) {
+    final rawId = json['id'] ?? json['_id'];
+    final name = json['season_name'] as String? ?? '';
+    final dynamicNumber = json['season_number'];
+    int? parsedNumber;
+    if (dynamicNumber is int) {
+      parsedNumber = dynamicNumber;
+    } else if (dynamicNumber is num) {
+      parsedNumber = dynamicNumber.toInt();
+    } else if (dynamicNumber is String) {
+      parsedNumber = int.tryParse(dynamicNumber);
+    }
+
+    return SeasonOption(
+      id: (rawId as String?) ?? '',
+      name: name,
+      number: parsedNumber,
+    );
+  }
+
+  String get label {
+    if (number != null && number! > 0) {
+      return 'Season $number - $name';
+    }
+    return name.isNotEmpty ? name : 'Unknown season';
+  }
+}
+
 class SurvivorPoolApp extends StatelessWidget {
   const SurvivorPoolApp({super.key});
 
@@ -376,20 +411,144 @@ class _LoginPageState extends State<LoginPage>
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   final AppUser user;
 
   const HomePage({super.key, required this.user});
 
-  void _showComingSoon(BuildContext context, String action) {
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<SeasonOption> _seasons = [];
+  bool _isLoadingSeasons = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSeasons();
+  }
+
+  void _showComingSoon(String action) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('$action coming soon.')));
   }
 
+  String _parseErrorMessage(String body) {
+    try {
+      final decoded = json.decode(body);
+      if (decoded is Map<String, dynamic>) {
+        final detail = decoded['detail'];
+        if (detail is String && detail.isNotEmpty) {
+          return detail;
+        }
+      }
+    } catch (_) {
+      // Ignore JSON parsing issues and fall through to default message.
+    }
+    return 'Failed to create pool. Please try again.';
+  }
+
+  Future<bool> _fetchSeasons() async {
+    if (_isLoadingSeasons) {
+      return _seasons.isNotEmpty;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingSeasons = true;
+      });
+    }
+
+    var parsed = _seasons;
+    var shouldApply = false;
+    var success = _seasons.isNotEmpty;
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:8000/seasons'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is List) {
+          final list = data
+              .whereType<Map<String, dynamic>>()
+              .map(SeasonOption.fromJson)
+              .where((season) => season.id.isNotEmpty)
+              .toList();
+
+          list.sort((a, b) => (b.number ?? 0).compareTo(a.number ?? 0));
+
+          parsed = list;
+          shouldApply = true;
+          success = parsed.isNotEmpty;
+        }
+      }
+    } catch (_) {
+      success = _seasons.isNotEmpty;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingSeasons = false;
+          if (shouldApply) {
+            _seasons = parsed;
+          }
+        });
+      }
+    }
+
+    return success;
+  }
+
+  Future<bool> _ensureSeasonsLoaded() async {
+    if (_seasons.isNotEmpty) {
+      return true;
+    }
+
+    final loaded = await _fetchSeasons();
+    if (!loaded && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to load seasons. Please try again.'),
+        ),
+      );
+    }
+    return loaded;
+  }
+
+  Future<void> _showCreatePoolDialog() async {
+    final ready = await _ensureSeasonsLoaded();
+    if (!mounted || !ready) {
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    final created = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _CreatePoolDialog(
+        seasons: List<SeasonOption>.from(_seasons),
+        ownerId: widget.user.id,
+        messenger: messenger,
+        parseErrorMessage: _parseErrorMessage,
+      ),
+    );
+
+    if (created == true) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Pool created successfully.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final user = widget.user;
     final hasDefaultPool =
         user.defaultPoolId != null && user.defaultPoolId!.isNotEmpty;
     final greetingName = user.displayName.isNotEmpty
@@ -495,8 +654,7 @@ class HomePage extends StatelessWidget {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () =>
-                                _showComingSoon(context, 'Join pool'),
+                            onPressed: () => _showComingSoon('Join pool'),
                             child: const Text('Join a Pool'),
                           ),
                         ),
@@ -504,9 +662,18 @@ class HomePage extends StatelessWidget {
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton(
-                            onPressed: () =>
-                                _showComingSoon(context, 'Create pool'),
-                            child: const Text('Create Pool Now'),
+                            onPressed: _isLoadingSeasons
+                                ? null
+                                : _showCreatePoolDialog,
+                            child: _isLoadingSeasons
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text('Create Pool Now'),
                           ),
                         ),
                       ],
@@ -515,6 +682,160 @@ class HomePage extends StatelessWidget {
                 ),
         ),
       ),
+    );
+  }
+}
+
+class _CreatePoolDialog extends StatefulWidget {
+  final List<SeasonOption> seasons;
+  final String ownerId;
+  final ScaffoldMessengerState messenger;
+  final String Function(String body) parseErrorMessage;
+
+  const _CreatePoolDialog({
+    required this.seasons,
+    required this.ownerId,
+    required this.messenger,
+    required this.parseErrorMessage,
+  });
+
+  @override
+  State<_CreatePoolDialog> createState() => _CreatePoolDialogState();
+}
+
+class _CreatePoolDialogState extends State<_CreatePoolDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _poolNameController;
+  String? _selectedSeasonId;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _poolNameController = TextEditingController();
+    if (widget.seasons.isNotEmpty) {
+      _selectedSeasonId = widget.seasons.first.id;
+    }
+  }
+
+  @override
+  void dispose() {
+    _poolNameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    var shouldReset = true;
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:8000/pools'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'name': _poolNameController.text.trim(),
+          'season_id': _selectedSeasonId,
+          'owner_id': widget.ownerId,
+          'invite_user_ids': const <String>[],
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        shouldReset = false;
+        if (mounted) {
+          Navigator.of(context).pop(true);
+        }
+        return;
+      }
+
+      widget.messenger.showSnackBar(
+        SnackBar(content: Text(widget.parseErrorMessage(response.body))),
+      );
+    } catch (error) {
+      widget.messenger.showSnackBar(
+        SnackBar(content: Text('Network error: $error')),
+      );
+    } finally {
+      if (shouldReset && mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create Pool'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _poolNameController,
+              decoration: const InputDecoration(labelText: 'Pool name'),
+              textInputAction: TextInputAction.next,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Pool name is required';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedSeasonId,
+              decoration: const InputDecoration(labelText: 'Season'),
+              items: widget.seasons
+                  .map(
+                    (season) => DropdownMenuItem<String>(
+                      value: season.id,
+                      child: Text(season.label),
+                    ),
+                  )
+                  .toList(),
+              onChanged: _isSubmitting
+                  ? null
+                  : (value) {
+                      if (value == null) {
+                        return;
+                      }
+                      setState(() {
+                        _selectedSeasonId = value;
+                      });
+                    },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please select a season';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _isSubmitting ? null : _submit,
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Create'),
+        ),
+      ],
     );
   }
 }
