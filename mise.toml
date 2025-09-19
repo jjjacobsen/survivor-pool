@@ -17,7 +17,7 @@ frontend = { run = [
 ], description = "Start frontend server" }
 
 mongo = { run = [
-    "docker run --rm --name dev-mongo -d -p 27017:27017 -v dev-mongo-data:/data/db -v $(pwd)/db/init:/docker-entrypoint-initdb.d:ro mongo:8.0",
+    "docker run --rm --name dev-mongo -d -p 27017:27017 -v dev-mongo-data:/data/db -v $(pwd)/db/init:/app/mongo-init:ro mongo:8.0",
 ], description = "Start MongoDB for development" }
 
 start = { run = [

@@ -3,6 +3,7 @@ set -euo pipefail
 
 container=${1:-dev-mongo}
 target_db=${2:-survivor_pool}
+seed_file=${3:-/app/mongo-init/season48.js}
 
 ping_eval=$(cat <<'JS'
 const ok = db.runCommand({ ping: 1 }).ok === 1;
@@ -26,6 +27,11 @@ until docker exec "$container" \
   mongosh --quiet --eval "$ping_eval" >/dev/null 2>&1; do
   sleep 1
 done
+
+docker exec "$container" test -f "$seed_file"
+
+echo "Running Mongo init script: $seed_file"
+docker exec "$container" mongosh --file "$seed_file"
 
 until docker exec "$container" \
   mongosh --quiet --eval "$db_exists_eval" >/dev/null 2>&1; do
