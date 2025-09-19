@@ -8,20 +8,20 @@ bootstrap = { run = [
     "cd frontend/survivor_pool && flutter pub get",
 ], description = "Install all project dependencies" }
 
-"dev:backend" = { run = [
+backend = { run = [
     "cd backend && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
 ], description = "Start backend server" }
 
-"dev:frontend" = { run = [
+frontend = { run = [
     "cd frontend/survivor_pool && flutter run -d 'iPhone 17 Pro Max'",
 ], description = "Start frontend server" }
 
-"dev:mongo" = { run = [
+mongo = { run = [
     "docker run --rm --name dev-mongo -d -p 27017:27017 -v dev-mongo-data:/data/db -v $(pwd)/db/init:/docker-entrypoint-initdb.d:ro mongo:8.0",
 ], description = "Start MongoDB for development" }
 
-"dev:start" = { run = [
-    "mise run dev:mongo",
+start = { run = [
+    "mise run mongo",
     "bash -lc 'if tmux has-session -t survivor-dev 2>/dev/null; then echo \"tmux session survivor-dev already running\"; exit 1; fi'",
     "bash -lc 'tmux new-session -d -s survivor-dev -n mongosh -c .'",
     "bash -lc 'tmux send-keys -t survivor-dev:mongosh \"./scripts/dev-mongosh.sh\" C-m'",
@@ -32,14 +32,14 @@ bootstrap = { run = [
     "echo 'Services running in tmux session survivor-dev. Attach with: tmux attach -t survivor-dev'",
 ], description = "Start all development services in background" }
 
-"dev:stop" = { run = [
+stop = { run = [
     "bash -lc 'tmux send-keys -t survivor-dev:frontend q 2>/dev/null || true; sleep 1'",
     "bash -lc 'tmux kill-session -t survivor-dev 2>/dev/null || echo \"tmux session survivor-dev not found\"'",
     "docker stop dev-mongo 2>/dev/null || echo 'MongoDB not running'",
     "echo 'All development services stopped'",
 ], description = "Stop all development services" }
 
-"dev:attach" = { run = ["tmux attach -t survivor-dev"], description = "Attach to tmux session" }
+attach = { run = ["tmux attach -t survivor-dev"], description = "Attach to tmux session" }
 
 prod = { run = [
     "docker compose up -d",
