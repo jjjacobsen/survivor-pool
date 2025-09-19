@@ -208,4 +208,93 @@
     },
     { upsert: true }
   );
+
+  const users = dbApp.users;
+  const pools = dbApp.pools;
+  const poolMemberships = dbApp.pool_memberships;
+  const spacePasswordHash = "$2b$12$dCJv2DzGaDpGDNkat1ohn.21VPhwo0H/pXvuXOGhKbmHpSmHhQ.DK";
+
+  function collectionExists(dbConn, name) {
+    return dbConn.getCollectionInfos({ name }).length > 0;
+  }
+
+  [
+    {
+      username: "test1",
+      email: "test1@email.com",
+      display_name: "test1",
+      id: ObjectId("68ccc555f763780fad79e575")
+    },
+    {
+      username: "test2",
+      email: "test2@email.com",
+      display_name: "test2",
+      id: ObjectId("68ccc555f763780fad79e576")
+    },
+    {
+      username: "test3",
+      email: "test3@email.com",
+      display_name: "test3",
+      id: ObjectId("68ccc555f763780fad79e577")
+    }
+  ].forEach((account) => {
+    users.updateOne(
+      { username: account.username },
+      {
+        $set: {
+          email: account.email,
+          password_hash: spacePasswordHash,
+          display_name: account.display_name,
+          account_status: "active",
+          default_pool: null
+        },
+        $setOnInsert: {
+          _id: account.id,
+          created_at: now
+        }
+      },
+      { upsert: true }
+    );
+  });
+
+  const resetUsername = "test";
+  const existingTest = users.findOne({ username: resetUsername });
+  if (existingTest) {
+    const testUserId = existingTest._id;
+    const ownedPoolIds = pools
+      .find({ ownerId: testUserId }, { _id: 1 })
+      .toArray()
+      .map((pool) => pool._id);
+
+    if (ownedPoolIds.length) {
+      poolMemberships.deleteMany({ poolId: { $in: ownedPoolIds } });
+      pools.deleteMany({ _id: { $in: ownedPoolIds } });
+      users.updateMany(
+        { default_pool: { $in: ownedPoolIds } },
+        { $set: { default_pool: null } }
+      );
+    }
+
+    poolMemberships.deleteMany({ userId: testUserId });
+
+    if (collectionExists(dbApp, "picks")) {
+      const pickFilters = [{ userId: testUserId }];
+      if (ownedPoolIds.length) {
+        pickFilters.push({ poolId: { $in: ownedPoolIds } });
+      }
+      dbApp.picks.deleteMany({ $or: pickFilters });
+    }
+
+    users.deleteOne({ _id: testUserId });
+  }
+
+  users.insertOne({
+    username: resetUsername,
+    email: "test@email.com",
+    password_hash: spacePasswordHash,
+    display_name: resetUsername,
+    account_status: "active",
+    created_at: now,
+    default_pool: null
+  });
 })();
