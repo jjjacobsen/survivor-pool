@@ -459,12 +459,6 @@ class _HomePageState extends State<HomePage> {
     _loadPools();
   }
 
-  void _showComingSoon(String action) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$action coming soon.')));
-  }
-
   String _parseErrorMessage(String body) {
     try {
       final decoded = json.decode(body);
@@ -757,7 +751,7 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(height: 12),
                         Text(
                           _pools.isEmpty
-                              ? 'Join an existing pool or create a new one to get started.'
+                              ? 'Create a new pool or use an invite to get started.'
                               : 'Choose a default pool from the dropdown above to view its details.',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.grey[600],
@@ -765,14 +759,6 @@ class _HomePageState extends State<HomePage> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 32),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () => _showComingSoon('Join pool'),
-                            child: const Text('Join a Pool'),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton(
