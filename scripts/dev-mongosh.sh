@@ -3,7 +3,7 @@ set -euo pipefail
 
 container=${1:-dev-mongo}
 target_db=${2:-survivor_pool}
-seed_file=${3:-/app/mongo-init/season48.js}
+seed_file=${3:-/app/mongo-init/init.js}
 
 ping_eval=$(cat <<'JS'
 const ok = db.runCommand({ ping: 1 }).ok === 1;
