@@ -76,22 +76,66 @@ class PoolOption {
   final String id;
   final String name;
   final String seasonId;
+  final String? ownerId;
+  final int? seasonNumber;
 
   const PoolOption({
     required this.id,
     required this.name,
     required this.seasonId,
+    this.ownerId,
+    this.seasonNumber,
   });
 
   factory PoolOption.fromJson(Map<String, dynamic> json) {
     final rawId = json['id'] ?? json['_id'];
     final seasonId = json['season_id'] ?? json['seasonId'] ?? '';
+    final ownerId = json['owner_id'] ?? json['ownerId'];
+    final dynamicSeasonNumber = json['season_number'] ?? json['seasonNumber'];
+    int? parsedSeasonNumber;
+    if (dynamicSeasonNumber is int) {
+      parsedSeasonNumber = dynamicSeasonNumber;
+    } else if (dynamicSeasonNumber is num) {
+      parsedSeasonNumber = dynamicSeasonNumber.toInt();
+    } else if (dynamicSeasonNumber is String) {
+      parsedSeasonNumber = int.tryParse(dynamicSeasonNumber);
+    }
     return PoolOption(
       id: (rawId as String?) ?? '',
       name: json['name'] as String? ?? 'Untitled Pool',
       seasonId: (seasonId as String?) ?? '',
+      ownerId: ownerId is String ? ownerId : null,
+      seasonNumber: parsedSeasonNumber,
     );
   }
+
+  PoolOption copyWith({
+    String? id,
+    String? name,
+    String? seasonId,
+    String? ownerId,
+    int? seasonNumber,
+  }) {
+    return PoolOption(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      seasonId: seasonId ?? this.seasonId,
+      ownerId: ownerId ?? this.ownerId,
+      seasonNumber: seasonNumber ?? this.seasonNumber,
+    );
+  }
+}
+
+class AvailableContestant {
+  final String id;
+  final String name;
+  final String? subtitle;
+
+  const AvailableContestant({
+    required this.id,
+    required this.name,
+    this.subtitle,
+  });
 }
 
 class SurvivorPoolApp extends StatelessWidget {
@@ -456,6 +500,47 @@ class _HomePageState extends State<HomePage> {
   bool _isLoadingPools = false;
   String? _defaultPoolId;
   bool _isUpdatingDefault = false;
+  static const List<AvailableContestant> _sampleContestants = [
+    AvailableContestant(
+      id: 'teeny_chirichillo',
+      name: 'Teeny Chirichillo',
+      subtitle: 'Lavo Tribe - Safe streak 3',
+    ),
+    AvailableContestant(
+      id: 'kishan_patel',
+      name: 'Kishan Patel',
+      subtitle: 'Gata Tribe - Challenge standout',
+    ),
+    AvailableContestant(
+      id: 'anika_dhar',
+      name: 'Anika Dhar',
+      subtitle: 'Tuku Tribe - Idol rumored',
+    ),
+  ];
+
+  List<PoolOption> _applySeasonNumbers(
+    List<PoolOption> pools, {
+    List<SeasonOption>? seasons,
+  }) {
+    final catalog = seasons ?? _seasons;
+    if (catalog.isEmpty) {
+      return pools;
+    }
+
+    final byId = {for (final season in catalog) season.id: season};
+
+    return pools.map((pool) {
+      final match = byId[pool.seasonId];
+      if (match == null) {
+        return pool;
+      }
+      final number = match.number;
+      if (number == null || number == pool.seasonNumber) {
+        return pool;
+      }
+      return pool.copyWith(seasonNumber: number);
+    }).toList();
+  }
 
   @override
   void initState() {
@@ -491,9 +576,8 @@ class _HomePageState extends State<HomePage> {
       });
     }
 
-    var parsed = _seasons;
-    var shouldApply = false;
     var success = _seasons.isNotEmpty;
+    List<SeasonOption>? fetched;
 
     try {
       final response = await http.get(
@@ -511,9 +595,8 @@ class _HomePageState extends State<HomePage> {
 
           list.sort((a, b) => (b.number ?? 0).compareTo(a.number ?? 0));
 
-          parsed = list;
-          shouldApply = true;
-          success = parsed.isNotEmpty;
+          fetched = list;
+          success = list.isNotEmpty;
         }
       }
     } catch (_) {
@@ -522,8 +605,10 @@ class _HomePageState extends State<HomePage> {
       if (mounted) {
         setState(() {
           _isLoadingSeasons = false;
-          if (shouldApply) {
-            _seasons = parsed;
+          final seasons = fetched;
+          if (seasons != null) {
+            _seasons = seasons;
+            _pools = _applySeasonNumbers(_pools, seasons: seasons);
           }
         });
       }
@@ -549,19 +634,19 @@ class _HomePageState extends State<HomePage> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data is List) {
-          final items =
-              data
-                  .whereType<Map<String, dynamic>>()
-                  .map(PoolOption.fromJson)
-                  .where((pool) => pool.id.isNotEmpty)
-                  .toList()
-                ..sort((a, b) => a.name.compareTo(b.name));
+          final mapped = data
+              .whereType<Map<String, dynamic>>()
+              .map(PoolOption.fromJson)
+              .where((pool) => pool.id.isNotEmpty)
+              .toList();
+          mapped.sort((a, b) => a.name.compareTo(b.name));
+          final decorated = _applySeasonNumbers(mapped);
 
           if (mounted) {
             setState(() {
-              _pools = items;
+              _pools = decorated;
               if (_defaultPoolId != null &&
-                  !_pools.any((pool) => pool.id == _defaultPoolId)) {
+                  !decorated.any((pool) => pool.id == _defaultPoolId)) {
                 _defaultPoolId = null;
               }
             });
@@ -705,8 +790,18 @@ class _HomePageState extends State<HomePage> {
               id: safeDefaultPoolId,
               name: 'Unknown Pool',
               seasonId: '',
+              ownerId: null,
+              seasonNumber: null,
             ),
           );
+
+    final isOwnerView =
+        selectedPool != null &&
+        (selectedPool.ownerId == null ||
+            selectedPool.ownerId == widget.user.id);
+    final availableContestants = selectedPool == null
+        ? const <AvailableContestant>[]
+        : _sampleContestants;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -734,7 +829,16 @@ class _HomePageState extends State<HomePage> {
           child: _isLoadingPools && _pools.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : _defaultPoolId != null && selectedPool != null
-              ? PoolPlaceholder(pool: selectedPool)
+              ? isOwnerView
+                    ? PoolOwnerDashboard(
+                        pool: selectedPool,
+                        availableContestants: availableContestants,
+                        onManageMembers: () {},
+                        onManageSettings: () {},
+                        onAdvanceWeek: () {},
+                        onContestantSelected: (_) {},
+                      )
+                    : PoolPlaceholder(pool: selectedPool)
               : Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 420),
@@ -931,6 +1035,223 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+class PoolOwnerDashboard extends StatelessWidget {
+  final PoolOption pool;
+  final List<AvailableContestant> availableContestants;
+  final VoidCallback? onManageMembers;
+  final VoidCallback? onManageSettings;
+  final VoidCallback? onAdvanceWeek;
+  final void Function(AvailableContestant contestant)? onContestantSelected;
+
+  const PoolOwnerDashboard({
+    super.key,
+    required this.pool,
+    this.availableContestants = const [],
+    this.onManageMembers,
+    this.onManageSettings,
+    this.onAdvanceWeek,
+    this.onContestantSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final estimatedHeight = availableContestants.length * 76.0;
+        final listHeight = availableContestants.isEmpty
+            ? 160.0
+            : estimatedHeight < 220.0
+            ? 220.0
+            : estimatedHeight > 420.0
+            ? 420.0
+            : estimatedHeight;
+
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeaderCard(theme),
+              const SizedBox(height: 24),
+              _buildWeeklyPickCard(theme, listHeight),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHeaderCard(ThemeData theme) {
+    final membersHandler = onManageMembers ?? () {};
+    final settingsHandler = onManageSettings ?? () {};
+    final advanceHandler = onAdvanceWeek ?? () {};
+    final seasonDescription = pool.seasonNumber != null
+        ? 'Season: ${pool.seasonNumber}'
+        : pool.seasonId.isEmpty
+        ? 'Season details coming soon'
+        : 'Season: ${pool.seasonId}';
+
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      pool.name,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  OutlinedButton.icon(
+                    onPressed: settingsHandler,
+                    icon: const Icon(Icons.settings_outlined),
+                    label: const Text('Pool settings'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                seasonDescription,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: membersHandler,
+                  icon: const Icon(Icons.group_outlined),
+                  label: const Text('Manage members'),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  onPressed: advanceHandler,
+                  icon: const Icon(Icons.skip_next_rounded),
+                  label: const Text('Advance to next week'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeeklyPickCard(ThemeData theme, double listHeight) {
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "This Week's Pick",
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Choose a contestant below to review their details before locking your pick.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(height: listHeight, child: _buildContestantList(theme)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContestantList(ThemeData theme) {
+    if (availableContestants.isEmpty) {
+      return Center(
+        child: Text(
+          'No available contestants yet. Check back after the next elimination.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    return Scrollbar(
+      child: ListView.separated(
+        itemCount: availableContestants.length,
+        itemBuilder: (context, index) {
+          final contestant = availableContestants[index];
+          return FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            onPressed: () {
+              final handler = onContestantSelected;
+              if (handler != null) {
+                handler(contestant);
+              }
+            },
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        contestant.name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (contestant.subtitle != null &&
+                          contestant.subtitle!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          contestant.subtitle!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded),
+              ],
+            ),
+          );
+        },
+        separatorBuilder: (_, index) => const SizedBox(height: 12),
+      ),
+    );
+  }
+}
+
 class PoolPlaceholder extends StatelessWidget {
   final PoolOption pool;
 
@@ -966,7 +1287,9 @@ class PoolPlaceholder extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Season: ${pool.seasonId.isEmpty ? 'TBD' : pool.seasonId}",
+                  pool.seasonNumber != null
+                      ? 'Season: ${pool.seasonNumber}'
+                      : "Season: ${pool.seasonId.isEmpty ? 'TBD' : pool.seasonId}",
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: Colors.grey[600],
                   ),
