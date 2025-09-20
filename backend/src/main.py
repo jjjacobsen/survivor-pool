@@ -27,6 +27,7 @@ users_collection = db.users
 pools_collection = db.pools
 pool_memberships_collection = db.pool_memberships
 seasons_collection = db.seasons
+picks_collection = db.picks
 
 
 class UserCreateRequest(BaseModel):
@@ -77,6 +78,19 @@ class SeasonResponse(BaseModel):
 
 class UserDefaultPoolUpdate(BaseModel):
     default_pool: str | None = None
+
+
+class AvailableContestantResponse(BaseModel):
+    id: str
+    name: str
+    subtitle: str | None = None
+
+
+class AvailableContestantsResponse(BaseModel):
+    pool_id: str
+    user_id: str
+    current_week: int
+    contestants: list[AvailableContestantResponse]
 
 
 @app.get("/")
@@ -408,3 +422,118 @@ def list_user_pools(user_id: str):
         )
 
     return responses
+
+
+@app.get(
+    "/pools/{pool_id}/available_contestants",
+    response_model=AvailableContestantsResponse,
+)
+def get_available_contestants(pool_id: str, user_id: str):
+    pool_oid = parse_object_id(pool_id, "pool_id")
+    user_oid = parse_object_id(user_id, "user_id")
+
+    pool = pools_collection.find_one({"_id": pool_oid})
+    if not pool:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pool not found",
+        )
+
+    membership = pool_memberships_collection.find_one(
+        {"poolId": pool_oid, "userId": user_oid}
+    )
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not a member of this pool",
+        )
+
+    season_id = pool.get("seasonId")
+    if not season_id:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Pool season not configured",
+        )
+
+    season = seasons_collection.find_one(
+        {"_id": season_id},
+        {"contestants": 1, "eliminations": 1},
+    )
+    if not season:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Season not found",
+        )
+
+    raw_week = pool.get("current_week")
+    current_week: int
+    if isinstance(raw_week, int):
+        current_week = raw_week if raw_week > 0 else 1
+    elif isinstance(raw_week, float):
+        current_week = int(raw_week) if raw_week > 0 else 1
+    elif isinstance(raw_week, str):
+        current_week = int(raw_week) if raw_week.isdigit() else 1
+    else:
+        current_week = 1
+
+    prior_picks_cursor = picks_collection.find(
+        {"userId": user_oid, "poolId": pool_oid},
+        {"contestant_id": 1},
+    )
+    picked_contestants = {
+        pick.get("contestant_id")
+        for pick in prior_picks_cursor
+        if pick.get("contestant_id")
+    }
+
+    eliminated_contestants: set[str] = set()
+    for elimination in season.get("eliminations", []):
+        contestant_id = elimination.get("eliminated_contestant_id")
+        if not contestant_id:
+            continue
+
+        week_value = elimination.get("week")
+        elim_week: int | None = None
+        if isinstance(week_value, int):
+            elim_week = week_value
+        elif isinstance(week_value, float):
+            elim_week = int(week_value)
+        elif isinstance(week_value, str):
+            try:
+                elim_week = int(week_value)
+            except ValueError:
+                elim_week = None
+
+        if elim_week is not None and elim_week < current_week:
+            eliminated_contestants.add(contestant_id)
+
+    contestants: list[AvailableContestantResponse] = []
+    for contestant in season.get("contestants", []):
+        contestant_id = contestant.get("id")
+        if not contestant_id or contestant_id in picked_contestants:
+            continue
+        if contestant_id in eliminated_contestants:
+            continue
+
+        name = contestant.get("name")
+        subtitle: str | None = None
+        initial_tribe = contestant.get("initial_tribe")
+        if isinstance(initial_tribe, str) and initial_tribe.strip():
+            subtitle = f"Initial tribe: {initial_tribe.strip()}"
+
+        contestants.append(
+            AvailableContestantResponse(
+                id=contestant_id,
+                name=name if isinstance(name, str) and name else contestant_id,
+                subtitle=subtitle,
+            )
+        )
+
+    contestants.sort(key=lambda c: c.name.lower())
+
+    return AvailableContestantsResponse(
+        pool_id=str(pool_oid),
+        user_id=str(user_oid),
+        current_week=current_week,
+        contestants=contestants,
+    )

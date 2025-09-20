@@ -150,6 +150,17 @@ class AvailableContestant {
     required this.name,
     this.subtitle,
   });
+
+  factory AvailableContestant.fromJson(Map<String, dynamic> json) {
+    final id = json['id'] as String? ?? '';
+    final name = json['name'] as String? ?? '';
+    final subtitle = json['subtitle'];
+    return AvailableContestant(
+      id: id,
+      name: name.isEmpty ? id : name,
+      subtitle: subtitle is String ? subtitle : null,
+    );
+  }
 }
 
 class SurvivorPoolApp extends StatelessWidget {
@@ -514,24 +525,9 @@ class _HomePageState extends State<HomePage> {
   bool _isLoadingPools = false;
   String? _defaultPoolId;
   bool _isUpdatingDefault = false;
-  static const List<AvailableContestant> _sampleContestants = [
-    AvailableContestant(
-      id: 'teeny_chirichillo',
-      name: 'Teeny Chirichillo',
-      subtitle: 'Lavo Tribe - Safe streak 3',
-    ),
-    AvailableContestant(
-      id: 'kishan_patel',
-      name: 'Kishan Patel',
-      subtitle: 'Gata Tribe - Challenge standout',
-    ),
-    AvailableContestant(
-      id: 'anika_dhar',
-      name: 'Anika Dhar',
-      subtitle: 'Tuku Tribe - Idol rumored',
-    ),
-  ];
-
+  List<AvailableContestant> _availableContestants = const [];
+  bool _isLoadingContestants = false;
+  String? _contestantsForPoolId;
   List<PoolOption> _applySeasonNumbers(
     List<PoolOption> pools, {
     List<SeasonOption>? seasons,
@@ -554,6 +550,64 @@ class _HomePageState extends State<HomePage> {
       }
       return pool.copyWith(seasonNumber: number);
     }).toList();
+  }
+
+  Future<void> _loadAvailableContestants(String? poolId) async {
+    if (!mounted) {
+      return;
+    }
+
+    if (poolId == null || poolId.isEmpty) {
+      setState(() {
+        _availableContestants = const [];
+        _contestantsForPoolId = null;
+        _isLoadingContestants = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingContestants = true;
+      _contestantsForPoolId = poolId;
+      _availableContestants = const [];
+    });
+
+    List<AvailableContestant> parsed = const <AvailableContestant>[];
+    var updated = false;
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'http://localhost:8000/pools/$poolId/available_contestants?user_id=${widget.user.id}',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          final items = decoded['contestants'];
+          if (items is List) {
+            parsed = items
+                .whereType<Map<String, dynamic>>()
+                .map(AvailableContestant.fromJson)
+                .where((contestant) => contestant.id.isNotEmpty)
+                .toList();
+            updated = true;
+          }
+        }
+      }
+    } catch (_) {
+      updated = false;
+    } finally {
+      if (mounted && _contestantsForPoolId == poolId) {
+        setState(() {
+          _isLoadingContestants = false;
+          if (updated) {
+            _availableContestants = parsed;
+          }
+        });
+      }
+    }
   }
 
   @override
@@ -664,6 +718,7 @@ class _HomePageState extends State<HomePage> {
                 _defaultPoolId = null;
               }
             });
+            unawaited(_loadAvailableContestants(_defaultPoolId));
           }
         }
       }
@@ -721,6 +776,7 @@ class _HomePageState extends State<HomePage> {
             ..sort((a, b) => a.name.compareTo(b.name));
           _defaultPoolId = newPool.id;
         });
+        unawaited(_loadAvailableContestants(newPool.id));
       }
 
       messenger.showSnackBar(
@@ -743,6 +799,7 @@ class _HomePageState extends State<HomePage> {
       _isUpdatingDefault = true;
       _defaultPoolId = poolId;
     });
+    unawaited(_loadAvailableContestants(poolId));
 
     try {
       final response = await http.patch(
@@ -757,6 +814,7 @@ class _HomePageState extends State<HomePage> {
             _defaultPoolId = previous;
           });
         }
+        unawaited(_loadAvailableContestants(previous));
         messenger.showSnackBar(
           SnackBar(content: Text(_parseErrorMessage(response.body))),
         );
@@ -770,6 +828,9 @@ class _HomePageState extends State<HomePage> {
             _defaultPoolId = serverDefault;
           });
         }
+        if (serverDefault != poolId) {
+          unawaited(_loadAvailableContestants(serverDefault));
+        }
       }
     } catch (error) {
       if (mounted) {
@@ -777,6 +838,7 @@ class _HomePageState extends State<HomePage> {
           _defaultPoolId = previous;
         });
       }
+      unawaited(_loadAvailableContestants(previous));
       messenger.showSnackBar(SnackBar(content: Text('Network error: $error')));
     } finally {
       if (mounted) {
@@ -814,9 +876,17 @@ class _HomePageState extends State<HomePage> {
         selectedPool != null &&
         (selectedPool.ownerId == null ||
             selectedPool.ownerId == widget.user.id);
-    final availableContestants = selectedPool == null
-        ? const <AvailableContestant>[]
-        : _sampleContestants;
+    List<AvailableContestant> availableContestants;
+    var isLoadingContestants = false;
+    if (selectedPool == null) {
+      availableContestants = const <AvailableContestant>[];
+    } else if (_contestantsForPoolId == selectedPool.id) {
+      availableContestants = _availableContestants;
+      isLoadingContestants = _isLoadingContestants;
+    } else {
+      availableContestants = const <AvailableContestant>[];
+      isLoadingContestants = true;
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -848,6 +918,7 @@ class _HomePageState extends State<HomePage> {
                     ? PoolOwnerDashboard(
                         pool: selectedPool,
                         availableContestants: availableContestants,
+                        isLoadingContestants: isLoadingContestants,
                         onManageMembers: () {},
                         onManageSettings: () {},
                         onAdvanceWeek: () {},
@@ -1053,6 +1124,7 @@ class _HomePageState extends State<HomePage> {
 class PoolOwnerDashboard extends StatelessWidget {
   final PoolOption pool;
   final List<AvailableContestant> availableContestants;
+  final bool isLoadingContestants;
   final VoidCallback? onManageMembers;
   final VoidCallback? onManageSettings;
   final VoidCallback? onAdvanceWeek;
@@ -1062,6 +1134,7 @@ class PoolOwnerDashboard extends StatelessWidget {
     super.key,
     required this.pool,
     this.availableContestants = const [],
+    this.isLoadingContestants = false,
     this.onManageMembers,
     this.onManageSettings,
     this.onAdvanceWeek,
@@ -1208,6 +1281,10 @@ class PoolOwnerDashboard extends StatelessWidget {
   }
 
   Widget _buildContestantList(ThemeData theme) {
+    if (isLoadingContestants) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     if (availableContestants.isEmpty) {
       return Center(
         child: Text(
