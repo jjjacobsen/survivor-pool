@@ -775,8 +775,10 @@ class _HomePageState extends State<HomePage> {
           _pools = [..._pools.where((pool) => pool.id != newPool.id), newPool]
             ..sort((a, b) => a.name.compareTo(b.name));
           _defaultPoolId = newPool.id;
+          _availableContestants = const [];
+          _contestantsForPoolId = null;
+          _isLoadingContestants = true;
         });
-        unawaited(_loadAvailableContestants(newPool.id));
       }
 
       messenger.showSnackBar(
