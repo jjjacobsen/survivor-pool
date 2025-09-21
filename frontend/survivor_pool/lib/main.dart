@@ -163,6 +163,191 @@ class AvailableContestant {
   }
 }
 
+class CurrentPickSummary {
+  final String id;
+  final String contestantId;
+  final String contestantName;
+  final int week;
+  final DateTime lockedAt;
+
+  const CurrentPickSummary({
+    required this.id,
+    required this.contestantId,
+    required this.contestantName,
+    required this.week,
+    required this.lockedAt,
+  });
+
+  factory CurrentPickSummary.fromJson(Map<String, dynamic> json) {
+    final id = json['pick_id'] as String? ?? json['id'] as String? ?? '';
+    final contestantId = json['contestant_id'] as String? ?? '';
+    final contestantName = json['contestant_name'] as String? ?? contestantId;
+    final rawWeek = json['week'];
+    final rawLocked = json['locked_at'];
+    var parsedWeek = 0;
+    if (rawWeek is int) {
+      parsedWeek = rawWeek;
+    } else if (rawWeek is num) {
+      parsedWeek = rawWeek.toInt();
+    } else if (rawWeek is String) {
+      parsedWeek = int.tryParse(rawWeek) ?? 0;
+    }
+    DateTime lockedAt;
+    if (rawLocked is String) {
+      lockedAt = DateTime.tryParse(rawLocked) ?? DateTime.now();
+    } else if (rawLocked is int) {
+      lockedAt = DateTime.fromMillisecondsSinceEpoch(rawLocked);
+    } else if (rawLocked is num) {
+      lockedAt = DateTime.fromMillisecondsSinceEpoch(rawLocked.toInt());
+    } else if (rawLocked is DateTime) {
+      lockedAt = rawLocked;
+    } else {
+      lockedAt = DateTime.now();
+    }
+
+    return CurrentPickSummary(
+      id: id,
+      contestantId: contestantId,
+      contestantName: contestantName.isEmpty ? contestantId : contestantName,
+      week: parsedWeek,
+      lockedAt: lockedAt,
+    );
+  }
+}
+
+class ContestantDetail {
+  final String id;
+  final String name;
+  final int? age;
+  final String? occupation;
+  final String? hometown;
+  final String? photoUrl;
+  final String? bio;
+  final String? initialTribe;
+
+  const ContestantDetail({
+    required this.id,
+    required this.name,
+    this.age,
+    this.occupation,
+    this.hometown,
+    this.photoUrl,
+    this.bio,
+    this.initialTribe,
+  });
+
+  factory ContestantDetail.fromJson(Map<String, dynamic> json) {
+    final rawAge = json['age'];
+    int? parsedAge;
+    if (rawAge is int) {
+      parsedAge = rawAge;
+    } else if (rawAge is num) {
+      parsedAge = rawAge.toInt();
+    } else if (rawAge is String) {
+      parsedAge = int.tryParse(rawAge);
+    }
+
+    return ContestantDetail(
+      id: json['id'] as String? ?? '',
+      name: (json['name'] is String && (json['name'] as String).isNotEmpty)
+          ? json['name'] as String
+          : (json['id'] as String? ?? ''),
+      age: parsedAge,
+      occupation: json['occupation'] as String?,
+      hometown: json['hometown'] as String?,
+      photoUrl: json['photo_url'] as String? ?? json['photoUrl'] as String?,
+      bio: json['bio'] as String?,
+      initialTribe:
+          json['initial_tribe'] as String? ?? json['initialTribe'] as String?,
+    );
+  }
+}
+
+class ContestantDetailResponse {
+  final ContestantDetail contestant;
+  final bool isAvailable;
+  final int? eliminatedWeek;
+  final int? alreadyPickedWeek;
+  final CurrentPickSummary? currentPick;
+
+  const ContestantDetailResponse({
+    required this.contestant,
+    required this.isAvailable,
+    this.eliminatedWeek,
+    this.alreadyPickedWeek,
+    this.currentPick,
+  });
+
+  factory ContestantDetailResponse.fromJson(Map<String, dynamic> json) {
+    final contestantJson = json['contestant'] as Map<String, dynamic>?;
+    final currentPickJson = json['current_pick'] as Map<String, dynamic>?;
+    return ContestantDetailResponse(
+      contestant: contestantJson != null
+          ? ContestantDetail.fromJson(contestantJson)
+          : const ContestantDetail(id: '', name: ''),
+      isAvailable: json['is_available'] as bool? ?? false,
+      eliminatedWeek: json['eliminated_week'] is int
+          ? json['eliminated_week'] as int
+          : int.tryParse('${json['eliminated_week']}'),
+      alreadyPickedWeek: json['already_picked_week'] is int
+          ? json['already_picked_week'] as int
+          : int.tryParse('${json['already_picked_week']}'),
+      currentPick: currentPickJson != null
+          ? CurrentPickSummary.fromJson(currentPickJson)
+          : null,
+    );
+  }
+}
+
+class PickResponse {
+  final String id;
+  final String contestantId;
+  final int week;
+  final DateTime lockedAt;
+
+  const PickResponse({
+    required this.id,
+    required this.contestantId,
+    required this.week,
+    required this.lockedAt,
+  });
+
+  factory PickResponse.fromJson(Map<String, dynamic> json) {
+    final rawLocked = json['locked_at'];
+    DateTime lockedAt;
+    if (rawLocked is String) {
+      lockedAt = DateTime.tryParse(rawLocked) ?? DateTime.now();
+    } else if (rawLocked is int) {
+      lockedAt = DateTime.fromMillisecondsSinceEpoch(rawLocked);
+    } else if (rawLocked is num) {
+      lockedAt = DateTime.fromMillisecondsSinceEpoch(rawLocked.toInt());
+    } else if (rawLocked is DateTime) {
+      lockedAt = rawLocked;
+    } else {
+      lockedAt = DateTime.now();
+    }
+
+    final rawWeek = json['week'];
+    var parsedWeek = 0;
+    if (rawWeek is int) {
+      parsedWeek = rawWeek;
+    } else if (rawWeek is num) {
+      parsedWeek = rawWeek.toInt();
+    } else if (rawWeek is String) {
+      parsedWeek = int.tryParse(rawWeek) ?? 0;
+    }
+
+    final id = json['pick_id'] as String? ?? json['id'] as String? ?? '';
+
+    return PickResponse(
+      id: id,
+      contestantId: json['contestant_id'] as String? ?? '',
+      week: parsedWeek,
+      lockedAt: lockedAt,
+    );
+  }
+}
+
 class SurvivorPoolApp extends StatelessWidget {
   const SurvivorPoolApp({super.key});
 
@@ -328,8 +513,8 @@ class _LoginPageState extends State<LoginPage>
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withValues(alpha: 0.2),
-                  Colors.black.withValues(alpha: 0.4),
+                  Colors.black.withAlpha(51),
+                  Colors.black.withAlpha(102),
                 ],
               ),
             ),
@@ -528,6 +713,7 @@ class _HomePageState extends State<HomePage> {
   List<AvailableContestant> _availableContestants = const [];
   bool _isLoadingContestants = false;
   String? _contestantsForPoolId;
+  CurrentPickSummary? _currentPick;
   List<PoolOption> _applySeasonNumbers(
     List<PoolOption> pools, {
     List<SeasonOption>? seasons,
@@ -562,17 +748,22 @@ class _HomePageState extends State<HomePage> {
         _availableContestants = const [];
         _contestantsForPoolId = null;
         _isLoadingContestants = false;
+        _currentPick = null;
       });
       return;
     }
 
     setState(() {
       _isLoadingContestants = true;
+      if (_contestantsForPoolId != poolId) {
+        _availableContestants = const [];
+        _currentPick = null;
+      }
       _contestantsForPoolId = poolId;
-      _availableContestants = const [];
     });
 
     List<AvailableContestant> parsed = const <AvailableContestant>[];
+    CurrentPickSummary? parsedCurrentPick;
     var updated = false;
 
     try {
@@ -594,6 +785,10 @@ class _HomePageState extends State<HomePage> {
                 .toList();
             updated = true;
           }
+          final pickData = decoded['current_pick'];
+          if (pickData is Map<String, dynamic>) {
+            parsedCurrentPick = CurrentPickSummary.fromJson(pickData);
+          }
         }
       }
     } catch (_) {
@@ -605,6 +800,7 @@ class _HomePageState extends State<HomePage> {
           if (updated) {
             _availableContestants = parsed;
           }
+          _currentPick = parsedCurrentPick;
         });
       }
     }
@@ -738,15 +934,152 @@ class _HomePageState extends State<HomePage> {
       return true;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
     final loaded = await _fetchSeasons();
     if (!loaded && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Unable to load seasons. Please try again.'),
         ),
       );
     }
     return loaded;
+  }
+
+  Future<ContestantDetailResponse?> _fetchContestantDetail(
+    String poolId,
+    String contestantId,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'http://localhost:8000/pools/$poolId/contestants/$contestantId?user_id=${widget.user.id}',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return ContestantDetailResponse.fromJson(decoded);
+        }
+      } else {
+        if (mounted) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                'Unable to load contestant. (${response.statusCode})',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Network error: $error')),
+        );
+      }
+    }
+    return null;
+  }
+
+  Future<PickResponse?> _lockPick(String poolId, String contestantId) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:8000/pools/$poolId/picks'),
+        headers: const {'Content-Type': 'application/json'},
+        body: json.encode({
+          'user_id': widget.user.id,
+          'contestant_id': contestantId,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return PickResponse.fromJson(decoded);
+        }
+      } else {
+        String message = 'Unable to lock pick. (${response.statusCode})';
+        try {
+          final decoded = json.decode(response.body);
+          if (decoded is Map<String, dynamic>) {
+            final detail = decoded['detail'];
+            if (detail is String && detail.isNotEmpty) {
+              message = detail;
+            }
+          }
+        } catch (_) {}
+        if (mounted) {
+          messenger.showSnackBar(SnackBar(content: Text(message)));
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Network error: $error')),
+        );
+      }
+    }
+    return null;
+  }
+
+  Future<void> _handleContestantSelected(
+    PoolOption pool,
+    AvailableContestant contestant,
+  ) async {
+    final detail = await _fetchContestantDetail(pool.id, contestant.id);
+    if (!mounted || detail == null) {
+      return;
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ContestantDetailPage(
+          pool: pool,
+          detail: detail,
+          onLockPick: () => _handleLockPick(pool, detail.contestant),
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _handleLockPick(
+    PoolOption pool,
+    ContestantDetail contestant,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final pick = await _lockPick(pool.id, contestant.id);
+    if (pick == null) {
+      return false;
+    }
+
+    if (!mounted) {
+      return true;
+    }
+
+    final summary = CurrentPickSummary(
+      id: pick.id,
+      contestantId: pick.contestantId,
+      contestantName: contestant.name.isNotEmpty
+          ? contestant.name
+          : pick.contestantId,
+      week: pick.week,
+      lockedAt: pick.lockedAt,
+    );
+
+    setState(() {
+      _currentPick = summary;
+    });
+
+    messenger.showSnackBar(
+      SnackBar(content: Text('Pick locked for ${summary.contestantName}.')),
+    );
+
+    await _loadAvailableContestants(pool.id);
+    return true;
   }
 
   Future<void> _showCreatePoolDialog() async {
@@ -890,6 +1223,10 @@ class _HomePageState extends State<HomePage> {
       isLoadingContestants = true;
     }
 
+    final currentPick = (_contestantsForPoolId == selectedPool?.id)
+        ? _currentPick
+        : null;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -921,10 +1258,13 @@ class _HomePageState extends State<HomePage> {
                         pool: selectedPool,
                         availableContestants: availableContestants,
                         isLoadingContestants: isLoadingContestants,
+                        currentPick: currentPick,
                         onManageMembers: () {},
                         onManageSettings: () {},
                         onAdvanceWeek: () {},
-                        onContestantSelected: (_) {},
+                        onContestantSelected: (contestant) {
+                          _handleContestantSelected(selectedPool, contestant);
+                        },
                       )
                     : PoolPlaceholder(pool: selectedPool)
               : Center(
@@ -1011,12 +1351,9 @@ class _HomePageState extends State<HomePage> {
         constraints: const BoxConstraints(maxWidth: 280),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withValues(alpha: 0.24),
+            color: theme.colorScheme.primary.withAlpha(61),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.35),
-              width: 1.2,
-            ),
+            border: Border.all(color: Colors.white.withAlpha(89), width: 1.2),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -1093,7 +1430,7 @@ class _HomePageState extends State<HomePage> {
       child: Container(
         decoration: BoxDecoration(
           color: isSelected
-              ? theme.colorScheme.primary.withValues(alpha: 0.12)
+              ? theme.colorScheme.primary.withAlpha(31)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
@@ -1127,6 +1464,7 @@ class PoolOwnerDashboard extends StatelessWidget {
   final PoolOption pool;
   final List<AvailableContestant> availableContestants;
   final bool isLoadingContestants;
+  final CurrentPickSummary? currentPick;
   final VoidCallback? onManageMembers;
   final VoidCallback? onManageSettings;
   final VoidCallback? onAdvanceWeek;
@@ -1137,6 +1475,7 @@ class PoolOwnerDashboard extends StatelessWidget {
     required this.pool,
     this.availableContestants = const [],
     this.isLoadingContestants = false,
+    this.currentPick,
     this.onManageMembers,
     this.onManageSettings,
     this.onAdvanceWeek,
@@ -1165,7 +1504,7 @@ class PoolOwnerDashboard extends StatelessWidget {
             children: [
               _buildHeaderCard(theme),
               const SizedBox(height: 24),
-              _buildWeeklyPickCard(theme, listHeight),
+              _buildWeeklyPickCard(theme, listHeight, currentPick),
             ],
           ),
         );
@@ -1244,7 +1583,11 @@ class PoolOwnerDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildWeeklyPickCard(ThemeData theme, double listHeight) {
+  Widget _buildWeeklyPickCard(
+    ThemeData theme,
+    double listHeight,
+    CurrentPickSummary? currentPick,
+  ) {
     return Card(
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -1269,13 +1612,18 @@ class PoolOwnerDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Choose a contestant below to review their details before locking your pick.',
+              currentPick != null
+                  ? 'Pick locked in for this week.'
+                  : 'Choose a contestant below to review their details before locking your pick.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 24),
-            SizedBox(height: listHeight, child: _buildContestantList(theme)),
+            if (currentPick != null)
+              _buildLockedPickSummary(theme, currentPick)
+            else
+              SizedBox(height: listHeight, child: _buildContestantList(theme)),
           ],
         ),
       ),
@@ -1352,6 +1700,69 @@ class PoolOwnerDashboard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildLockedPickSummary(ThemeData theme, CurrentPickSummary summary) {
+    final handler = onContestantSelected;
+    final lockedAt = summary.lockedAt.toLocal();
+    final timestamp = _formatTimestamp(lockedAt);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withAlpha(20),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.verified, color: theme.colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  summary.contestantName,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Locked at $timestamp',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.tonalIcon(
+            onPressed: handler == null
+                ? null
+                : () {
+                    handler(
+                      AvailableContestant(
+                        id: summary.contestantId,
+                        name: summary.contestantName,
+                      ),
+                    );
+                  },
+            icon: const Icon(Icons.info_outline),
+            label: const Text('View contestant details'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTimestamp(DateTime value) {
+    final year = value.year;
+    final month = value.month.toString().padLeft(2, '0');
+    final day = value.day.toString().padLeft(2, '0');
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '$month/$day/$year $hour:$minute';
+  }
 }
 
 class PoolPlaceholder extends StatelessWidget {
@@ -1376,7 +1787,7 @@ class PoolPlaceholder extends StatelessWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: theme.primaryColor.withValues(alpha: 0.2)),
+            side: BorderSide(color: theme.primaryColor.withAlpha(51)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -1401,6 +1812,254 @@ class PoolPlaceholder extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class ContestantDetailPage extends StatefulWidget {
+  final PoolOption pool;
+  final ContestantDetailResponse detail;
+  final Future<bool> Function() onLockPick;
+
+  const ContestantDetailPage({
+    super.key,
+    required this.pool,
+    required this.detail,
+    required this.onLockPick,
+  });
+
+  @override
+  State<ContestantDetailPage> createState() => _ContestantDetailPageState();
+}
+
+class _ContestantDetailPageState extends State<ContestantDetailPage> {
+  bool _isSubmitting = false;
+
+  Future<void> _handleLock() async {
+    if (_isSubmitting || !widget.detail.isAvailable) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    final success = await widget.onLockPick();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = false;
+    });
+
+    if (success && mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final detail = widget.detail.contestant;
+    final chips = <Widget>[];
+
+    if (detail.age != null) {
+      chips.add(_buildInfoChip('Age', detail.age.toString(), theme));
+    }
+    if (detail.occupation != null && detail.occupation!.isNotEmpty) {
+      chips.add(_buildInfoChip('Occupation', detail.occupation!, theme));
+    }
+    if (detail.hometown != null && detail.hometown!.isNotEmpty) {
+      chips.add(_buildInfoChip('Hometown', detail.hometown!, theme));
+    }
+    if (detail.initialTribe != null && detail.initialTribe!.isNotEmpty) {
+      chips.add(_buildInfoChip('Initial Tribe', detail.initialTribe!, theme));
+    }
+
+    final statusNotes = <Widget>[];
+    if (widget.detail.currentPick != null &&
+        widget.detail.currentPick!.contestantId != detail.id) {
+      final pick = widget.detail.currentPick!;
+      statusNotes.add(
+        _buildStatusNote(
+          theme,
+          'You already locked ${pick.contestantName} for week ${pick.week}.',
+        ),
+      );
+    }
+
+    final alreadyPickedWeek = widget.detail.alreadyPickedWeek;
+    final currentPickId = widget.detail.currentPick?.contestantId;
+    if (alreadyPickedWeek != null && currentPickId != detail.id) {
+      statusNotes.add(
+        _buildStatusNote(
+          theme,
+          'You previously picked ${detail.name} in week $alreadyPickedWeek.',
+        ),
+      );
+    }
+
+    if (widget.detail.eliminatedWeek != null) {
+      statusNotes.add(
+        _buildStatusNote(
+          theme,
+          '${detail.name} was eliminated in week ${widget.detail.eliminatedWeek}.',
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(detail.name.isEmpty ? 'Contestant' : detail.name),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeaderImage(detail, theme),
+                    const SizedBox(height: 24),
+                    Text(
+                      detail.name,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Week ${widget.pool.currentWeek} · ${widget.pool.name}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (chips.isNotEmpty)
+                      Wrap(spacing: 12, runSpacing: 12, children: chips),
+                    if (detail.bio != null && detail.bio!.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      Text(
+                        'Bio',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(detail.bio!, style: theme.textTheme.bodyMedium),
+                    ],
+                    if (statusNotes.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      ...statusNotes,
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: widget.detail.isAvailable && !_isSubmitting
+                      ? _handleLock
+                      : null,
+                  icon: _isSubmitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.lock_outline),
+                  label: Text(
+                    widget.detail.isAvailable ? 'Lock Pick' : 'Unavailable',
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(String label, String value, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withAlpha(20),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(value, style: theme.textTheme.bodyMedium),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusNote(ThemeData theme, String message) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withAlpha(46),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        message,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.error,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderImage(ContestantDetail detail, ThemeData theme) {
+    if (detail.photoUrl != null && detail.photoUrl!.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: AspectRatio(
+          aspectRatio: 4 / 3,
+          child: Image.network(
+            detail.photoUrl!,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) =>
+                _buildImagePlaceholder(theme),
+          ),
+        ),
+      );
+    }
+    return _buildImagePlaceholder(theme);
+  }
+
+  Widget _buildImagePlaceholder(ThemeData theme) {
+    return Container(
+      height: 220,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: theme.colorScheme.surfaceContainerHighest,
+      ),
+      child: Icon(
+        Icons.image_outlined,
+        size: 64,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
     );
   }
 }
