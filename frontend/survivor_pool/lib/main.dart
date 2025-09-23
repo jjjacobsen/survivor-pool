@@ -1909,8 +1909,6 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeaderImage(theme),
-                    const SizedBox(height: 24),
                     Text(
                       detail.name,
                       style: theme.textTheme.headlineSmall?.copyWith(
@@ -2002,25 +2000,6 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
           color: theme.colorScheme.error,
           fontWeight: FontWeight.w600,
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderImage(ThemeData theme) {
-    return _buildImagePlaceholder(theme);
-  }
-
-  Widget _buildImagePlaceholder(ThemeData theme) {
-    return Container(
-      height: 220,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: theme.colorScheme.surfaceContainerHighest,
-      ),
-      child: Icon(
-        Icons.image_outlined,
-        size: 64,
-        color: theme.colorScheme.onSurfaceVariant,
       ),
     );
   }
