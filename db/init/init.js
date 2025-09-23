@@ -10,29 +10,29 @@
   function idOf(name) { return name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""); }
 
   const contestants = [
-    { name: "Kyle Fraser", age: 30, hometown: "Brooklyn, NY" },
-    { name: "Eva Erickson", age: 23, hometown: "Providence, RI" },
-    { name: "Joe Hunter", age: 45, hometown: "West Sacramento, CA" },
-    { name: "Kamilla Karthigesu", age: 30, hometown: "Foster City, CA" },
-    { name: "David Kinne", age: 38, hometown: "Buena Park, CA" },
-    { name: "Chrissy Sarnowsky", age: 54, hometown: "Chicago, IL" },
-    { name: "Mitch Guerra", age: 34, hometown: "Waco, TX" },
-    { name: "Shauhin Davari", age: 37, hometown: "Costa Mesa, CA" },
-    { name: "Mary Zheng", age: 30, hometown: "Philadelphia, PA" },
-    { name: "Star Toomey", age: 27, hometown: "Augusta, GA" },
-    { name: "Cedrek McFadden", age: 45, hometown: "Greenville, SC" },
-    { name: "Saiounia Hughley", age: 29, hometown: "Simi Valley, CA" },
-    { name: "Charity Nelms", age: 33, hometown: "St. Petersburg, FL" },
-    { name: "Bianca Roses", age: 32, hometown: "Arlington, VA" },
-    { name: "Thomas Krottinger", age: 34, hometown: "Los Angeles, CA" },
-    { name: "Justin Pioppi", age: 29, hometown: "Winthrop, MA" },
-    { name: "Kevin Leung", age: 33, hometown: "Livermore, CA" },
-    { name: "Stephanie Berger", age: 37, hometown: "Brooklyn, NY" }
+    { name: "Kyle Fraser", age: 30, hometown: "Brooklyn, NY", occupation: "Digital Strategist" },
+    { name: "Eva Erickson", age: 23, hometown: "Providence, RI", occupation: "Biotech Researcher" },
+    { name: "Joe Hunter", age: 45, hometown: "West Sacramento, CA", occupation: "Firefighter" },
+    { name: "Kamilla Karthigesu", age: 30, hometown: "Foster City, CA", occupation: "Product Manager" },
+    { name: "David Kinne", age: 38, hometown: "Buena Park, CA", occupation: "Elementary Teacher" },
+    { name: "Chrissy Sarnowsky", age: 54, hometown: "Chicago, IL", occupation: "Tax Consultant" },
+    { name: "Mitch Guerra", age: 34, hometown: "Waco, TX", occupation: "Fitness Coach" },
+    { name: "Shauhin Davari", age: 37, hometown: "Costa Mesa, CA", occupation: "Sports Agent" },
+    { name: "Mary Zheng", age: 30, hometown: "Philadelphia, PA", occupation: "Data Analyst" },
+    { name: "Star Toomey", age: 27, hometown: "Augusta, GA", occupation: "Graphic Designer" },
+    { name: "Cedrek McFadden", age: 45, hometown: "Greenville, SC", occupation: "Youth Pastor" },
+    { name: "Saiounia Hughley", age: 29, hometown: "Simi Valley, CA", occupation: "Marketing Specialist" },
+    { name: "Charity Nelms", age: 33, hometown: "St. Petersburg, FL", occupation: "Real Estate Broker" },
+    { name: "Bianca Roses", age: 32, hometown: "Arlington, VA", occupation: "Public Defender" },
+    { name: "Thomas Krottinger", age: 34, hometown: "Los Angeles, CA", occupation: "Entrepreneur" },
+    { name: "Justin Pioppi", age: 29, hometown: "Winthrop, MA", occupation: "Bartender" },
+    { name: "Kevin Leung", age: 33, hometown: "Livermore, CA", occupation: "Mechanical Engineer" },
+    { name: "Stephanie Berger", age: 37, hometown: "Brooklyn, NY", occupation: "Nurse Practitioner" }
   ].map(c => ({
     id: idOf(c.name),
     name: c.name,
     age: c.age,
-    occupation: null,
+    occupation: c.occupation,
     hometown: c.hometown
   }));
 
