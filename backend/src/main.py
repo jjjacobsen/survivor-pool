@@ -108,9 +108,6 @@ class ContestantDetail(BaseModel):
     age: int | None = None
     occupation: str | None = None
     hometown: str | None = None
-    photo_url: str | None = None
-    bio: str | None = None
-    initial_tribe: str | None = None
 
 
 class ContestantDetailResponse(BaseModel):
@@ -568,9 +565,6 @@ def get_available_contestants(pool_id: str, user_id: str):
 
         name = contestant.get("name")
         subtitle: str | None = None
-        initial_tribe = contestant.get("initial_tribe")
-        if isinstance(initial_tribe, str) and initial_tribe.strip():
-            subtitle = f"Initial tribe: {initial_tribe.strip()}"
 
         contestants.append(
             AvailableContestantResponse(
@@ -763,21 +757,6 @@ def get_contestant_detail(pool_id: str, contestant_id: str, user_id: str):
         hometown=(
             target_contestant.get("hometown")
             if isinstance(target_contestant.get("hometown"), str)
-            else None
-        ),
-        photo_url=(
-            target_contestant.get("photo_url")
-            if isinstance(target_contestant.get("photo_url"), str)
-            else None
-        ),
-        bio=(
-            target_contestant.get("bio")
-            if isinstance(target_contestant.get("bio"), str)
-            else None
-        ),
-        initial_tribe=(
-            target_contestant.get("initial_tribe")
-            if isinstance(target_contestant.get("initial_tribe"), str)
             else None
         ),
     )

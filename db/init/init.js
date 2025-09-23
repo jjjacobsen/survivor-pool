@@ -10,33 +10,30 @@
   function idOf(name) { return name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""); }
 
   const contestants = [
-    { name: "Kyle Fraser", age: 30, hometown: "Brooklyn, NY", initial_tribe: "Civa" },
-    { name: "Eva Erickson", age: 23, hometown: "Providence, RI", initial_tribe: "Lagi" },
-    { name: "Joe Hunter", age: 45, hometown: "West Sacramento, CA", initial_tribe: "Lagi" },
-    { name: "Kamilla Karthigesu", age: 30, hometown: "Foster City, CA", initial_tribe: "Vula" },
-    { name: "David Kinne", age: 38, hometown: "Buena Park, CA", initial_tribe: "Civa" },
-    { name: "Chrissy Sarnowsky", age: 54, hometown: "Chicago, IL", initial_tribe: "Civa" },
-    { name: "Mitch Guerra", age: 34, hometown: "Waco, TX", initial_tribe: "Civa" },
-    { name: "Shauhin Davari", age: 37, hometown: "Costa Mesa, CA", initial_tribe: "Lagi" },
-    { name: "Mary Zheng", age: 30, hometown: "Philadelphia, PA", initial_tribe: "Vula" },
-    { name: "Star Toomey", age: 27, hometown: "Augusta, GA", initial_tribe: "Lagi" },
-    { name: "Cedrek McFadden", age: 45, hometown: "Greenville, SC", initial_tribe: "Vula" },
-    { name: "Saiounia Hughley", age: 29, hometown: "Simi Valley, CA", initial_tribe: "Vula" },
-    { name: "Charity Nelms", age: 33, hometown: "St. Petersburg, FL", initial_tribe: "Civa" },
-    { name: "Bianca Roses", age: 32, hometown: "Arlington, VA", initial_tribe: "Lagi" },
-    { name: "Thomas Krottinger", age: 34, hometown: "Los Angeles, CA", initial_tribe: "Lagi" },
-    { name: "Justin Pioppi", age: 29, hometown: "Winthrop, MA", initial_tribe: "Vula" },
-    { name: "Kevin Leung", age: 33, hometown: "Livermore, CA", initial_tribe: "Vula" },
-    { name: "Stephanie Berger", age: 37, hometown: "Brooklyn, NY", initial_tribe: "Vula" }
+    { name: "Kyle Fraser", age: 30, hometown: "Brooklyn, NY" },
+    { name: "Eva Erickson", age: 23, hometown: "Providence, RI" },
+    { name: "Joe Hunter", age: 45, hometown: "West Sacramento, CA" },
+    { name: "Kamilla Karthigesu", age: 30, hometown: "Foster City, CA" },
+    { name: "David Kinne", age: 38, hometown: "Buena Park, CA" },
+    { name: "Chrissy Sarnowsky", age: 54, hometown: "Chicago, IL" },
+    { name: "Mitch Guerra", age: 34, hometown: "Waco, TX" },
+    { name: "Shauhin Davari", age: 37, hometown: "Costa Mesa, CA" },
+    { name: "Mary Zheng", age: 30, hometown: "Philadelphia, PA" },
+    { name: "Star Toomey", age: 27, hometown: "Augusta, GA" },
+    { name: "Cedrek McFadden", age: 45, hometown: "Greenville, SC" },
+    { name: "Saiounia Hughley", age: 29, hometown: "Simi Valley, CA" },
+    { name: "Charity Nelms", age: 33, hometown: "St. Petersburg, FL" },
+    { name: "Bianca Roses", age: 32, hometown: "Arlington, VA" },
+    { name: "Thomas Krottinger", age: 34, hometown: "Los Angeles, CA" },
+    { name: "Justin Pioppi", age: 29, hometown: "Winthrop, MA" },
+    { name: "Kevin Leung", age: 33, hometown: "Livermore, CA" },
+    { name: "Stephanie Berger", age: 37, hometown: "Brooklyn, NY" }
   ].map(c => ({
     id: idOf(c.name),
     name: c.name,
     age: c.age,
     occupation: null,
-    hometown: c.hometown,
-    photo_url: null,
-    bio: null,
-    initial_tribe: c.initial_tribe
+    hometown: c.hometown
   }));
 
   // Elimination order by air week (double boots share the same week number)

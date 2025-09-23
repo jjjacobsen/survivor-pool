@@ -47,27 +47,21 @@ Single source of truth for all Survivor season data. This data represents immuta
   format: "new_era",
   created_at: ISODate("..."),
 
-  // Cast roster (immutable identity + static bio)
+  // Cast roster (immutable identity details)
   contestants: [
     {
       id: "teeny_chirichillo",
       name: "Teeny Chirichillo",
       age: 24,
       occupation: "Freelance Writer",
-      hometown: "Manahawkin, NJ",
-      photo_url: "/images/contestants/teeny_chirichillo.jpg",
-      bio: "Ready to outwit, outplay, and outlast in the ultimate game...",
-      initial_tribe: "Lavo"
+      hometown: "Manahawkin, NJ"
     },
     {
       id: "kishan_patel",
       name: "Kishan Patel",
       age: 28,
       occupation: "ER Doctor",
-      hometown: "San Francisco, CA",
-      photo_url: "/images/contestants/kishan_patel.jpg",
-      bio: "Bringing strategic thinking and quick decision making...",
-      initial_tribe: "Lavo"
+      hometown: "San Francisco, CA"
     }
     // ... all contestants
   ],

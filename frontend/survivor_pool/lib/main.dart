@@ -221,9 +221,6 @@ class ContestantDetail {
   final int? age;
   final String? occupation;
   final String? hometown;
-  final String? photoUrl;
-  final String? bio;
-  final String? initialTribe;
 
   const ContestantDetail({
     required this.id,
@@ -231,9 +228,6 @@ class ContestantDetail {
     this.age,
     this.occupation,
     this.hometown,
-    this.photoUrl,
-    this.bio,
-    this.initialTribe,
   });
 
   factory ContestantDetail.fromJson(Map<String, dynamic> json) {
@@ -255,10 +249,6 @@ class ContestantDetail {
       age: parsedAge,
       occupation: json['occupation'] as String?,
       hometown: json['hometown'] as String?,
-      photoUrl: json['photo_url'] as String? ?? json['photoUrl'] as String?,
-      bio: json['bio'] as String?,
-      initialTribe:
-          json['initial_tribe'] as String? ?? json['initialTribe'] as String?,
     );
   }
 }
@@ -1873,9 +1863,6 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
     if (detail.hometown != null && detail.hometown!.isNotEmpty) {
       chips.add(_buildInfoChip('Hometown', detail.hometown!, theme));
     }
-    if (detail.initialTribe != null && detail.initialTribe!.isNotEmpty) {
-      chips.add(_buildInfoChip('Initial Tribe', detail.initialTribe!, theme));
-    }
 
     final statusNotes = <Widget>[];
     if (widget.detail.currentPick != null &&
@@ -1922,7 +1909,7 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeaderImage(detail, theme),
+                    _buildHeaderImage(theme),
                     const SizedBox(height: 24),
                     Text(
                       detail.name,
@@ -1940,17 +1927,6 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
                     const SizedBox(height: 12),
                     if (chips.isNotEmpty)
                       Wrap(spacing: 12, runSpacing: 12, children: chips),
-                    if (detail.bio != null && detail.bio!.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      Text(
-                        'Bio',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(detail.bio!, style: theme.textTheme.bodyMedium),
-                    ],
                     if (statusNotes.isNotEmpty) ...[
                       const SizedBox(height: 24),
                       ...statusNotes,
@@ -2030,21 +2006,7 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
     );
   }
 
-  Widget _buildHeaderImage(ContestantDetail detail, ThemeData theme) {
-    if (detail.photoUrl != null && detail.photoUrl!.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: AspectRatio(
-          aspectRatio: 4 / 3,
-          child: Image.network(
-            detail.photoUrl!,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) =>
-                _buildImagePlaceholder(theme),
-          ),
-        ),
-      );
-    }
+  Widget _buildHeaderImage(ThemeData theme) {
     return _buildImagePlaceholder(theme);
   }
 
