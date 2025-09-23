@@ -371,7 +371,7 @@ def list_seasons():
     return [
         SeasonResponse(
             id=str(season["_id"]),
-            season_name=season.get("season_name", ""),
+            season_name=season["season_name"],
             season_number=season.get("season_number"),
         )
         for season in seasons
@@ -527,33 +527,16 @@ def get_available_contestants(pool_id: str, user_id: str):
         if pick.get("contestant_id")
     }
 
-    eliminated_contestants: set[str] = set()
-    for elimination in season.get("eliminations", []):
-        contestant_id = elimination.get("eliminated_contestant_id")
-        if not contestant_id:
-            continue
+    eliminated_contestants = {
+        elimination["eliminated_contestant_id"]
+        for elimination in season.get("eliminations", [])
+        if elimination.get("eliminated_contestant_id")
+        and elimination["week"] < current_week
+    }
 
-        week_value = elimination.get("week")
-        elim_week: int | None = None
-        if isinstance(week_value, int):
-            elim_week = week_value
-        elif isinstance(week_value, float):
-            elim_week = int(week_value)
-        elif isinstance(week_value, str):
-            try:
-                elim_week = int(week_value)
-            except ValueError:
-                elim_week = None
-
-        if elim_week is not None and elim_week < current_week:
-            eliminated_contestants.add(contestant_id)
-
-    contestant_catalog: dict[str, dict[str, Any]] = {}
-    for contestant in season.get("contestants", []):
-        contestant_id = contestant.get("id")
-        if not contestant_id:
-            continue
-        contestant_catalog[contestant_id] = contestant
+    contestant_catalog: dict[str, dict[str, Any]] = {
+        contestant["id"]: contestant for contestant in season.get("contestants", [])
+    }
 
     contestants: list[AvailableContestantResponse] = []
     for contestant_id, contestant in contestant_catalog.items():
@@ -563,14 +546,11 @@ def get_available_contestants(pool_id: str, user_id: str):
         ):
             continue
 
-        name = contestant.get("name")
-        subtitle: str | None = None
-
         contestants.append(
             AvailableContestantResponse(
                 id=contestant_id,
-                name=name if isinstance(name, str) and name else contestant_id,
-                subtitle=subtitle,
+                name=contestant.get("name") or contestant_id,
+                subtitle=None,
             )
         )
 
@@ -587,13 +567,10 @@ def get_available_contestants(pool_id: str, user_id: str):
             raw_created_at if isinstance(raw_created_at, datetime) else datetime.now()
         )
         contestant = contestant_catalog.get(c_id, {})
-        name = (
-            contestant.get("name") if isinstance(contestant.get("name"), str) else None
-        )
         current_pick_summary = CurrentPickSummary(
             pick_id=str(current_pick_doc.get("_id")),
             contestant_id=c_id,
-            contestant_name=name if name else c_id,
+            contestant_name=contestant.get("name") or c_id,
             week=current_week,
             locked_at=locked_at,
         )
@@ -615,19 +592,6 @@ def _extract_week_value(raw_week: Any) -> int | None:
     if isinstance(raw_week, str):
         try:
             return int(raw_week)
-        except ValueError:
-            return None
-    return None
-
-
-def _parse_int(value: Any) -> int | None:
-    if isinstance(value, int):
-        return value
-    if isinstance(value, float):
-        return int(value)
-    if isinstance(value, str):
-        try:
-            return int(value)
         except ValueError:
             return None
     return None
@@ -674,11 +638,10 @@ def get_contestant_detail(pool_id: str, contestant_id: str, user_id: str):
             detail="Season not found",
         )
 
-    target_contestant: dict[str, Any] | None = None
-    for contestant in season.get("contestants", []):
-        if contestant.get("id") == contestant_id:
-            target_contestant = contestant
-            break
+    contestants_by_id = {
+        contestant["id"]: contestant for contestant in season.get("contestants", [])
+    }
+    target_contestant = contestants_by_id.get(contestant_id)
 
     if not target_contestant:
         raise HTTPException(
@@ -691,11 +654,8 @@ def get_contestant_detail(pool_id: str, contestant_id: str, user_id: str):
 
     eliminated_week: int | None = None
     for elimination in season.get("eliminations", []):
-        if elimination.get("eliminated_contestant_id") != contestant_id:
-            continue
-        elim_week = _extract_week_value(elimination.get("week"))
-        if elim_week is not None:
-            eliminated_week = elim_week
+        if elimination.get("eliminated_contestant_id") == contestant_id:
+            eliminated_week = elimination["week"]
             break
 
     prior_pick = picks_collection.find_one(
@@ -719,17 +679,13 @@ def get_contestant_detail(pool_id: str, contestant_id: str, user_id: str):
         locked_at = (
             raw_created_at if isinstance(raw_created_at, datetime) else datetime.now()
         )
-        name = None
-        for contestant in season.get("contestants", []):
-            if contestant.get("id") == pick_contestant_id:
-                raw_name = contestant.get("name")
-                if isinstance(raw_name, str) and raw_name:
-                    name = raw_name
-                break
         current_pick_summary = CurrentPickSummary(
             pick_id=str(current_pick_doc.get("_id")),
             contestant_id=pick_contestant_id,
-            contestant_name=name if name else pick_contestant_id,
+            contestant_name=(
+                contestants_by_id.get(pick_contestant_id, {}).get("name")
+                or pick_contestant_id
+            ),
             week=current_week,
             locked_at=locked_at,
         )
@@ -743,22 +699,10 @@ def get_contestant_detail(pool_id: str, contestant_id: str, user_id: str):
 
     detail = ContestantDetail(
         id=contestant_id,
-        name=(
-            target_contestant.get("name")
-            if isinstance(target_contestant.get("name"), str)
-            else contestant_id
-        ),
-        age=_parse_int(target_contestant.get("age")),
-        occupation=(
-            target_contestant.get("occupation")
-            if isinstance(target_contestant.get("occupation"), str)
-            else None
-        ),
-        hometown=(
-            target_contestant.get("hometown")
-            if isinstance(target_contestant.get("hometown"), str)
-            else None
-        ),
+        name=target_contestant.get("name") or contestant_id,
+        age=target_contestant.get("age"),
+        occupation=target_contestant.get("occupation"),
+        hometown=target_contestant.get("hometown"),
     )
 
     return ContestantDetailResponse(
@@ -853,11 +797,8 @@ def create_pick(pool_id: str, payload: PickRequest):
 
     eliminated_week: int | None = None
     for elimination in season.get("eliminations", []):
-        if elimination.get("eliminated_contestant_id") != payload.contestant_id:
-            continue
-        elim_week = _extract_week_value(elimination.get("week"))
-        if elim_week is not None:
-            eliminated_week = elim_week
+        if elimination.get("eliminated_contestant_id") == payload.contestant_id:
+            eliminated_week = elimination["week"]
             break
 
     if eliminated_week is not None and eliminated_week < current_week:
