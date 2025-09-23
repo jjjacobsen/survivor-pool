@@ -9,6 +9,7 @@
 - When implementing a new feature or starting a new session it is a good idea to first read docs/PRD.md, docs/DB_schema.md, and db/init/init.js to know the product and the database architecture
 - Don't put dart or python code in other files. Stick to the main.dart and main.py
 - Don't worry about unit tests or integration tests for now
+- Don't use SnackBar's in flutter
 
 ## COMMANDS
 

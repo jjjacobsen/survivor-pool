@@ -525,29 +525,9 @@ class _LoginPageState extends State<LoginPage>
             MaterialPageRoute(builder: (context) => HomePage(user: user)),
           );
         }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                _isLoginMode
-                    ? 'Login failed. Please check your credentials.'
-                    : 'Account creation failed. Please try again.',
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Network error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    } catch (_) {
+      // Ignored to keep UI quiet without snackbars.
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -998,15 +978,7 @@ class _HomePageState extends State<HomePage> {
       return true;
     }
 
-    final messenger = ScaffoldMessenger.of(context);
     final loaded = await _fetchSeasons();
-    if (!loaded && mounted) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Unable to load seasons. Please try again.'),
-        ),
-      );
-    }
     return loaded;
   }
 
@@ -1014,7 +986,6 @@ class _HomePageState extends State<HomePage> {
     String poolId,
     String contestantId,
   ) async {
-    final messenger = ScaffoldMessenger.of(context);
     try {
       final response = await http.get(
         Uri.parse(
@@ -1027,29 +998,14 @@ class _HomePageState extends State<HomePage> {
         if (decoded is Map<String, dynamic>) {
           return ContestantDetailResponse.fromJson(decoded);
         }
-      } else {
-        if (mounted) {
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text(
-                'Unable to load contestant. (${response.statusCode})',
-              ),
-            ),
-          );
-        }
       }
-    } catch (error) {
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(content: Text('Network error: $error')),
-        );
-      }
+    } catch (_) {
+      // Ignored to keep UI quiet without snackbars.
     }
     return null;
   }
 
   Future<PickResponse?> _lockPick(String poolId, String contestantId) async {
-    final messenger = ScaffoldMessenger.of(context);
     try {
       final response = await http.post(
         Uri.parse('http://localhost:8000/pools/$poolId/picks'),
@@ -1065,27 +1021,9 @@ class _HomePageState extends State<HomePage> {
         if (decoded is Map<String, dynamic>) {
           return PickResponse.fromJson(decoded);
         }
-      } else {
-        String message = 'Unable to lock pick. (${response.statusCode})';
-        try {
-          final decoded = json.decode(response.body);
-          if (decoded is Map<String, dynamic>) {
-            final detail = decoded['detail'];
-            if (detail is String && detail.isNotEmpty) {
-              message = detail;
-            }
-          }
-        } catch (_) {}
-        if (mounted) {
-          messenger.showSnackBar(SnackBar(content: Text(message)));
-        }
       }
-    } catch (error) {
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(content: Text('Network error: $error')),
-        );
-      }
+    } catch (_) {
+      // Ignored to keep UI quiet without snackbars.
     }
     return null;
   }
@@ -1127,7 +1065,6 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    final skipped = result['skipped'] == true;
     final newWeek = rawWeek <= 0 ? 1 : rawWeek;
 
     setState(() {
@@ -1146,15 +1083,6 @@ class _HomePageState extends State<HomePage> {
       }
     });
 
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          skipped ? 'Skipped to week $newWeek.' : 'Advanced to week $newWeek.',
-        ),
-      ),
-    );
-
     unawaited(_loadPools());
     if (_defaultPoolId != pool.id) {
       unawaited(_loadAvailableContestants(pool.id));
@@ -1165,7 +1093,6 @@ class _HomePageState extends State<HomePage> {
     PoolOption pool,
     ContestantDetail contestant,
   ) async {
-    final messenger = ScaffoldMessenger.of(context);
     final pick = await _lockPick(pool.id, contestant.id);
     if (pick == null) {
       return false;
@@ -1189,10 +1116,6 @@ class _HomePageState extends State<HomePage> {
       _currentPick = summary;
     });
 
-    messenger.showSnackBar(
-      SnackBar(content: Text('Pick locked for ${summary.contestantName}.')),
-    );
-
     await _loadAvailableContestants(pool.id);
     return true;
   }
@@ -1203,15 +1126,12 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    final messenger = ScaffoldMessenger.of(context);
-
     final created = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _CreatePoolDialog(
         seasons: List<SeasonOption>.from(_seasons),
         ownerId: widget.user.id,
-        messenger: messenger,
         parseErrorMessage: _parseErrorMessage,
       ),
     );
@@ -1229,10 +1149,6 @@ class _HomePageState extends State<HomePage> {
         });
       }
 
-      messenger.showSnackBar(
-        SnackBar(content: Text('Pool "${newPool.name}" created.')),
-      );
-
       unawaited(_loadPools());
     }
   }
@@ -1242,7 +1158,6 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    final messenger = ScaffoldMessenger.of(context);
     final previous = _defaultPoolId;
 
     setState(() {
@@ -1265,9 +1180,6 @@ class _HomePageState extends State<HomePage> {
           });
         }
         unawaited(_loadAvailableContestants(previous));
-        messenger.showSnackBar(
-          SnackBar(content: Text(_parseErrorMessage(response.body))),
-        );
       } else {
         final decoded = json.decode(response.body);
         final serverDefault = decoded is Map<String, dynamic>
@@ -1282,14 +1194,13 @@ class _HomePageState extends State<HomePage> {
           unawaited(_loadAvailableContestants(serverDefault));
         }
       }
-    } catch (error) {
+    } catch (_) {
       if (mounted) {
         setState(() {
           _defaultPoolId = previous;
         });
       }
       unawaited(_loadAvailableContestants(previous));
-      messenger.showSnackBar(SnackBar(content: Text('Network error: $error')));
     } finally {
       if (mounted) {
         setState(() {
@@ -2002,7 +1913,9 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
           return detail;
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      // Ignored to keep UI quiet without snackbars.
+    }
     return fallback;
   }
 
@@ -2018,7 +1931,6 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
 
   Future<void> _confirmAdvance({required bool skip}) async {
     final verb = skip ? 'skip this week' : 'advance to the next week';
-    final messenger = ScaffoldMessenger.of(context);
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -2047,10 +1959,6 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
     if (!_isSubmitting) {
       unawaited(
         Future<void>.delayed(Duration.zero, () => _submitAdvance(skip: skip)),
-      );
-    } else {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Action in progress. Please wait.')),
       );
     }
   }
@@ -2081,25 +1989,9 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
             return;
           }
         }
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unexpected response from server.')),
-          );
-        }
-      } else {
-        final message = _parseError(response.body, 'Unable to advance week.');
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message)));
-        }
       }
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Network error: $error')));
-      }
+    } catch (_) {
+      // Ignored to keep UI quiet without snackbars.
     } finally {
       if (mounted) {
         setState(() {
@@ -2540,13 +2432,11 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
 class _CreatePoolDialog extends StatefulWidget {
   final List<SeasonOption> seasons;
   final String ownerId;
-  final ScaffoldMessengerState messenger;
   final String Function(String body) parseErrorMessage;
 
   const _CreatePoolDialog({
     required this.seasons,
     required this.ownerId,
-    required this.messenger,
     required this.parseErrorMessage,
   });
 
@@ -2605,14 +2495,8 @@ class _CreatePoolDialogState extends State<_CreatePoolDialog> {
         }
         return;
       }
-
-      widget.messenger.showSnackBar(
-        SnackBar(content: Text(widget.parseErrorMessage(response.body))),
-      );
-    } catch (error) {
-      widget.messenger.showSnackBar(
-        SnackBar(content: Text('Network error: $error')),
-      );
+    } catch (_) {
+      // Ignored to keep UI quiet without snackbars.
     } finally {
       if (shouldReset && mounted) {
         setState(() => _isSubmitting = false);
