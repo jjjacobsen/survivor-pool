@@ -528,16 +528,7 @@ def get_available_contestants(pool_id: str, user_id: str):
             detail="Season not found",
         )
 
-    raw_week = pool.get("current_week")
-    current_week: int
-    if isinstance(raw_week, int):
-        current_week = raw_week if raw_week > 0 else 1
-    elif isinstance(raw_week, float):
-        current_week = int(raw_week) if raw_week > 0 else 1
-    elif isinstance(raw_week, str):
-        current_week = int(raw_week) if raw_week.isdigit() else 1
-    else:
-        current_week = 1
+    current_week = pool["current_week"]
 
     prior_picks_cursor = picks_collection.find(
         {"userId": user_oid, "poolId": pool_oid},
@@ -604,19 +595,6 @@ def get_available_contestants(pool_id: str, user_id: str):
         contestants=contestants,
         current_pick=current_pick_summary,
     )
-
-
-def _extract_week_value(raw_week: Any) -> int | None:
-    if isinstance(raw_week, int):
-        return raw_week
-    if isinstance(raw_week, float):
-        return int(raw_week)
-    if isinstance(raw_week, str):
-        try:
-            return int(raw_week)
-        except ValueError:
-            return None
-    return None
 
 
 def _require_pool_owner(
@@ -770,8 +748,7 @@ def get_contestant_detail(pool_id: str, contestant_id: str, user_id: str):
             detail="Contestant not found",
         )
 
-    raw_week = pool.get("current_week")
-    current_week = _extract_week_value(raw_week) or 1
+    current_week = pool["current_week"]
 
     eliminated_week: int | None = None
     for elimination in season.get("eliminations", []):
@@ -782,9 +759,7 @@ def get_contestant_detail(pool_id: str, contestant_id: str, user_id: str):
     prior_pick = picks_collection.find_one(
         {"userId": user_oid, "poolId": pool_oid, "contestant_id": contestant_id}
     )
-    already_picked_week = (
-        _extract_week_value(prior_pick.get("week")) if prior_pick else None
-    )
+    already_picked_week = prior_pick.get("week") if prior_pick else None
 
     visible_eliminated_week: int | None = None
     if eliminated_week is not None and eliminated_week < current_week:
@@ -879,8 +854,7 @@ def create_pick(pool_id: str, payload: PickRequest):
             detail="Season not found",
         )
 
-    raw_week = pool.get("current_week")
-    current_week = _extract_week_value(raw_week) or 1
+    current_week = pool["current_week"]
 
     existing_pick = picks_collection.find_one(
         {"userId": user_oid, "poolId": pool_oid, "week": current_week}
@@ -907,7 +881,7 @@ def create_pick(pool_id: str, payload: PickRequest):
         {"userId": user_oid, "poolId": pool_oid, "contestant_id": payload.contestant_id}
     )
     if prior_pick:
-        prior_week = _extract_week_value(prior_pick.get("week"))
+        prior_week = prior_pick.get("week")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
@@ -963,8 +937,7 @@ def create_pick(pool_id: str, payload: PickRequest):
 def get_pool_advance_status(pool_id: str, user_id: str):
     pool, pool_oid, _ = _require_pool_owner(pool_id, user_id)
 
-    raw_week = pool.get("current_week")
-    current_week = _extract_week_value(raw_week) or 1
+    current_week = pool["current_week"]
 
     status_payload, _ = _compute_pool_advance_status(pool_oid, current_week)
     return status_payload
@@ -977,8 +950,7 @@ def get_pool_advance_status(pool_id: str, user_id: str):
 def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest):
     pool, pool_oid, _ = _require_pool_owner(pool_id, payload.user_id)
 
-    raw_week = pool.get("current_week")
-    current_week = _extract_week_value(raw_week) or 1
+    current_week = pool["current_week"]
 
     missing_ids: list[ObjectId] = []
     if payload.skip:
@@ -1002,9 +974,10 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest):
                 },
             )
 
-    update_filter: dict[str, Any] = {"_id": pool_oid}
-    if raw_week is not None:
-        update_filter["current_week"] = raw_week
+    update_filter: dict[str, Any] = {
+        "_id": pool_oid,
+        "current_week": current_week,
+    }
 
     updated_pool = pools_collection.find_one_and_update(
         update_filter,
@@ -1018,7 +991,6 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest):
             detail="Pool week changed, retry",
         )
 
-    new_week_raw = updated_pool.get("current_week")
-    new_week = _extract_week_value(new_week_raw) or (current_week + 1)
+    new_week = updated_pool["current_week"]
 
     return PoolAdvanceResponse(new_current_week=new_week)
