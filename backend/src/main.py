@@ -7,7 +7,7 @@ from bson import ObjectId
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
-from pymongo import MongoClient
+from pymongo import MongoClient, ReturnDocument
 
 app = FastAPI()
 
@@ -120,6 +120,19 @@ class ContestantDetailResponse(BaseModel):
     current_pick: CurrentPickSummary | None = None
 
 
+class PoolAdvanceMissingMember(BaseModel):
+    user_id: str
+    display_name: str
+
+
+class PoolAdvanceStatusResponse(BaseModel):
+    current_week: int
+    active_member_count: int
+    locked_count: int
+    missing_count: int
+    missing_members: list[PoolAdvanceMissingMember]
+
+
 class PickRequest(BaseModel):
     user_id: str
     contestant_id: str
@@ -132,6 +145,15 @@ class PickResponse(BaseModel):
     contestant_id: str
     week: int
     locked_at: datetime
+
+
+class PoolAdvanceRequest(BaseModel):
+    user_id: str
+    skip: bool = False
+
+
+class PoolAdvanceResponse(BaseModel):
+    new_current_week: int
 
 
 @app.get("/")
@@ -597,6 +619,105 @@ def _extract_week_value(raw_week: Any) -> int | None:
     return None
 
 
+def _require_pool_owner(
+    pool_id: str,
+    user_id: str,
+) -> tuple[dict[str, Any], ObjectId, ObjectId]:
+    pool_oid = parse_object_id(pool_id, "pool_id")
+    owner_oid = parse_object_id(user_id, "user_id")
+
+    pool = pools_collection.find_one({"_id": pool_oid})
+    if not pool:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pool not found",
+        )
+
+    if pool.get("ownerId") != owner_oid:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not the pool owner",
+        )
+
+    return pool, pool_oid, owner_oid
+
+
+def _compute_pool_advance_status(
+    pool_oid: ObjectId, current_week: int
+) -> tuple[PoolAdvanceStatusResponse, list[ObjectId]]:
+    active_cursor = pool_memberships_collection.find(
+        {"poolId": pool_oid, "status": "active"},
+        {"userId": 1},
+    )
+
+    active_user_ids: list[ObjectId] = []
+    for membership in active_cursor:
+        member_user_id = membership.get("userId")
+        if isinstance(member_user_id, ObjectId):
+            active_user_ids.append(member_user_id)
+
+    active_member_count = len(active_user_ids)
+    if not active_user_ids:
+        empty_status = PoolAdvanceStatusResponse(
+            current_week=current_week,
+            active_member_count=0,
+            locked_count=0,
+            missing_count=0,
+            missing_members=[],
+        )
+        return empty_status, []
+
+    picks_cursor = picks_collection.find(
+        {
+            "poolId": pool_oid,
+            "week": current_week,
+            "userId": {"$in": active_user_ids},
+        },
+        {"userId": 1},
+    )
+
+    locked_user_ids = {
+        pick.get("userId")
+        for pick in picks_cursor
+        if isinstance(pick.get("userId"), ObjectId)
+    }
+
+    missing_user_ids = [
+        user_id for user_id in active_user_ids if user_id not in locked_user_ids
+    ]
+
+    missing_members: list[PoolAdvanceMissingMember] = []
+    if missing_user_ids:
+        users_cursor = users_collection.find(
+            {"_id": {"$in": missing_user_ids}},
+            {"display_name": 1},
+        )
+        display_names: dict[ObjectId, str] = {}
+        for user in users_cursor:
+            display_names[user["_id"]] = user.get("display_name", "")
+
+        for user_id in missing_user_ids:
+            name = display_names.get(user_id, "") or str(user_id)
+            missing_members.append(
+                PoolAdvanceMissingMember(
+                    user_id=str(user_id),
+                    display_name=name,
+                )
+            )
+
+    missing_members.sort(key=lambda member: member.display_name.lower())
+
+    status_payload = PoolAdvanceStatusResponse(
+        current_week=current_week,
+        active_member_count=active_member_count,
+        locked_count=active_member_count - len(missing_user_ids),
+        missing_count=len(missing_user_ids),
+        missing_members=missing_members,
+    )
+
+    return status_payload, missing_user_ids
+
+
 @app.get(
     "/pools/{pool_id}/contestants/{contestant_id}",
     response_model=ContestantDetailResponse,
@@ -833,3 +954,71 @@ def create_pick(pool_id: str, payload: PickRequest):
         week=current_week,
         locked_at=now,
     )
+
+
+@app.get(
+    "/pools/{pool_id}/advance-status",
+    response_model=PoolAdvanceStatusResponse,
+)
+def get_pool_advance_status(pool_id: str, user_id: str):
+    pool, pool_oid, _ = _require_pool_owner(pool_id, user_id)
+
+    raw_week = pool.get("current_week")
+    current_week = _extract_week_value(raw_week) or 1
+
+    status_payload, _ = _compute_pool_advance_status(pool_oid, current_week)
+    return status_payload
+
+
+@app.post(
+    "/pools/{pool_id}/advance-week",
+    response_model=PoolAdvanceResponse,
+)
+def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest):
+    pool, pool_oid, _ = _require_pool_owner(pool_id, payload.user_id)
+
+    raw_week = pool.get("current_week")
+    current_week = _extract_week_value(raw_week) or 1
+
+    missing_ids: list[ObjectId] = []
+    if payload.skip:
+        picks_collection.delete_many({"poolId": pool_oid, "week": current_week})
+    else:
+        _, missing_ids = _compute_pool_advance_status(pool_oid, current_week)
+        if missing_ids:
+            now = datetime.now()
+            pool_memberships_collection.update_many(
+                {
+                    "poolId": pool_oid,
+                    "userId": {"$in": missing_ids},
+                    "status": "active",
+                },
+                {
+                    "$set": {
+                        "status": "eliminated",
+                        "eliminated_week": current_week,
+                        "eliminated_date": now,
+                    }
+                },
+            )
+
+    update_filter: dict[str, Any] = {"_id": pool_oid}
+    if raw_week is not None:
+        update_filter["current_week"] = raw_week
+
+    updated_pool = pools_collection.find_one_and_update(
+        update_filter,
+        {"$inc": {"current_week": 1}},
+        return_document=ReturnDocument.AFTER,
+    )
+
+    if not updated_pool:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Pool week changed, retry",
+        )
+
+    new_week_raw = updated_pool.get("current_week")
+    new_week = _extract_week_value(new_week_raw) or (current_week + 1)
+
+    return PoolAdvanceResponse(new_current_week=new_week)
