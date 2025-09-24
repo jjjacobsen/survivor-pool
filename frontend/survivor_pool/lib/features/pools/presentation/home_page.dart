@@ -536,6 +536,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         titleSpacing: 12,
         title: _buildDefaultPoolSelector(theme, safeDefaultPoolId),
         backgroundColor: theme.primaryColor,
