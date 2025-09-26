@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:survivor_pool/core/constants/api.dart';
 import 'package:survivor_pool/core/models/pool.dart';
 import 'package:survivor_pool/core/models/pool_advance.dart';
+import 'package:survivor_pool/core/widgets/confirmation_dialog.dart';
 
 class PoolAdvancePage extends StatefulWidget {
   final PoolOption pool;
@@ -98,27 +99,13 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
   Future<void> _confirmAdvance({required bool skip}) async {
     final verb = skip ? 'skip this week' : 'advance to the next week';
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showConfirmationDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Confirm action'),
-          content: Text('Are you sure you would like to $verb?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Yes'),
-            ),
-          ],
-        );
-      },
+      title: 'Confirm action',
+      message: 'Are you sure you would like to $verb?',
     );
 
-    if (confirmed != true) {
+    if (!mounted || !confirmed) {
       return;
     }
 

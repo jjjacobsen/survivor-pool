@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:survivor_pool/core/models/contestant.dart';
 import 'package:survivor_pool/core/models/pool.dart';
+import 'package:survivor_pool/core/widgets/confirmation_dialog.dart';
 
 class ContestantDetailPage extends StatefulWidget {
   final PoolOption pool;
@@ -24,6 +25,20 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
 
   Future<void> _handleLock() async {
     if (_isSubmitting || !widget.detail.isAvailable) {
+      return;
+    }
+
+    final contestant = widget.detail.contestant;
+    final name = contestant.name.isEmpty ? 'this pick' : contestant.name;
+    final confirmed = await showConfirmationDialog(
+      context: context,
+      title: 'Lock pick',
+      message:
+          'Lock $name for week ${widget.pool.currentWeek}? This cannot be undone.',
+      confirmLabel: 'Lock pick',
+    );
+
+    if (!mounted || !confirmed) {
       return;
     }
 
