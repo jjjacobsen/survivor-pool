@@ -4,7 +4,7 @@ import 'package:survivor_pool/core/models/contestant.dart';
 import 'package:survivor_pool/core/models/pick.dart';
 import 'package:survivor_pool/core/models/pool.dart';
 
-class PoolOwnerDashboard extends StatelessWidget {
+class PoolDashboard extends StatelessWidget {
   final PoolOption pool;
   final List<AvailableContestant> availableContestants;
   final bool isLoadingContestants;
@@ -14,7 +14,7 @@ class PoolOwnerDashboard extends StatelessWidget {
   final VoidCallback? onAdvanceWeek;
   final void Function(AvailableContestant contestant)? onContestantSelected;
 
-  const PoolOwnerDashboard({
+  const PoolDashboard({
     super.key,
     required this.pool,
     this.availableContestants = const [],
@@ -57,14 +57,15 @@ class PoolOwnerDashboard extends StatelessWidget {
   }
 
   Widget _buildHeaderCard(ThemeData theme) {
-    final membersHandler = onManageMembers ?? () {};
-    final settingsHandler = onManageSettings ?? () {};
-    final advanceHandler = onAdvanceWeek ?? () {};
     final seasonDescription = pool.seasonNumber != null
         ? 'Season: ${pool.seasonNumber}'
         : pool.seasonId.isEmpty
         ? 'Season details coming soon'
         : 'Season: ${pool.seasonId}';
+
+    final hasSettings = onManageSettings != null;
+    final hasManageMembers = onManageMembers != null;
+    final hasAdvance = onAdvanceWeek != null;
 
     return SizedBox(
       width: double.infinity,
@@ -87,12 +88,14 @@ class PoolOwnerDashboard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  OutlinedButton.icon(
-                    onPressed: settingsHandler,
-                    icon: const Icon(Icons.settings_outlined),
-                    label: const Text('Pool settings'),
-                  ),
+                  if (hasSettings) ...[
+                    const SizedBox(width: 16),
+                    OutlinedButton.icon(
+                      onPressed: onManageSettings,
+                      icon: const Icon(Icons.settings_outlined),
+                      label: const Text('Pool settings'),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 6),
@@ -102,24 +105,28 @@ class PoolOwnerDashboard extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: membersHandler,
-                  icon: const Icon(Icons.group_outlined),
-                  label: const Text('Manage members'),
+              if (hasManageMembers || hasAdvance) ...[
+                const SizedBox(height: 24),
+              ],
+              if (hasManageMembers)
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: onManageMembers,
+                    icon: const Icon(Icons.group_outlined),
+                    label: const Text('Manage members'),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.tonalIcon(
-                  onPressed: advanceHandler,
-                  icon: const Icon(Icons.skip_next_rounded),
-                  label: const Text('Advance to next week'),
+              if (hasManageMembers && hasAdvance) const SizedBox(height: 16),
+              if (hasAdvance)
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.tonalIcon(
+                    onPressed: onAdvanceWeek,
+                    icon: const Icon(Icons.skip_next_rounded),
+                    label: const Text('Advance to next week'),
+                  ),
                 ),
-              ),
             ],
           ),
         ),

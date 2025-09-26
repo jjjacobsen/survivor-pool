@@ -15,8 +15,7 @@ import 'package:survivor_pool/features/picks/presentation/pages/contestant_detai
 import 'package:survivor_pool/features/pools/presentation/pages/pool_advance_page.dart';
 import 'package:survivor_pool/features/pools/presentation/pages/manage_pool_members_page.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/create_pool_dialog.dart';
-import 'package:survivor_pool/features/pools/presentation/widgets/pool_owner_dashboard.dart';
-import 'package:survivor_pool/features/pools/presentation/widgets/pool_placeholder.dart';
+import 'package:survivor_pool/features/pools/presentation/widgets/pool_dashboard.dart';
 
 class HomePage extends StatefulWidget {
   final AppUser user;
@@ -656,25 +655,22 @@ class _HomePageState extends State<HomePage> {
                 child: _isLoadingPools && _pools.isEmpty
                     ? const Center(child: CircularProgressIndicator())
                     : _defaultPoolId != null && selectedPool != null
-                    ? isOwnerView
-                          ? PoolOwnerDashboard(
-                              pool: selectedPool,
-                              availableContestants: availableContestants,
-                              isLoadingContestants: isLoadingContestants,
-                              currentPick: currentPick,
-                              onManageMembers: () =>
-                                  _handleManageMembers(selectedPool),
-                              onManageSettings: () {},
-                              onAdvanceWeek: () =>
-                                  _handleAdvanceWeek(selectedPool),
-                              onContestantSelected: (contestant) {
-                                _handleContestantSelected(
-                                  selectedPool,
-                                  contestant,
-                                );
-                              },
-                            )
-                          : PoolPlaceholder(pool: selectedPool)
+                    ? PoolDashboard(
+                        pool: selectedPool,
+                        availableContestants: availableContestants,
+                        isLoadingContestants: isLoadingContestants,
+                        currentPick: currentPick,
+                        onManageMembers: isOwnerView
+                            ? () => _handleManageMembers(selectedPool)
+                            : null,
+                        onManageSettings: isOwnerView ? () {} : null,
+                        onAdvanceWeek: isOwnerView
+                            ? () => _handleAdvanceWeek(selectedPool)
+                            : null,
+                        onContestantSelected: (contestant) {
+                          _handleContestantSelected(selectedPool, contestant);
+                        },
+                      )
                     : Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 420),
