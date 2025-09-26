@@ -29,3 +29,11 @@ class UserLoginRequest(BaseModel):
 
 class UserDefaultPoolUpdate(BaseModel):
     default_pool: str | None = None
+
+
+class UserSearchResult(BaseModel):
+    id: str
+    display_name: str
+    email: str
+    username: str
+    membership_status: str | None = None

@@ -1,4 +1,6 @@
+import re
 from datetime import datetime
+from difflib import SequenceMatcher
 from typing import Any
 
 from bson import ObjectId
@@ -16,6 +18,7 @@ from ..schemas.users import (
     UserDefaultPoolUpdate,
     UserLoginRequest,
     UserResponse,
+    UserSearchResult,
 )
 from .common import parse_object_id
 
@@ -165,7 +168,9 @@ def update_default_pool(user_id: str, payload: UserDefaultPoolUpdate) -> UserRes
 def list_user_pools(user_id: str) -> list[PoolResponse]:
     user_oid = parse_object_id(user_id, "user_id")
 
-    memberships = pool_memberships_collection.find({"userId": user_oid})
+    memberships = pool_memberships_collection.find(
+        {"userId": user_oid, "status": {"$in": ["active", "eliminated"]}}
+    )
     pool_ids = {membership["poolId"] for membership in memberships}
     if not pool_ids:
         return []
@@ -188,3 +193,82 @@ def list_user_pools(user_id: str) -> list[PoolResponse]:
         )
 
     return responses
+
+
+def _fuzzy_score(query: str, candidate: str) -> float:
+    if not query or not candidate:
+        return 0.0
+    return SequenceMatcher(a=query, b=candidate).ratio()
+
+
+def search_active_users(
+    query: str, pool_id: str | None = None
+) -> list[UserSearchResult]:
+    trimmed = query.strip()
+    if len(trimmed) < 2:
+        return []
+
+    pool_membership_status: dict[ObjectId, str] = {}
+    if pool_id:
+        pool_oid = parse_object_id(pool_id, "pool_id")
+        membership_cursor = pool_memberships_collection.find({"poolId": pool_oid})
+        for membership in membership_cursor:
+            member_id = membership.get("userId")
+            if isinstance(member_id, ObjectId):
+                pool_membership_status[member_id] = membership.get("status", "")
+
+    pieces = trimmed.split()
+    escaped = ".*".join(re.escape(part) for part in pieces)
+    pattern = f"{escaped}"
+
+    selector = {
+        "account_status": "active",
+        "$or": [
+            {"display_name": {"$regex": pattern, "$options": "i"}},
+            {"email": {"$regex": pattern, "$options": "i"}},
+            {"username": {"$regex": pattern, "$options": "i"}},
+        ],
+    }
+
+    projection = {"display_name": 1, "email": 1, "username": 1}
+    cursor = users_collection.find(selector, projection).limit(40)
+
+    lower_query = trimmed.lower()
+    ranked: list[tuple[float, str, dict[str, Any]]] = []
+
+    for doc in cursor:
+        display_name = doc.get("display_name") or ""
+        email = doc.get("email") or ""
+        username = doc.get("username") or ""
+        score = max(
+            _fuzzy_score(lower_query, display_name.lower()),
+            _fuzzy_score(lower_query, email.lower()),
+            _fuzzy_score(lower_query, username.lower()),
+        )
+        tie_break = display_name.lower() or username.lower() or email.lower()
+        ranked.append((score, tie_break, doc))
+
+    ranked.sort(key=lambda item: (-item[0], item[1]))
+
+    results: list[UserSearchResult] = []
+    for score, _, doc in ranked[:10]:
+        if score <= 0.0:
+            continue
+        user_id = doc.get("_id")
+        if not isinstance(user_id, ObjectId):
+            continue
+        status = pool_membership_status.get(user_id)
+        username = doc.get("username") or ""
+        results.append(
+            UserSearchResult(
+                id=str(user_id),
+                display_name=(
+                    doc.get("display_name") or username or doc.get("email", "")
+                ),
+                email=doc.get("email") or "",
+                username=username,
+                membership_status=status if status else None,
+            )
+        )
+
+    return results

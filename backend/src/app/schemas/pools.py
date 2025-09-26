@@ -84,3 +84,49 @@ class PoolAdvanceRequest(BaseModel):
 
 class PoolAdvanceResponse(BaseModel):
     new_current_week: int
+
+
+class PoolMemberSummary(BaseModel):
+    user_id: str
+    display_name: str
+    email: str
+    role: str
+    status: str
+    joined_at: datetime | None = None
+    invited_at: datetime | None = None
+
+
+class PoolMembershipListResponse(BaseModel):
+    pool_id: str
+    members: list[PoolMemberSummary]
+
+
+class PoolInviteRequest(BaseModel):
+    owner_id: str
+    invited_user_id: str
+
+
+class PoolInviteResponse(BaseModel):
+    member: PoolMemberSummary
+
+
+class PoolInviteDecisionRequest(BaseModel):
+    user_id: str
+    action: str
+
+
+class PoolInviteDecisionResponse(BaseModel):
+    member: PoolMemberSummary
+
+
+class PendingInviteSummary(BaseModel):
+    pool_id: str
+    pool_name: str
+    owner_display_name: str
+    season_id: str
+    season_number: int | None = None
+    invited_at: datetime | None = None
+
+
+class PendingInvitesResponse(BaseModel):
+    invites: list[PendingInviteSummary]

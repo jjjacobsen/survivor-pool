@@ -7,6 +7,11 @@ from ..schemas.pools import (
     PoolAdvanceResponse,
     PoolAdvanceStatusResponse,
     PoolCreateRequest,
+    PoolInviteDecisionRequest,
+    PoolInviteDecisionResponse,
+    PoolInviteRequest,
+    PoolInviteResponse,
+    PoolMembershipListResponse,
     PoolResponse,
 )
 from ..services import pools as pools_service
@@ -53,3 +58,29 @@ def get_pool_advance_status(pool_id: str, user_id: str) -> PoolAdvanceStatusResp
 )
 def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceResponse:
     return pools_service.advance_pool_week(pool_id, payload)
+
+
+@router.get(
+    "/pools/{pool_id}/memberships",
+    response_model=PoolMembershipListResponse,
+)
+def list_pool_memberships(pool_id: str, owner_id: str) -> PoolMembershipListResponse:
+    return pools_service.list_pool_memberships(pool_id, owner_id)
+
+
+@router.post(
+    "/pools/{pool_id}/invites",
+    response_model=PoolInviteResponse,
+)
+def invite_user_to_pool(pool_id: str, payload: PoolInviteRequest) -> PoolInviteResponse:
+    return pools_service.invite_user_to_pool(pool_id, payload)
+
+
+@router.post(
+    "/pools/{pool_id}/invites/respond",
+    response_model=PoolInviteDecisionResponse,
+)
+def respond_to_invite(
+    pool_id: str, payload: PoolInviteDecisionRequest
+) -> PoolInviteDecisionResponse:
+    return pools_service.respond_to_invite(pool_id, payload)

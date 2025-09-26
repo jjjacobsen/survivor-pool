@@ -18,11 +18,19 @@ from ..schemas.pools import (
     ContestantDetail,
     ContestantDetailResponse,
     CurrentPickSummary,
+    PendingInvitesResponse,
+    PendingInviteSummary,
     PoolAdvanceMissingMember,
     PoolAdvanceRequest,
     PoolAdvanceResponse,
     PoolAdvanceStatusResponse,
     PoolCreateRequest,
+    PoolInviteDecisionRequest,
+    PoolInviteDecisionResponse,
+    PoolInviteRequest,
+    PoolInviteResponse,
+    PoolMembershipListResponse,
+    PoolMemberSummary,
     PoolResponse,
 )
 from .common import parse_object_id
@@ -95,21 +103,25 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Invited user not found",
             )
-        pool_memberships_collection.update_one(
+        pool_memberships_collection.find_one_and_update(
             {"poolId": pool_id, "userId": invitee_id},
             {
-                "$setOnInsert": {
+                "$set": {
                     "role": "member",
-                    "joinedAt": None,
                     "status": "invited",
+                    "invitedAt": now,
+                    "joinedAt": None,
                     "eliminated_week": None,
                     "eliminated_date": None,
+                },
+                "$setOnInsert": {
                     "total_picks": 0,
                     "score": 0,
                     "available_contestants": [],
-                }
+                },
             },
             upsert=True,
+            return_document=ReturnDocument.AFTER,
         )
         invited_user_ids.append(invitee)
 
@@ -130,6 +142,35 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
     )
 
 
+def _coerce_datetime(value: Any) -> datetime | None:
+    return value if isinstance(value, datetime) else None
+
+
+def _build_member_summary(
+    membership: dict[str, Any], user_doc: dict[str, Any]
+) -> PoolMemberSummary:
+    raw_user_id = membership.get("userId") or user_doc.get("_id")
+    if isinstance(raw_user_id, ObjectId):
+        user_id = str(raw_user_id)
+    else:
+        user_id = str(raw_user_id)
+
+    display_name = user_doc.get("display_name") or ""
+    email = user_doc.get("email") or ""
+    if not display_name:
+        display_name = email or user_id
+
+    return PoolMemberSummary(
+        user_id=user_id,
+        display_name=display_name,
+        email=email,
+        role=membership.get("role", "member"),
+        status=membership.get("status", "active"),
+        joined_at=_coerce_datetime(membership.get("joinedAt")),
+        invited_at=_coerce_datetime(membership.get("invitedAt")),
+    )
+
+
 def get_available_contestants(
     pool_id: str, user_id: str
 ) -> AvailableContestantsResponse:
@@ -146,7 +187,7 @@ def get_available_contestants(
     membership = pool_memberships_collection.find_one(
         {"poolId": pool_oid, "userId": user_oid}
     )
-    if not membership:
+    if not membership or membership.get("status") != "active":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User is not a member of this pool",
@@ -254,7 +295,7 @@ def get_contestant_detail(
     membership = pool_memberships_collection.find_one(
         {"poolId": pool_oid, "userId": user_oid}
     )
-    if not membership or membership.get("status") == "eliminated":
+    if not membership or membership.get("status") != "active":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User is not an active member of this pool",
@@ -406,6 +447,274 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
     new_week = updated_pool["current_week"]
 
     return PoolAdvanceResponse(new_current_week=new_week)
+
+
+def list_pool_memberships(pool_id: str, owner_id: str) -> PoolMembershipListResponse:
+    _, pool_oid, _ = _require_pool_owner(pool_id, owner_id)
+
+    membership_docs = list(pool_memberships_collection.find({"poolId": pool_oid}))
+    if not membership_docs:
+        return PoolMembershipListResponse(pool_id=str(pool_oid), members=[])
+
+    user_ids: list[ObjectId] = []
+    for membership in membership_docs:
+        member_id = membership.get("userId")
+        if isinstance(member_id, ObjectId):
+            user_ids.append(member_id)
+
+    if not user_ids:
+        return PoolMembershipListResponse(pool_id=str(pool_oid), members=[])
+
+    users_cursor = users_collection.find(
+        {"_id": {"$in": user_ids}},
+        {"display_name": 1, "email": 1},
+    )
+    users_by_id: dict[ObjectId, dict[str, Any]] = {
+        user["_id"]: user for user in users_cursor
+    }
+
+    summaries: list[PoolMemberSummary] = []
+    for membership in membership_docs:
+        member_id = membership.get("userId")
+        if not isinstance(member_id, ObjectId):
+            continue
+        user_doc = users_by_id.get(member_id)
+        if not user_doc:
+            continue
+        summaries.append(_build_member_summary(membership, user_doc))
+
+    summaries.sort(
+        key=lambda member: (
+            0 if member.role == "owner" else 1,
+            0 if member.status == "active" else 1,
+            member.display_name.lower(),
+        )
+    )
+
+    return PoolMembershipListResponse(pool_id=str(pool_oid), members=summaries)
+
+
+def invite_user_to_pool(pool_id: str, payload: PoolInviteRequest) -> PoolInviteResponse:
+    _, pool_oid, owner_oid = _require_pool_owner(pool_id, payload.owner_id)
+
+    invited_oid = parse_object_id(payload.invited_user_id, "invited_user_id")
+    if invited_oid == owner_oid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Owner is already in this pool",
+        )
+
+    target_user = users_collection.find_one(
+        {"_id": invited_oid, "account_status": "active"},
+        {"display_name": 1, "email": 1},
+    )
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    existing = pool_memberships_collection.find_one(
+        {"poolId": pool_oid, "userId": invited_oid}
+    )
+    if existing and existing.get("status") == "active":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User already in this pool",
+        )
+
+    now = datetime.now()
+    updated = pool_memberships_collection.find_one_and_update(
+        {"poolId": pool_oid, "userId": invited_oid},
+        {
+            "$set": {
+                "role": "member",
+                "status": "invited",
+                "invitedAt": now,
+                "joinedAt": None,
+                "eliminated_week": None,
+                "eliminated_date": None,
+            },
+            "$setOnInsert": {
+                "total_picks": 0,
+                "score": 0,
+                "available_contestants": [],
+            },
+        },
+        upsert=True,
+        return_document=ReturnDocument.AFTER,
+    )
+
+    member = _build_member_summary(updated, target_user)
+    return PoolInviteResponse(member=member)
+
+
+def respond_to_invite(
+    pool_id: str, payload: PoolInviteDecisionRequest
+) -> PoolInviteDecisionResponse:
+    pool_oid = parse_object_id(pool_id, "pool_id")
+    user_oid = parse_object_id(payload.user_id, "user_id")
+
+    action = payload.action.strip().lower()
+    if action not in {"accept", "decline"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported action",
+        )
+
+    membership = pool_memberships_collection.find_one(
+        {"poolId": pool_oid, "userId": user_oid}
+    )
+    if not membership or membership.get("status") != "invited":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invite not found",
+        )
+
+    now = datetime.now()
+    update_doc: dict[str, Any]
+    if action == "accept":
+        update_doc = {
+            "$set": {
+                "status": "active",
+                "joinedAt": now,
+                "invitedAt": membership.get("invitedAt") or now,
+                "eliminated_week": None,
+                "eliminated_date": None,
+            }
+        }
+    else:
+        update_doc = {
+            "$set": {
+                "status": "declined",
+                "joinedAt": None,
+                "invitedAt": membership.get("invitedAt") or now,
+            }
+        }
+
+    updated_membership = pool_memberships_collection.find_one_and_update(
+        {"poolId": pool_oid, "userId": user_oid, "status": "invited"},
+        update_doc,
+        return_document=ReturnDocument.AFTER,
+    )
+    if not updated_membership:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Invite already handled",
+        )
+
+    user_doc = users_collection.find_one(
+        {"_id": user_oid},
+        {"display_name": 1, "email": 1},
+    )
+    if not user_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    member = _build_member_summary(updated_membership, user_doc)
+    return PoolInviteDecisionResponse(member=member)
+
+
+def get_pending_invites_for_user(user_id: str) -> PendingInvitesResponse:
+    user_oid = parse_object_id(user_id, "user_id")
+
+    membership_docs = list(
+        pool_memberships_collection.find({"userId": user_oid, "status": "invited"})
+    )
+    if not membership_docs:
+        return PendingInvitesResponse(invites=[])
+
+    pool_ids: set[ObjectId] = set()
+    for membership in membership_docs:
+        pool_id = membership.get("poolId")
+        if isinstance(pool_id, ObjectId):
+            pool_ids.add(pool_id)
+
+    if not pool_ids:
+        return PendingInvitesResponse(invites=[])
+
+    pools_cursor = pools_collection.find(
+        {"_id": {"$in": list(pool_ids)}},
+        {"name": 1, "ownerId": 1, "seasonId": 1},
+    )
+    pools_by_id: dict[ObjectId, dict[str, Any]] = {
+        pool["_id"]: pool for pool in pools_cursor
+    }
+
+    owner_ids: set[ObjectId] = set()
+    season_ids: set[ObjectId] = set()
+    for pool in pools_by_id.values():
+        owner = pool.get("ownerId")
+        if isinstance(owner, ObjectId):
+            owner_ids.add(owner)
+        season = pool.get("seasonId")
+        if isinstance(season, ObjectId):
+            season_ids.add(season)
+
+    owners_cursor = users_collection.find(
+        {"_id": {"$in": list(owner_ids)}},
+        {"display_name": 1, "email": 1},
+    )
+    owners_by_id: dict[ObjectId, dict[str, Any]] = {
+        owner["_id"]: owner for owner in owners_cursor
+    }
+
+    seasons_cursor = seasons_collection.find(
+        {"_id": {"$in": list(season_ids)}},
+        {"season_number": 1},
+    )
+    seasons_by_id: dict[ObjectId, int | None] = {
+        season["_id"]: season.get("season_number") for season in seasons_cursor
+    }
+
+    invites: list[PendingInviteSummary] = []
+    for membership in membership_docs:
+        pool_oid = membership.get("poolId")
+        if not isinstance(pool_oid, ObjectId):
+            continue
+        pool = pools_by_id.get(pool_oid)
+        if not pool:
+            continue
+        owner_id = pool.get("ownerId")
+        owner_doc = (
+            owners_by_id.get(owner_id) if isinstance(owner_id, ObjectId) else None
+        )
+        owner_display = ""
+        if owner_doc:
+            owner_display = (
+                owner_doc.get("display_name") or owner_doc.get("email") or ""
+            )
+
+        season_id = pool.get("seasonId")
+        season_number: int | None = None
+        season_id_str = ""
+        if isinstance(season_id, ObjectId):
+            season_number = seasons_by_id.get(season_id)
+            season_id_str = str(season_id)
+
+        invited_at = _coerce_datetime(membership.get("invitedAt"))
+
+        invites.append(
+            PendingInviteSummary(
+                pool_id=str(pool_oid),
+                pool_name=pool.get("name", ""),
+                owner_display_name=owner_display,
+                season_id=season_id_str,
+                season_number=season_number,
+                invited_at=invited_at,
+            )
+        )
+
+    invites.sort(
+        key=lambda invite: (
+            invite.invited_at is None,
+            invite.pool_name.lower(),
+        )
+    )
+
+    return PendingInvitesResponse(invites=invites)
 
 
 def _require_pool_owner(

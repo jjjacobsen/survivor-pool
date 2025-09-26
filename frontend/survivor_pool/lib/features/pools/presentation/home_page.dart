@@ -13,6 +13,7 @@ import 'package:survivor_pool/core/models/season.dart';
 import 'package:survivor_pool/core/models/user.dart';
 import 'package:survivor_pool/features/picks/presentation/pages/contestant_detail_page.dart';
 import 'package:survivor_pool/features/pools/presentation/pages/pool_advance_page.dart';
+import 'package:survivor_pool/features/pools/presentation/pages/manage_pool_members_page.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/create_pool_dialog.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/pool_owner_dashboard.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/pool_placeholder.dart';
@@ -37,6 +38,9 @@ class _HomePageState extends State<HomePage> {
   bool _isLoadingContestants = false;
   String? _contestantsForPoolId;
   CurrentPickSummary? _currentPick;
+  List<PendingInvite> _pendingInvites = const [];
+  bool _isLoadingInvites = false;
+  final Set<String> _inviteRequests = <String>{};
 
   Uri _apiUri(String path) => Uri.parse('${ApiConfig.baseUrl}$path');
 
@@ -138,6 +142,7 @@ class _HomePageState extends State<HomePage> {
     _defaultPoolId = widget.user.defaultPoolId;
     _fetchSeasons();
     _loadPools();
+    _loadInvites();
   }
 
   String _parseErrorMessage(String body) {
@@ -251,6 +256,91 @@ class _HomePageState extends State<HomePage> {
         });
       }
     }
+  }
+
+  Future<void> _loadInvites() async {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingInvites = true;
+    });
+
+    try {
+      final response = await http.get(
+        _apiUri('/users/${widget.user.id}/invites'),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          final list = decoded['invites'];
+          final invites = list is List
+              ? list
+                    .whereType<Map<String, dynamic>>()
+                    .map(PendingInvite.fromJson)
+                    .where((invite) => invite.poolId.isNotEmpty)
+                    .toList()
+              : <PendingInvite>[];
+          if (mounted) {
+            setState(() {
+              _pendingInvites = invites;
+            });
+          }
+        }
+      }
+    } catch (_) {
+      // Leave existing invites untouched on failure.
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingInvites = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleInviteAction(PendingInvite invite, String action) async {
+    if (_inviteRequests.contains(invite.poolId)) {
+      return;
+    }
+
+    setState(() {
+      _inviteRequests.add(invite.poolId);
+    });
+
+    try {
+      final response = await http.post(
+        _apiUri('/pools/${invite.poolId}/invites/respond'),
+        headers: const {'Content-Type': 'application/json'},
+        body: json.encode({'user_id': widget.user.id, 'action': action}),
+      );
+
+      if (response.statusCode == 200) {
+        await _loadInvites();
+        if (action == 'accept') {
+          await _loadPools();
+        }
+      }
+    } catch (_) {
+      // Ignore failures so user can retry.
+    } finally {
+      if (mounted) {
+        setState(() {
+          _inviteRequests.remove(invite.poolId);
+        });
+      }
+    }
+  }
+
+  Future<void> _handleManageMembers(PoolOption pool) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            ManagePoolMembersPage(pool: pool, ownerId: widget.user.id),
+      ),
+    );
   }
 
   Future<bool> _ensureSeasonsLoaded() async {
@@ -532,6 +622,7 @@ class _HomePageState extends State<HomePage> {
     final currentPick = (_contestantsForPoolId == selectedPool?.id)
         ? _currentPick
         : null;
+    final showInvites = _pendingInvites.isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -556,77 +647,197 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: _isLoadingPools && _pools.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : _defaultPoolId != null && selectedPool != null
-              ? isOwnerView
-                    ? PoolOwnerDashboard(
-                        pool: selectedPool,
-                        availableContestants: availableContestants,
-                        isLoadingContestants: isLoadingContestants,
-                        currentPick: currentPick,
-                        onManageMembers: () {},
-                        onManageSettings: () {},
-                        onAdvanceWeek: () => _handleAdvanceWeek(selectedPool),
-                        onContestantSelected: (contestant) {
-                          _handleContestantSelected(selectedPool, contestant);
-                        },
-                      )
-                    : PoolPlaceholder(pool: selectedPool)
-              : Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.group_add_outlined,
-                          size: 80,
-                          color: theme.primaryColor,
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          _pools.isEmpty ? 'No pools yet' : 'Select a pool',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (showInvites) _buildInvitesBanner(theme),
+              if (showInvites) const SizedBox(height: 16),
+              Expanded(
+                child: _isLoadingPools && _pools.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : _defaultPoolId != null && selectedPool != null
+                    ? isOwnerView
+                          ? PoolOwnerDashboard(
+                              pool: selectedPool,
+                              availableContestants: availableContestants,
+                              isLoadingContestants: isLoadingContestants,
+                              currentPick: currentPick,
+                              onManageMembers: () =>
+                                  _handleManageMembers(selectedPool),
+                              onManageSettings: () {},
+                              onAdvanceWeek: () =>
+                                  _handleAdvanceWeek(selectedPool),
+                              onContestantSelected: (contestant) {
+                                _handleContestantSelected(
+                                  selectedPool,
+                                  contestant,
+                                );
+                              },
+                            )
+                          : PoolPlaceholder(pool: selectedPool)
+                    : Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.group_add_outlined,
+                                size: 80,
+                                color: theme.primaryColor,
+                              ),
+                              const SizedBox(height: 24),
+                              Text(
+                                _pools.isEmpty
+                                    ? 'No pools yet'
+                                    : 'Select a pool',
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                _pools.isEmpty
+                                    ? 'Create a new pool or use an invite to get started.'
+                                    : 'Choose a default pool from the dropdown above to view its details.',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey[600],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 32),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton(
+                                  onPressed: _isLoadingSeasons
+                                      ? null
+                                      : _showCreatePoolDialog,
+                                  child: _isLoadingSeasons
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Text('Create Pool Now'),
+                                ),
+                              ),
+                            ],
                           ),
-                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          _pools.isEmpty
-                              ? 'Create a new pool or use an invite to get started.'
-                              : 'Choose a default pool from the dropdown above to view its details.',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 32),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton(
-                            onPressed: _isLoadingSeasons
-                                ? null
-                                : _showCreatePoolDialog,
-                            child: _isLoadingSeasons
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Text('Create Pool Now'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Widget _buildInvitesBanner(ThemeData theme) {
+    if (_pendingInvites.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.mail_outline, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
+                Text(
+                  'Pool invites',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const Spacer(),
+                if (_isLoadingInvites)
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ..._pendingInvites.map((invite) => _buildInviteRow(theme, invite)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInviteRow(ThemeData theme, PendingInvite invite) {
+    final busy = _inviteRequests.contains(invite.poolId);
+    final subtitle = _formatInviteSubtitle(invite);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            invite.poolName.isNotEmpty ? invite.poolName : 'Untitled pool',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (subtitle.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              FilledButton(
+                onPressed: busy
+                    ? null
+                    : () => _handleInviteAction(invite, 'accept'),
+                child: busy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Accept'),
+              ),
+              const SizedBox(width: 12),
+              TextButton(
+                onPressed: busy
+                    ? null
+                    : () => _handleInviteAction(invite, 'decline'),
+                child: const Text('Decline'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatInviteSubtitle(PendingInvite invite) {
+    final parts = <String>[];
+    if (invite.seasonNumber != null) {
+      parts.add('Season ${invite.seasonNumber}');
+    }
+    if (invite.ownerDisplayName.isNotEmpty) {
+      parts.add('Hosted by ${invite.ownerDisplayName}');
+    }
+    return parts.join(' • ');
   }
 
   Widget _buildDefaultPoolSelector(ThemeData theme, String? selectedPoolId) {
