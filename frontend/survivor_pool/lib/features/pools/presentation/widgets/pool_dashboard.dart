@@ -29,30 +29,23 @@ class PoolDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final estimatedHeight = availableContestants.length * 76.0;
-        final listHeight = availableContestants.isEmpty
-            ? 160.0
-            : estimatedHeight < 220.0
-            ? 220.0
-            : estimatedHeight > 420.0
-            ? 420.0
-            : estimatedHeight;
+    final estimatedHeight = availableContestants.length * 76.0;
+    final listHeight = availableContestants.isEmpty
+        ? 160.0
+        : estimatedHeight < 220.0
+        ? 220.0
+        : estimatedHeight > 420.0
+        ? 420.0
+        : estimatedHeight;
 
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeaderCard(theme),
-              const SizedBox(height: 24),
-              _buildWeeklyPickCard(theme, listHeight, currentPick),
-            ],
-          ),
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeaderCard(theme),
+        const SizedBox(height: 24),
+        _buildWeeklyPickCard(theme, listHeight, currentPick),
+        const SizedBox(height: 24),
+      ],
     );
   }
 
