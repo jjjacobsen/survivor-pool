@@ -578,6 +578,7 @@ class _HomePageState extends State<HomePage> {
       _defaultPoolId = poolId;
     });
     unawaited(_loadAvailableContestants(poolId));
+    unawaited(_loadInvites());
 
     try {
       final response = await http.patch(
