@@ -259,17 +259,18 @@ class _HomePageState extends State<HomePage> {
 
           if (mounted && requestId == _poolsRequestToken) {
             final existingById = {for (final pool in _pools) pool.id: pool};
-            final merged = decorated
-                .map(
-                  (pool) => existingById.containsKey(pool.id)
-                      ? pool.copyWith(
-                          currentWeek:
-                              existingById[pool.id]?.currentWeek ??
-                              pool.currentWeek,
-                        )
-                      : pool,
-                )
-                .toList();
+            final merged = decorated.map((pool) {
+              final existing = existingById[pool.id];
+              if (existing == null) {
+                return pool;
+              }
+              return existing.copyWith(
+                name: pool.name,
+                seasonId: pool.seasonId,
+                ownerId: pool.ownerId,
+                seasonNumber: pool.seasonNumber,
+              );
+            }).toList();
             setState(() {
               _pools = merged;
               if (_defaultPoolId != null &&
@@ -339,7 +340,6 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _refreshHome() async {
     await _loadInvites();
-    await _loadPools(force: true, loadDefaultContestants: false);
     final selected = _defaultPoolId;
     if (selected != null) {
       await _loadAvailableContestants(selected);
@@ -498,10 +498,7 @@ class _HomePageState extends State<HomePage> {
       }
     });
 
-    unawaited(_loadPools());
-    if (_defaultPoolId != pool.id) {
-      unawaited(_loadAvailableContestants(pool.id));
-    }
+    unawaited(_loadAvailableContestants(pool.id));
   }
 
   Future<bool> _handleLockPick(
