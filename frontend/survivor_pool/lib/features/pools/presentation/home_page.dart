@@ -365,7 +365,8 @@ class _HomePageState extends State<HomePage> {
       if (response.statusCode == 200) {
         await _loadInvites();
         if (action == 'accept') {
-          await _loadPools();
+          await _loadPools(loadDefaultContestants: false);
+          await _updateDefaultPool(invite.poolId);
         }
       }
     } catch (_) {
