@@ -16,6 +16,10 @@ frontend = { run = [
     "cd frontend/survivor_pool && flutter run -d 'iPhone 17 Pro Max'",
 ], description = "Start frontend server" }
 
+frontend2 = { run = [
+    "cd frontend/survivor_pool && flutter run -d 'iPhone 17 Pro'",
+], description = "Start frontend server" }
+
 mongo = { run = [
     "docker run --rm --name dev-mongo -d -p 27017:27017 -v dev-mongo-data:/data/db -v $(pwd)/db/init:/app/mongo-init:ro mongo:8.0",
 ], description = "Start MongoDB for development" }
