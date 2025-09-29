@@ -674,6 +674,7 @@ class _HomePageState extends State<HomePage> {
         automaticallyImplyLeading: false,
         leadingWidth: 56,
         leading: _buildDefaultPoolSelector(theme, safeDefaultPoolId),
+        title: _buildUserSummary(theme),
         titleSpacing: 12,
         backgroundColor: theme.primaryColor,
         foregroundColor: Colors.white,
@@ -710,6 +711,25 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildUserSummary(ThemeData theme) {
+    final headlineStyle = theme.textTheme.titleSmall?.copyWith(
+      color: Colors.white,
+      fontWeight: FontWeight.w600,
+    );
+    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+      color: Colors.white70,
+    );
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(widget.user.displayName, style: headlineStyle),
+        Text('@${widget.user.username}', style: subtitleStyle),
+      ],
     );
   }
 
