@@ -672,8 +672,9 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        leadingWidth: 56,
+        leading: _buildDefaultPoolSelector(theme, safeDefaultPoolId),
         titleSpacing: 12,
-        title: _buildDefaultPoolSelector(theme, safeDefaultPoolId),
         backgroundColor: theme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -896,138 +897,51 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildDefaultPoolSelector(ThemeData theme, String? selectedPoolId) {
-    final textStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: Colors.white,
-      fontWeight: FontWeight.w600,
-    );
-
     final allPools = <({String? id, String label})>[
       (id: null, label: 'Home'),
       ..._pools.map((pool) => (id: pool.id, label: pool.name)),
     ];
 
-    final items = allPools
-        .map(
-          (entry) => _buildPoolMenuItem(
-            entry.id,
-            entry.label,
-            theme,
-            isSelected: selectedPoolId == entry.id,
-          ),
-        )
-        .toList();
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 280),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withAlpha(61),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withAlpha(89), width: 1.2),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-            child: Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String?>(
-                      value: selectedPoolId,
-                      isExpanded: true,
-                      items: items,
-                      onChanged: _isUpdatingDefault
-                          ? null
-                          : (value) => _updateDefaultPool(value),
-                      style: textStyle,
-                      dropdownColor: theme.colorScheme.surface,
-                      iconEnabledColor: Colors.white,
-                      menuMaxHeight: 320,
-                      borderRadius: BorderRadius.circular(12),
-                      selectedItemBuilder: (context) => allPools
-                          .map(
-                            (entry) => Row(
-                              children: [
-                                Icon(
-                                  entry.id == null
-                                      ? Icons.home_outlined
-                                      : Icons.flag_outlined,
-                                  size: 18,
-                                  color: Colors.white,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    entry.label,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: textStyle,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                          .toList(),
-                      hint: Text('Select pool', style: textStyle),
-                    ),
-                  ),
-                ),
-                if (_isUpdatingDefault || _isLoadingPools) ...[
-                  const SizedBox(width: 8),
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
+    final textStyle = theme.textTheme.bodyMedium?.copyWith(
+      fontWeight: FontWeight.w500,
     );
-  }
 
-  DropdownMenuItem<String?> _buildPoolMenuItem(
-    String? id,
-    String label,
-    ThemeData theme, {
-    bool isSelected = false,
-  }) {
-    return DropdownMenuItem<String?>(
-      value: id,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primary.withAlpha(31)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: Row(
-          children: [
-            Icon(
-              id == null ? Icons.home_outlined : Icons.flag_outlined,
-              size: 18,
-              color: isSelected ? theme.colorScheme.primary : Colors.grey[700],
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.black87,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+    return MenuAnchor(
+      builder: (context, controller, child) {
+        final isBusy = _isUpdatingDefault || _isLoadingPools;
+        return IconButton(
+          icon: const Icon(Icons.home_outlined),
+          color: Colors.white,
+          onPressed: isBusy
+              ? null
+              : () {
+                  controller.isOpen ? controller.close() : controller.open();
+                },
+        );
+      },
+      menuChildren: allPools
+          .map(
+            (entry) => MenuItemButton(
+              onPressed: () {
+                _updateDefaultPool(entry.id);
+              },
+              child: SizedBox(
+                width: 200,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    entry.label,
+                    overflow: TextOverflow.ellipsis,
+                    style: textStyle,
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
-      ),
+          )
+          .toList(),
     );
   }
 }
