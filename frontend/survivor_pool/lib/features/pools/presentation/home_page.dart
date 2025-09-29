@@ -391,9 +391,30 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _handlePoolSettings(PoolOption pool) async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => PoolSettingsPage(pool: pool)));
+    final result = await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute(
+        builder: (_) => PoolSettingsPage(pool: pool, ownerId: widget.user.id),
+      ),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    if (result['deleted'] == true) {
+      setState(() {
+        _pools = _pools
+            .where((candidate) => candidate.id != pool.id)
+            .toList(growable: false);
+        if (_defaultPoolId == pool.id) {
+          _defaultPoolId = null;
+          _availableContestants = const [];
+          _currentPick = null;
+          _contestantsForPoolId = null;
+        }
+      });
+      unawaited(_loadPools(force: true));
+    }
   }
 
   Future<bool> _ensureSeasonsLoaded() async {

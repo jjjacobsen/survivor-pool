@@ -84,3 +84,8 @@ def respond_to_invite(
     pool_id: str, payload: PoolInviteDecisionRequest
 ) -> PoolInviteDecisionResponse:
     return pools_service.respond_to_invite(pool_id, payload)
+
+
+@router.delete("/pools/{pool_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_pool(pool_id: str, owner_id: str) -> None:
+    pools_service.delete_pool(pool_id, owner_id)

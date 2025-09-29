@@ -549,6 +549,25 @@ def invite_user_to_pool(pool_id: str, payload: PoolInviteRequest) -> PoolInviteR
     return PoolInviteResponse(member=member)
 
 
+def delete_pool(pool_id: str, owner_id: str) -> None:
+    _, pool_oid, _ = _require_pool_owner(pool_id, owner_id)
+
+    picks_collection.delete_many({"poolId": pool_oid})
+    pool_memberships_collection.delete_many({"poolId": pool_oid})
+
+    delete_result = pools_collection.delete_one({"_id": pool_oid})
+    if delete_result.deleted_count != 1:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pool not found",
+        )
+
+    users_collection.update_many(
+        {"default_pool": pool_oid},
+        {"$set": {"default_pool": None}},
+    )
+
+
 def respond_to_invite(
     pool_id: str, payload: PoolInviteDecisionRequest
 ) -> PoolInviteDecisionResponse:
