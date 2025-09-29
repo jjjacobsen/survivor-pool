@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:survivor_pool/core/models/user.dart';
 import 'package:survivor_pool/features/auth/presentation/login_page.dart';
-import 'package:survivor_pool/features/pools/presentation/home_page.dart';
 import 'package:survivor_pool/app/routes.dart';
+import 'package:survivor_pool/features/pools/presentation/home_page.dart';
+import 'package:survivor_pool/features/profile/presentation/pages/profile_page.dart';
 
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -12,6 +13,12 @@ class AppRouter {
         final args = settings.arguments;
         if (args is AppUser) {
           return MaterialPageRoute(builder: (_) => HomePage(user: args));
+        }
+        return MaterialPageRoute(builder: (_) => const LoginPage());
+      case AppRoutes.profile:
+        final args = settings.arguments;
+        if (args is AppUser) {
+          return MaterialPageRoute(builder: (_) => ProfilePage(user: args));
         }
         return MaterialPageRoute(builder: (_) => const LoginPage());
       case AppRoutes.login:

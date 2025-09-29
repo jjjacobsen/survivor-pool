@@ -680,13 +680,15 @@ class _HomePageState extends State<HomePage> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          TextButton(
+          IconButton(
+            tooltip: 'Profile',
             onPressed: () {
               Navigator.of(
                 context,
-              ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+              ).pushNamed(AppRoutes.profile, arguments: widget.user);
             },
-            child: const Text('Logout', style: TextStyle(color: Colors.white)),
+            icon: const Icon(Icons.person_outline),
+            color: Colors.white,
           ),
         ],
       ),
