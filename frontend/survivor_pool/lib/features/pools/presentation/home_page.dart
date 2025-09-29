@@ -14,6 +14,7 @@ import 'package:survivor_pool/core/models/user.dart';
 import 'package:survivor_pool/features/picks/presentation/pages/contestant_detail_page.dart';
 import 'package:survivor_pool/features/pools/presentation/pages/pool_advance_page.dart';
 import 'package:survivor_pool/features/pools/presentation/pages/manage_pool_members_page.dart';
+import 'package:survivor_pool/features/pools/presentation/pages/pool_settings_page.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/create_pool_dialog.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/pool_dashboard.dart';
 
@@ -389,6 +390,12 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _handlePoolSettings(PoolOption pool) async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => PoolSettingsPage(pool: pool)));
+  }
+
   Future<bool> _ensureSeasonsLoaded() async {
     if (_seasons.isNotEmpty) {
       return true;
@@ -759,7 +766,9 @@ class _HomePageState extends State<HomePage> {
         onManageMembers: isOwnerView
             ? () => _handleManageMembers(selectedPool)
             : null,
-        onManageSettings: isOwnerView ? () {} : null,
+        onManageSettings: isOwnerView
+            ? () => _handlePoolSettings(selectedPool)
+            : null,
         onAdvanceWeek: isOwnerView
             ? () => _handleAdvanceWeek(selectedPool)
             : null,
