@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 
 from ..core.security import hash_password, verify_password
 from ..db.mongo import (
+    picks_collection,
     pool_memberships_collection,
     pools_collection,
     users_collection,
@@ -20,6 +21,7 @@ from ..schemas.users import (
     UserResponse,
     UserSearchResult,
 )
+from . import pools as pools_service
 from .common import parse_object_id
 
 
@@ -193,6 +195,34 @@ def list_user_pools(user_id: str) -> list[PoolResponse]:
         )
 
     return responses
+
+
+def delete_user(user_id: str) -> None:
+    user_oid = parse_object_id(user_id, "user_id")
+
+    user = users_collection.find_one({"_id": user_oid})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    owned_pools = list(pools_collection.find({"ownerId": user_oid}, {"_id": 1}))
+    for pool in owned_pools:
+        pool_id = pool.get("_id")
+        if pool_id is None:
+            continue
+        pools_service.delete_pool(str(pool_id), user_id)
+
+    pool_memberships_collection.delete_many({"userId": user_oid})
+    picks_collection.delete_many({"userId": user_oid})
+
+    delete_result = users_collection.delete_one({"_id": user_oid})
+    if delete_result.deleted_count != 1:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete user",
+        )
 
 
 def _fuzzy_score(query: str, candidate: str) -> float:

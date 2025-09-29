@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, status
 
 from ..schemas.pools import PendingInvitesResponse, PoolResponse
 from ..schemas.users import (
@@ -47,3 +47,8 @@ def search_users(
 )
 def list_user_invites(user_id: str) -> PendingInvitesResponse:
     return pools_service.get_pending_invites_for_user(user_id)
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(user_id: str) -> None:
+    users_service.delete_user(user_id)
