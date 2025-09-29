@@ -129,6 +129,9 @@ class _HomePageState extends State<HomePage> {
             parsedCurrentPick = CurrentPickSummary.fromJson(pickData);
           }
         }
+      } else if (response.statusCode == 404) {
+        _handleMissingPool(poolId);
+        return;
       }
     } catch (_) {
       updated = false;
@@ -390,6 +393,29 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _handleMissingPool(String poolId) {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _pools = _pools
+          .where((candidate) => candidate.id != poolId)
+          .toList(growable: false);
+      if (_contestantsForPoolId == poolId) {
+        _contestantsForPoolId = null;
+        _availableContestants = const [];
+        _currentPick = null;
+        _isLoadingContestants = false;
+      }
+      if (_defaultPoolId == poolId) {
+        _defaultPoolId = null;
+      }
+    });
+
+    unawaited(_loadPools(force: true));
+  }
+
   Future<void> _handlePoolSettings(PoolOption pool) async {
     final result = await Navigator.of(context).push<Map<String, dynamic>>(
       MaterialPageRoute(
@@ -614,6 +640,11 @@ class _HomePageState extends State<HomePage> {
         headers: const {'Content-Type': 'application/json'},
         body: json.encode({'default_pool': poolId}),
       );
+
+      if (response.statusCode == 404 && poolId != null) {
+        _handleMissingPool(poolId);
+        return;
+      }
 
       if (response.statusCode != 200) {
         if (mounted) {
