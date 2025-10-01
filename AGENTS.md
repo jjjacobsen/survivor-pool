@@ -10,6 +10,7 @@
 - Don't worry about unit tests or integration tests for now
 - Don't use SnackBar's in flutter
 - When working on core logic don't add unnecessary type checking and default values. Validate at the edges, trust on the inside
+- Do not have code that fails silently. Allow things to fail if something is wrong
 
 ## COMMANDS
 
