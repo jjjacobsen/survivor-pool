@@ -180,7 +180,6 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
             "eliminated_date": None,
             "total_picks": 0,
             "score": 0,
-            "available_contestants": [],
         }
     )
 
@@ -210,7 +209,6 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
                 "$setOnInsert": {
                     "total_picks": 0,
                     "score": 0,
-                    "available_contestants": [],
                 },
             },
             upsert=True,
@@ -293,9 +291,20 @@ def get_available_contestants(
             detail="User is not a member of this pool",
         )
 
+    cache = membership.get("available_contestants")
+    score_value = membership.get("score")
+    if not (
+        isinstance(cache, list)
+        and isinstance(score_value, int)
+        and score_value == len(cache)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Available contestant cache invalid",
+        )
+
     membership_status = membership.get("status")
     if membership_status == "eliminated":
-        score_value = membership["score"]
         return AvailableContestantsResponse(
             pool_id=str(pool_oid),
             user_id=str(user_oid),
@@ -388,8 +397,6 @@ def get_available_contestants(
             week=current_week,
             locked_at=locked_at,
         )
-
-    score_value = membership["score"]
 
     return AvailableContestantsResponse(
         pool_id=str(pool_oid),
@@ -831,7 +838,6 @@ def invite_user_to_pool(pool_id: str, payload: PoolInviteRequest) -> PoolInviteR
             "$setOnInsert": {
                 "total_picks": 0,
                 "score": 0,
-                "available_contestants": [],
             },
         },
         upsert=True,

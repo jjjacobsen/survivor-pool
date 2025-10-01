@@ -180,7 +180,7 @@ Manages the many-to-many relationship between users and pools, with added game s
 
   // Performance metrics (cached for leaderboard performance)
   score: 15, // number of remaining available contestants
-  available_contestants: ["teeny_chirichillo", "sol_yi", "rachel_lamont"] // cached list
+  available_contestants: ["teeny_chirichillo", "sol_yi", "rachel_lamont"] // cached list computed by backend recompute
 }
 ```
 
@@ -362,6 +362,8 @@ db.pool_memberships.updateMany(
   }
 )
 ```
+
+> `available_contestants` is never seeded with a default; backend recomputation must populate it and inconsistencies are treated as errors.
 
 ## Benefits of This Design
 
