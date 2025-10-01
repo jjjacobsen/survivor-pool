@@ -23,13 +23,19 @@ class ManagePoolMembersPage extends StatefulWidget {
 }
 
 class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
-  late final SearchController _searchController;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   Timer? _debounce;
   bool _isLoading = true;
   bool _searchBusy = false;
   bool _isInviting = false;
+  int _searchRequestId = 0;
+  String _latestDeliveredQuery = '';
+  String _currentNormalizedQuery = '';
+  String? _invitingUserId;
   List<PoolMemberSummary> _members = const [];
   List<UserSearchResult> _searchResults = const [];
+  final Map<String, List<UserSearchResult>> _searchCache = {};
 
   Uri _apiUri(String path, [Map<String, String>? query]) {
     final base = Uri.parse('${ApiConfig.baseUrl}$path');
@@ -42,44 +48,75 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
   @override
   void initState() {
     super.initState();
-    _searchController = SearchController();
-    _searchController.addListener(_handleSearchChanged);
     _loadMembers();
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
-    _searchController.removeListener(_handleSearchChanged);
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
-  void _handleSearchChanged() {
-    final query = _searchController.text.trim();
+  String _normalizeQuery(String value) => value.trim().toLowerCase();
+
+  void _clearSearch() {
     _debounce?.cancel();
-    if (query.length < 2) {
-      if (_searchResults.isNotEmpty || _searchBusy) {
-        setState(() {
-          _searchBusy = false;
-          _searchResults = const [];
-        });
+    _searchController.clear();
+    setState(() {
+      _currentNormalizedQuery = '';
+      _latestDeliveredQuery = '';
+      _searchBusy = false;
+      _searchResults = const [];
+    });
+    _searchFocusNode.requestFocus();
+  }
+
+  void _onQueryChanged(String value) {
+    final normalized = _normalizeQuery(value);
+    _debounce?.cancel();
+    final cached = _searchCache[normalized];
+    setState(() {
+      _currentNormalizedQuery = normalized;
+      if (normalized.length < 2) {
+        _searchBusy = false;
+        _searchResults = const [];
+        return;
       }
+      if (cached != null) {
+        _searchResults = cached;
+        _latestDeliveredQuery = normalized;
+      }
+    });
+    if (normalized.length < 2) {
       return;
     }
-    _debounce = Timer(const Duration(milliseconds: 240), () {
-      _runSearch(query);
+    _debounce = Timer(const Duration(milliseconds: 220), () {
+      _runSearch(value);
     });
   }
 
-  Future<void> _runSearch(String query) async {
+  Future<void> _runSearch(String rawQuery) async {
+    final normalized = _normalizeQuery(rawQuery);
+    if (normalized.length < 2) {
+      return;
+    }
+    final requestId = ++_searchRequestId;
     setState(() {
       _searchBusy = true;
     });
     try {
       final response = await http.get(
-        _apiUri('/users/search', {'q': query, 'pool_id': widget.pool.id}),
+        _apiUri('/users/search', {
+          'q': rawQuery.trim(),
+          'pool_id': widget.pool.id,
+          'limit': '15',
+        }),
       );
+      if (!mounted || requestId != _searchRequestId) {
+        return;
+      }
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
         if (decoded is List) {
@@ -87,23 +124,58 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
               .whereType<Map<String, dynamic>>()
               .map(UserSearchResult.fromJson)
               .where((user) => user.id.isNotEmpty)
-              .toList();
-          if (mounted) {
-            setState(() {
-              _searchResults = results;
-            });
-          }
+              .toList(growable: false);
+          setState(() {
+            _searchCache[normalized] = results;
+            _searchResults = results;
+            _latestDeliveredQuery = normalized;
+          });
         }
       }
     } catch (_) {
-      // Network issues silently ignored to keep UI calm.
+      if (!mounted || requestId != _searchRequestId) {
+        return;
+      }
+      setState(() {
+        _searchCache.remove(normalized);
+      });
     } finally {
-      if (mounted) {
+      if (mounted && requestId == _searchRequestId) {
         setState(() {
           _searchBusy = false;
         });
       }
     }
+  }
+
+  void _updateSearchStatusForUser(String userId, String status) {
+    final query = _latestDeliveredQuery;
+    if (query.isEmpty) {
+      return;
+    }
+    final cached = _searchCache[query];
+    if (cached == null) {
+      return;
+    }
+    final updated = cached
+        .map(
+          (result) => result.id == userId
+              ? UserSearchResult(
+                  id: result.id,
+                  displayName: result.displayName,
+                  email: result.email,
+                  username: result.username,
+                  membershipStatus: status,
+                )
+              : result,
+        )
+        .toList(growable: false);
+    setState(() {
+      _searchCache[query] = updated;
+      if (_currentNormalizedQuery == query) {
+        _searchResults = updated;
+      }
+    });
   }
 
   Future<void> _loadMembers() async {
@@ -142,11 +214,13 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
     if (_isInviting || user.id.isEmpty) {
       return;
     }
-    if (user.membershipStatus == 'active') {
+    if (user.membershipStatus == 'active' ||
+        user.membershipStatus == 'invited') {
       return;
     }
     setState(() {
       _isInviting = true;
+      _invitingUserId = user.id;
     });
     try {
       final response = await http.post(
@@ -159,11 +233,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
       );
       if (response.statusCode == 200) {
         await _loadMembers();
-        if (mounted) {
-          setState(() {
-            _searchResults = const [];
-          });
-        }
+        _updateSearchStatusForUser(user.id, 'invited');
       }
     } catch (_) {
       // Ignore failures and let owner retry.
@@ -171,6 +241,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
       if (mounted) {
         setState(() {
           _isInviting = false;
+          _invitingUserId = null;
         });
       }
     }
@@ -198,64 +269,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              SearchAnchor.bar(
-                searchController: _searchController,
-                barHintText: 'Search by email or display name',
-                suggestionsBuilder: (context, controller) {
-                  if (_searchBusy) {
-                    return [
-                      const ListTile(
-                        leading: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        title: Text('Searching…'),
-                      ),
-                    ];
-                  }
-                  if (_searchResults.isEmpty) {
-                    return [
-                      const ListTile(
-                        leading: Icon(Icons.search_off_outlined),
-                        title: Text('No matches yet'),
-                      ),
-                    ];
-                  }
-                  return _searchResults.map((result) {
-                    final status = result.membershipStatus;
-                    final isMember = status == 'active';
-                    final isInvited = status == 'invited';
-                    Widget? trailing;
-                    if (isMember) {
-                      trailing = const Chip(label: Text('Member'));
-                    } else if (isInvited) {
-                      trailing = const Chip(label: Text('Invited'));
-                    } else {
-                      trailing = ElevatedButton(
-                        onPressed: _isInviting
-                            ? null
-                            : () {
-                                controller.closeView(result.displayName);
-                                _searchController.text = '';
-                                _inviteUser(result);
-                              },
-                        child: const Text('Invite'),
-                      );
-                    }
-                    return ListTile(
-                      leading: const Icon(Icons.person_outline),
-                      title: Text(
-                        result.displayName.isNotEmpty
-                            ? result.displayName
-                            : result.email,
-                      ),
-                      subtitle: _buildSearchSubtitle(result),
-                      trailing: trailing,
-                    );
-                  });
-                },
-              ),
+              _buildSearchCard(theme),
               const SizedBox(height: 16),
               Expanded(
                 child: _isLoading
@@ -296,6 +310,190 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSearchCard(ThemeData theme) {
+    final normalized = _currentNormalizedQuery;
+    final hasQuery = normalized.length >= 2;
+    final latestMatches = _latestDeliveredQuery == normalized;
+    final cached = _searchCache[normalized];
+    final results = !hasQuery
+        ? const <UserSearchResult>[]
+        : (latestMatches
+              ? _searchResults
+              : (cached ?? const <UserSearchResult>[]));
+    final showSpinner =
+        _searchBusy && hasQuery && (!latestMatches || results.isEmpty);
+
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Invite members',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              textInputAction: TextInputAction.search,
+              onChanged: _onQueryChanged,
+              onSubmitted: (value) {
+                _debounce?.cancel();
+                _runSearch(value);
+              },
+              decoration: InputDecoration(
+                hintText: 'Search by email or display name',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        onPressed: _clearSearch,
+                        icon: const Icon(Icons.close),
+                        tooltip: 'Clear search',
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildSearchResultsArea(theme, hasQuery, results, showSpinner),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResultsArea(
+    ThemeData theme,
+    bool hasQuery,
+    List<UserSearchResult> results,
+    bool showSpinner,
+  ) {
+    if (!hasQuery) {
+      return _buildSearchMessage(
+        theme,
+        Icons.search,
+        'Type at least two characters to find players to invite.',
+      );
+    }
+    if (showSpinner && results.isEmpty) {
+      return const SizedBox(
+        height: 72,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+    if (results.isEmpty) {
+      return _buildSearchMessage(
+        theme,
+        Icons.search_off_outlined,
+        'No matching users yet.',
+      );
+    }
+
+    final resultsList = ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 320),
+      child: ListView.separated(
+        shrinkWrap: true,
+        padding: EdgeInsets.zero,
+        physics: const BouncingScrollPhysics(),
+        itemCount: results.length,
+        separatorBuilder: (context, _) => const Divider(height: 18),
+        itemBuilder: (context, index) =>
+            _buildSearchResultTile(theme, results[index]),
+      ),
+    );
+    if (!showSpinner) {
+      return resultsList;
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+        const SizedBox(height: 12),
+        resultsList,
+      ],
+    );
+  }
+
+  Widget _buildSearchMessage(ThemeData theme, IconData icon, String message) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            message,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchResultTile(ThemeData theme, UserSearchResult result) {
+    final status = result.membershipStatus;
+    final isMember = status == 'active';
+    final isInvited = status == 'invited';
+    Widget trailing;
+    if (isMember) {
+      trailing = const Chip(label: Text('Member'));
+    } else if (isInvited) {
+      trailing = const Chip(label: Text('Invited'));
+    } else if (_isInviting && _invitingUserId == result.id) {
+      trailing = const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    } else {
+      trailing = ElevatedButton(
+        onPressed: _isInviting ? null : () => _inviteUser(result),
+        child: const Text('Invite'),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.person_outline),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                result.displayName.isNotEmpty
+                    ? result.displayName
+                    : result.email,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (result.email.isNotEmpty || result.username.isNotEmpty)
+                _buildSearchSubtitle(result),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        trailing,
+      ],
     );
   }
 

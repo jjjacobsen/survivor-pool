@@ -36,9 +36,11 @@ def list_user_pools(user_id: str) -> list[PoolResponse]:
 
 @router.get("/users/search", response_model=list[UserSearchResult])
 def search_users(
-    q: str = Query(""), pool_id: str | None = None
+    q: str = Query(""),
+    pool_id: str | None = None,
+    limit: int = Query(10, ge=1, le=25),
 ) -> list[UserSearchResult]:
-    return users_service.search_active_users(q, pool_id)
+    return users_service.search_active_users(q, pool_id, limit)
 
 
 @router.get(

@@ -232,11 +232,13 @@ def _fuzzy_score(query: str, candidate: str) -> float:
 
 
 def search_active_users(
-    query: str, pool_id: str | None = None
+    query: str, pool_id: str | None = None, limit: int = 10
 ) -> list[UserSearchResult]:
     trimmed = query.strip()
     if len(trimmed) < 2:
         return []
+
+    effective_limit = max(1, min(limit, 25))
 
     pool_membership_status: dict[ObjectId, str] = {}
     if pool_id:
@@ -247,9 +249,11 @@ def search_active_users(
             if isinstance(member_id, ObjectId):
                 pool_membership_status[member_id] = membership.get("status", "")
 
-    pieces = trimmed.split()
+    pieces = [part for part in trimmed.lower().split() if part]
+    if not pieces:
+        pieces = [trimmed.lower()]
     escaped = ".*".join(re.escape(part) for part in pieces)
-    pattern = f"{escaped}"
+    pattern = escaped if escaped else re.escape(trimmed.lower())
 
     selector = {
         "account_status": "active",
@@ -261,29 +265,51 @@ def search_active_users(
     }
 
     projection = {"display_name": 1, "email": 1, "username": 1}
-    cursor = users_collection.find(selector, projection).limit(40)
+    fetch_limit = max(effective_limit * 4, 40)
+    cursor = users_collection.find(selector, projection).limit(fetch_limit)
 
     lower_query = trimmed.lower()
-    ranked: list[tuple[float, str, dict[str, Any]]] = []
+
+    def prefix_boost(value: str) -> float:
+        if not value:
+            return 0.0
+        lowered = value.lower()
+        if lowered.startswith(lower_query):
+            return 1.0
+        boost = 0.0
+        for token in pieces:
+            if lowered.startswith(token):
+                boost = max(boost, 0.85)
+            elif token and token in lowered:
+                boost = max(boost, 0.6)
+        return boost
+
+    ranked: list[tuple[float, float, str, dict[str, Any]]] = []
 
     for doc in cursor:
         display_name = doc.get("display_name") or ""
         email = doc.get("email") or ""
         username = doc.get("username") or ""
-        score = max(
+        fuzzy_score = max(
             _fuzzy_score(lower_query, display_name.lower()),
             _fuzzy_score(lower_query, email.lower()),
             _fuzzy_score(lower_query, username.lower()),
         )
-        tie_break = display_name.lower() or username.lower() or email.lower()
-        ranked.append((score, tie_break, doc))
-
-    ranked.sort(key=lambda item: (-item[0], item[1]))
-
-    results: list[UserSearchResult] = []
-    for score, _, doc in ranked[:10]:
+        boost = max(
+            prefix_boost(display_name),
+            prefix_boost(email),
+            prefix_boost(username),
+        )
+        score = max(fuzzy_score, boost)
         if score <= 0.0:
             continue
+        tie_break = display_name.lower() or username.lower() or email.lower()
+        ranked.append((score, boost, tie_break, doc))
+
+    ranked.sort(key=lambda item: (-item[0], -item[1], item[2]))
+
+    results: list[UserSearchResult] = []
+    for _, _, _, doc in ranked[:effective_limit]:
         user_id = doc.get("_id")
         if not isinstance(user_id, ObjectId):
             continue
