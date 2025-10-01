@@ -310,8 +310,12 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: ListTile(
-                leading: const Icon(Icons.hourglass_bottom_rounded),
-                title: Text(member.displayName),
+                title: Text(
+                  member.displayName,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
               ),
             ),
           ),
