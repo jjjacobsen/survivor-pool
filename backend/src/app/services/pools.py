@@ -178,7 +178,6 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
             "elimination_reason": None,
             "eliminated_week": None,
             "eliminated_date": None,
-            "total_picks": 0,
             "score": 0,
         }
     )
@@ -207,7 +206,6 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
                     "eliminated_date": None,
                 },
                 "$setOnInsert": {
-                    "total_picks": 0,
                     "score": 0,
                 },
             },
@@ -836,7 +834,6 @@ def invite_user_to_pool(pool_id: str, payload: PoolInviteRequest) -> PoolInviteR
                 "eliminated_date": None,
             },
             "$setOnInsert": {
-                "total_picks": 0,
                 "score": 0,
             },
         },

@@ -176,7 +176,6 @@ Manages the many-to-many relationship between users and pools, with added game s
   elimination_reason: null, // missed_pick | contestant_voted_out | no_options_left
   eliminated_week: null,
   eliminated_date: null,
-  total_picks: 3,
 
   // Performance metrics (cached for leaderboard performance)
   score: 15, // number of remaining available contestants
