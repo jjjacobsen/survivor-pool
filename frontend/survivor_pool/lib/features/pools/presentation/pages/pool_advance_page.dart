@@ -341,16 +341,7 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
     final canSubmit = !_isSubmitting && !_isLoading && _status != null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Advance Week'),
-        actions: [
-          IconButton(
-            onPressed: _isLoading ? null : _loadStatus,
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refresh',
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Advance Week')),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadStatus,
