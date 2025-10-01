@@ -351,7 +351,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
                 _runSearch(value);
               },
               decoration: InputDecoration(
-                hintText: 'Search by email or display name',
+                hintText: 'Search members',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -377,11 +377,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
     bool showSpinner,
   ) {
     if (!hasQuery) {
-      return _buildSearchMessage(
-        theme,
-        Icons.search,
-        'Type at least two characters to find players to invite.',
-      );
+      return const SizedBox.shrink();
     }
     if (showSpinner && results.isEmpty) {
       return const SizedBox(
