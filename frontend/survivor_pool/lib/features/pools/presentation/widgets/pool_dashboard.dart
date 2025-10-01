@@ -114,8 +114,8 @@ class PoolDashboard extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              const SizedBox(height: 6),
               if (scoreText != null) ...[
-                const SizedBox(height: 6),
                 Text(
                   scoreText,
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -125,7 +125,15 @@ class PoolDashboard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                const SizedBox(height: 6),
               ],
+              Text(
+                'Week ${pool.currentWeek}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               if (hasManageMembers || hasAdvance) ...[
                 const SizedBox(height: 24),
               ],
@@ -177,15 +185,7 @@ class PoolDashboard extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Week ${pool.currentWeek}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 12),
             if (isEliminated)
               _buildEliminatedMessage(theme, eliminationReason, eliminatedWeek)
             else ...[
