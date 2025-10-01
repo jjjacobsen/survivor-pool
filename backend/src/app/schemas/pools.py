@@ -28,6 +28,8 @@ class AvailableContestantResponse(BaseModel):
     id: str
     name: str
     subtitle: str | None = None
+    tribe_name: str | None = None
+    tribe_color: str | None = None
 
 
 class CurrentPickSummary(BaseModel):
@@ -56,6 +58,8 @@ class ContestantDetail(BaseModel):
     age: int | None = None
     occupation: str | None = None
     hometown: str | None = None
+    tribe_name: str | None = None
+    tribe_color: str | None = None
 
 
 class ContestantDetailResponse(BaseModel):

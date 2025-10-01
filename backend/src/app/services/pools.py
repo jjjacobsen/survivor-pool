@@ -41,6 +41,41 @@ ELIMINATION_REASON_CONTESTANT = "contestant_voted_out"
 ELIMINATION_REASON_NO_OPTIONS = "no_options_left"
 
 
+def _resolve_contestant_tribe(
+    season: dict[str, Any], contestant_id: str, week: int
+) -> tuple[str | None, str | None]:
+    if week < 1:
+        week = 1
+
+    latest_week = -1
+    latest_entry: dict[str, Any] | None = None
+    for entry in season.get("tribe_timeline", []) or []:
+        entry_week = entry.get("week")
+        if not isinstance(entry_week, int) or entry_week > week:
+            continue
+        if entry_week >= latest_week:
+            latest_week = entry_week
+            latest_entry = entry
+
+    if not latest_entry:
+        return None, None
+
+    for tribe in latest_entry.get("tribes", []) or []:
+        members = tribe.get("members") or []
+        if isinstance(members, list) and contestant_id in members:
+            tribe_name = tribe.get("name")
+            tribe_color = tribe.get("color")
+            name_value = (
+                tribe_name if isinstance(tribe_name, str) and tribe_name else None
+            )
+            color_value = (
+                tribe_color if isinstance(tribe_color, str) and tribe_color else None
+            )
+            return name_value, color_value
+
+    return None, None
+
+
 def _collect_active_contestant_ids(season: dict[str, Any], week: int) -> set[str]:
     if week < 1:
         week = 1
@@ -142,7 +177,7 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
     season_id = parse_object_id(pool_data.season_id, "season_id")
     season = seasons_collection.find_one(
         {"_id": season_id},
-        {"contestants": 1, "eliminations": 1},
+        {"contestants": 1, "eliminations": 1, "tribe_timeline": 1},
     )
     if not season:
         raise HTTPException(
@@ -330,7 +365,7 @@ def get_available_contestants(
 
     season = seasons_collection.find_one(
         {"_id": season_id},
-        {"contestants": 1},
+        {"contestants": 1, "tribe_timeline": 1},
     )
     if not season:
         raise HTTPException(
@@ -349,11 +384,16 @@ def get_available_contestants(
         if not isinstance(contestant_id, str):
             continue
         contestant = contestant_catalog.get(contestant_id, {})
+        tribe_name, tribe_color = _resolve_contestant_tribe(
+            season, contestant_id, current_week
+        )
         contestants.append(
             AvailableContestantResponse(
                 id=contestant_id,
                 name=contestant.get("name") or contestant_id,
                 subtitle=None,
+                tribe_name=tribe_name,
+                tribe_color=tribe_color,
             )
         )
 
@@ -420,7 +460,7 @@ def get_contestant_detail(
 
     season = seasons_collection.find_one(
         {"_id": season_id},
-        {"contestants": 1, "eliminations": 1},
+        {"contestants": 1, "eliminations": 1, "tribe_timeline": 1},
     )
     if not season:
         raise HTTPException(
@@ -484,12 +524,18 @@ def get_contestant_detail(
         and membership.get("status") == "active"
     )
 
+    tribe_name, tribe_color = _resolve_contestant_tribe(
+        season, contestant_id, current_week
+    )
+
     detail = ContestantDetail(
         id=contestant_id,
         name=target_contestant.get("name") or contestant_id,
         age=target_contestant.get("age"),
         occupation=target_contestant.get("occupation"),
         hometown=target_contestant.get("hometown"),
+        tribe_name=tribe_name,
+        tribe_color=tribe_color,
     )
 
     return ContestantDetailResponse(

@@ -4,21 +4,29 @@ class AvailableContestant {
   final String id;
   final String name;
   final String? subtitle;
+  final String? tribeName;
+  final String? tribeColor;
 
   const AvailableContestant({
     required this.id,
     required this.name,
     this.subtitle,
+    this.tribeName,
+    this.tribeColor,
   });
 
   factory AvailableContestant.fromJson(Map<String, dynamic> json) {
     final id = json['id'] as String? ?? '';
     final name = json['name'] as String? ?? '';
     final subtitle = json['subtitle'];
+    final tribeName = json['tribe_name'];
+    final tribeColor = json['tribe_color'];
     return AvailableContestant(
       id: id,
       name: name.isEmpty ? id : name,
-      subtitle: subtitle is String ? subtitle : null,
+      subtitle: subtitle is String && subtitle.isNotEmpty ? subtitle : null,
+      tribeName: tribeName is String ? tribeName : null,
+      tribeColor: tribeColor is String ? tribeColor : null,
     );
   }
 }
@@ -29,6 +37,8 @@ class ContestantDetail {
   final int? age;
   final String? occupation;
   final String? hometown;
+  final String? tribeName;
+  final String? tribeColor;
 
   const ContestantDetail({
     required this.id,
@@ -36,6 +46,8 @@ class ContestantDetail {
     this.age,
     this.occupation,
     this.hometown,
+    this.tribeName,
+    this.tribeColor,
   });
 
   factory ContestantDetail.fromJson(Map<String, dynamic> json) {
@@ -57,6 +69,8 @@ class ContestantDetail {
       age: parsedAge,
       occupation: json['occupation'] as String?,
       hometown: json['hometown'] as String?,
+      tribeName: json['tribe_name'] as String?,
+      tribeColor: json['tribe_color'] as String?,
     );
   }
 }

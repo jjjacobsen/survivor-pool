@@ -66,6 +66,16 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
     final detail = widget.detail.contestant;
     final chips = <Widget>[];
 
+    if (detail.tribeName != null && detail.tribeName!.isNotEmpty) {
+      chips.add(
+        _buildInfoChip(
+          'Tribe',
+          detail.tribeName!,
+          theme,
+          colorHex: detail.tribeColor,
+        ),
+      );
+    }
     if (detail.age != null) {
       chips.add(_buildInfoChip('Age', detail.age.toString(), theme));
     }
@@ -172,11 +182,17 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
     );
   }
 
-  Widget _buildInfoChip(String label, String value, ThemeData theme) {
+  Widget _buildInfoChip(
+    String label,
+    String value,
+    ThemeData theme, {
+    String? colorHex,
+  }) {
+    final accent = _tryParseColor(colorHex) ?? theme.colorScheme.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withAlpha(20),
+        color: accent.withAlpha(32),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -186,7 +202,7 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
           Text(
             label,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.primary,
+              color: accent,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -195,6 +211,36 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
         ],
       ),
     );
+  }
+
+  Color? _tryParseColor(String? source) {
+    if (source == null) {
+      return null;
+    }
+    final value = source.trim();
+    if (value.isEmpty) {
+      return null;
+    }
+    if (value.startsWith('#')) {
+      final hex = value.substring(1);
+      if (hex.length == 6) {
+        final parsed = int.tryParse('FF$hex', radix: 16);
+        if (parsed != null) {
+          return Color(parsed);
+        }
+      } else if (hex.length == 8) {
+        final parsed = int.tryParse(hex, radix: 16);
+        if (parsed != null) {
+          return Color(parsed);
+        }
+      }
+    } else if (value.startsWith('0x')) {
+      final parsed = int.tryParse(value.substring(2), radix: 16);
+      if (parsed != null) {
+        return Color(parsed);
+      }
+    }
+    return null;
   }
 
   Widget _buildStatusNote(ThemeData theme, String message) {
