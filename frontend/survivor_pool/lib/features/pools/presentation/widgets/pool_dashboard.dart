@@ -282,55 +282,39 @@ class PoolDashboard extends StatelessWidget {
       );
     }
 
-    return Scrollbar(
-      child: ListView.separated(
-        itemCount: availableContestants.length,
-        itemBuilder: (context, index) {
-          final contestant = availableContestants[index];
-          return FilledButton.tonal(
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            onPressed: onContestantSelected == null
-                ? null
-                : () => onContestantSelected!(contestant),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        contestant.name,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (contestant.subtitle != null &&
-                          contestant.subtitle!.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          contestant.subtitle!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right_rounded),
-              ],
-            ),
-          );
-        },
-        separatorBuilder: (_, index) => const SizedBox(height: 12),
-      ),
-    );
+    final groups = _groupContestantsByTribe(availableContestants);
+    final children = <Widget>[];
+
+    for (var groupIndex = 0; groupIndex < groups.length; groupIndex++) {
+      final group = groups[groupIndex];
+      final headerColor =
+          _parseColorHex(group.colorHex) ?? theme.colorScheme.primary;
+
+      children.add(
+        Text(
+          group.label,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: headerColor,
+          ),
+        ),
+      );
+      children.add(const SizedBox(height: 8));
+
+      for (var i = 0; i < group.members.length; i++) {
+        final contestant = group.members[i];
+        children.add(_buildContestantButton(theme, contestant));
+        if (i < group.members.length - 1) {
+          children.add(const SizedBox(height: 12));
+        }
+      }
+
+      if (groupIndex < groups.length - 1) {
+        children.add(const SizedBox(height: 20));
+      }
+    }
+
+    return Scrollbar(child: ListView(children: children));
   }
 
   Widget _buildLockedPickSummary(ThemeData theme, CurrentPickSummary summary) {
@@ -395,4 +379,166 @@ class PoolDashboard extends StatelessWidget {
     final minute = value.minute.toString().padLeft(2, '0');
     return '$month/$day/$year $hour:$minute';
   }
+
+  Color? _parseColorHex(String? source) {
+    if (source == null) {
+      return null;
+    }
+    final value = source.trim();
+    if (value.isEmpty) {
+      return null;
+    }
+    final normalized = value.toLowerCase();
+    if (value.startsWith('#')) {
+      final hex = value.substring(1);
+      if (hex.length == 6) {
+        final parsed = int.tryParse('FF$hex', radix: 16);
+        if (parsed != null) {
+          return Color(parsed);
+        }
+      } else if (hex.length == 8) {
+        final parsed = int.tryParse(hex, radix: 16);
+        if (parsed != null) {
+          return Color(parsed);
+        }
+      }
+    } else if (value.startsWith('0x')) {
+      final parsed = int.tryParse(value.substring(2), radix: 16);
+      if (parsed != null) {
+        return Color(parsed);
+      }
+    } else {
+      final named = _namedTribeColors[normalized];
+      if (named != null) {
+        return named;
+      }
+    }
+    return null;
+  }
+
+  Color? _blendWithSurface(
+    ThemeData theme,
+    Color? color, {
+    double strength = 0.2,
+  }) {
+    if (color == null) {
+      return null;
+    }
+    final surface = theme.colorScheme.surface;
+    final t = strength.clamp(0.0, 1.0);
+    return Color.lerp(surface, color, t) ?? color;
+  }
+
+  FilledButton _buildContestantButton(
+    ThemeData theme,
+    AvailableContestant contestant,
+  ) {
+    final baseColor = _parseColorHex(contestant.tribeColor);
+    final backgroundColor = _blendWithSurface(theme, baseColor, strength: 0.22);
+    return FilledButton.tonal(
+      style: FilledButton.styleFrom(
+        backgroundColor: backgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
+        overlayColor: baseColor?.withValues(alpha: 0.12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: baseColor == null
+              ? BorderSide.none
+              : BorderSide(color: baseColor.withValues(alpha: 0.35)),
+        ),
+      ),
+      onPressed: onContestantSelected == null
+          ? null
+          : () => onContestantSelected!(contestant),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  contestant.name,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (contestant.subtitle != null &&
+                    contestant.subtitle!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    contestant.subtitle!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded),
+        ],
+      ),
+    );
+  }
+
+  List<_TribeGroup> _groupContestantsByTribe(
+    List<AvailableContestant> contestants,
+  ) {
+    final groupsByKey = <String, _TribeGroup>{};
+    final orderedGroups = <_TribeGroup>[];
+
+    for (final contestant in contestants) {
+      final rawName = contestant.tribeName?.trim() ?? '';
+      final key = rawName.isEmpty ? '__none__' : rawName.toLowerCase();
+      final displayName = rawName.isEmpty ? 'Unassigned' : rawName;
+
+      var group = groupsByKey[key];
+      if (group == null) {
+        group = _TribeGroup(
+          label: displayName,
+          colorHex: contestant.tribeColor,
+        );
+        groupsByKey[key] = group;
+        orderedGroups.add(group);
+      } else if (group.colorHex == null && contestant.tribeColor != null) {
+        group.colorHex = contestant.tribeColor;
+      }
+
+      group.members.add(contestant);
+    }
+
+    for (final group in orderedGroups) {
+      group.members.sort((a, b) => a.name.compareTo(b.name));
+    }
+
+    return orderedGroups;
+  }
+
+  static const Map<String, Color> _namedTribeColors = {
+    'purple': Color(0xFF8B5CF6),
+    'violet': Color(0xFFA855F7),
+    'blue': Color(0xFF3B82F6),
+    'navy': Color(0xFF1D4ED8),
+    'green': Color(0xFF22C55E),
+    'teal': Color(0xFF14B8A6),
+    'turquoise': Color(0xFF0EA5E9),
+    'orange': Color(0xFFF97316),
+    'yellow': Color(0xFFEAB308),
+    'gold': Color(0xFFF59E0B),
+    'red': Color(0xFFEF4444),
+    'maroon': Color(0xFFB91C1C),
+    'pink': Color(0xFFEC4899),
+    'magenta': Color(0xFFD946EF),
+    'brown': Color(0xFF92400E),
+  };
+}
+
+class _TribeGroup {
+  _TribeGroup({required this.label, this.colorHex});
+
+  final String label;
+  String? colorHex;
+  final List<AvailableContestant> members = [];
 }

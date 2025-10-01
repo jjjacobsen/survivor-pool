@@ -85,8 +85,7 @@
           idOf("Mitch Guerra"), idOf("Chrissy Sarnowsky"), idOf("Bianca Roses"), idOf("Saiounia Hughley"), idOf("Cedrek McFadden")
         ]},
         { name: "Vula", color: "green", members: [
-          idOf("Mary Zheng"), idOf("Shauhin Davari"), idOf("Star Toomey"), idOf("Thomas Krottinger")
-          // fifth member uncertain from public summaries; omitted intentionally
+          idOf("Mary Zheng"), idOf("Shauhin Davari"), idOf("Star Toomey"), idOf("Thomas Krottinger"), idOf("Charity Nelms")
         ]}
       ]
     },
