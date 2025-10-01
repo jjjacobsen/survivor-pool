@@ -9,6 +9,7 @@ class PoolDashboard extends StatelessWidget {
   final List<AvailableContestant> availableContestants;
   final bool isLoadingContestants;
   final CurrentPickSummary? currentPick;
+  final int? score;
   final bool isEliminated;
   final String? eliminationReason;
   final int? eliminatedWeek;
@@ -23,6 +24,7 @@ class PoolDashboard extends StatelessWidget {
     this.availableContestants = const [],
     this.isLoadingContestants = false,
     this.currentPick,
+    this.score,
     this.isEliminated = false,
     this.eliminationReason,
     this.eliminatedWeek,
@@ -68,6 +70,7 @@ class PoolDashboard extends StatelessWidget {
         : pool.seasonId.isEmpty
         ? 'Season details coming soon'
         : 'Season: ${pool.seasonId}';
+    final scoreText = score != null ? 'Remaining choices: ${score!}' : null;
 
     final hasSettings = onManageSettings != null;
     final hasManageMembers = onManageMembers != null;
@@ -111,6 +114,18 @@ class PoolDashboard extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              if (scoreText != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  scoreText,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: isEliminated
+                        ? theme.colorScheme.error
+                        : theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
               if (hasManageMembers || hasAdvance) ...[
                 const SizedBox(height: 24),
               ],

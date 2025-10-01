@@ -41,6 +41,89 @@ ELIMINATION_REASON_CONTESTANT = "contestant_voted_out"
 ELIMINATION_REASON_NO_OPTIONS = "no_options_left"
 
 
+def _collect_active_contestant_ids(season: dict[str, Any], week: int) -> set[str]:
+    if week < 1:
+        week = 1
+
+    eliminated_before_week = {
+        elimination.get("eliminated_contestant_id")
+        for elimination in season.get("eliminations", [])
+        if elimination.get("week", 0) < week
+        and isinstance(elimination.get("eliminated_contestant_id"), str)
+    }
+
+    active_ids: set[str] = set()
+    for contestant in season.get("contestants", []) or []:
+        contestant_id = contestant.get("id")
+        if (
+            isinstance(contestant_id, str)
+            and contestant_id not in eliminated_before_week
+        ):
+            active_ids.add(contestant_id)
+
+    return active_ids
+
+
+def _gather_used_contestants(
+    pool_oid: ObjectId, upto_week: int
+) -> dict[ObjectId, set[str]]:
+    if upto_week < 1:
+        upto_week = 1
+
+    query: dict[str, Any] = {"poolId": pool_oid, "week": {"$lt": upto_week}}
+    cursor = picks_collection.find(query, {"userId": 1, "contestant_id": 1})
+
+    used: dict[ObjectId, set[str]] = {}
+    for pick in cursor:
+        pick_user = pick.get("userId")
+        pick_contestant = pick.get("contestant_id")
+        if isinstance(pick_user, ObjectId) and isinstance(pick_contestant, str):
+            used.setdefault(pick_user, set()).add(pick_contestant)
+
+    return used
+
+
+def _recalculate_pool_scores(
+    pool_oid: ObjectId, season: dict[str, Any], target_week: int
+) -> None:
+    if target_week < 1:
+        target_week = 1
+
+    active_contestants = _collect_active_contestant_ids(season, target_week)
+    used_by_user = _gather_used_contestants(pool_oid, target_week)
+
+    active_cursor = pool_memberships_collection.find(
+        {"poolId": pool_oid, "status": "active"},
+        {"_id": 1, "userId": 1},
+    )
+
+    for membership in active_cursor:
+        membership_id = membership.get("_id")
+        member_user = membership.get("userId")
+        if not isinstance(membership_id, ObjectId) or not isinstance(
+            member_user, ObjectId
+        ):
+            continue
+
+        remaining_ids = sorted(
+            active_contestants - used_by_user.get(member_user, set())
+        )
+        pool_memberships_collection.update_one(
+            {"_id": membership_id},
+            {
+                "$set": {
+                    "available_contestants": remaining_ids,
+                    "score": len(remaining_ids),
+                }
+            },
+        )
+
+    pool_memberships_collection.update_many(
+        {"poolId": pool_oid, "status": {"$ne": "active"}},
+        {"$set": {"available_contestants": [], "score": 0}},
+    )
+
+
 def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
     name = pool_data.name.strip()
     if not name:
@@ -57,7 +140,11 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
         )
 
     season_id = parse_object_id(pool_data.season_id, "season_id")
-    if not seasons_collection.find_one({"_id": season_id}):
+    season = seasons_collection.find_one(
+        {"_id": season_id},
+        {"contestants": 1, "eliminations": 1},
+    )
+    if not season:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Season not found",
@@ -136,6 +223,8 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
         {"$set": {"default_pool": pool_id}},
     )
 
+    _recalculate_pool_scores(pool_id, season, pool_doc["current_week"])
+
     return PoolResponse(
         id=str(pool_id),
         name=name,
@@ -206,11 +295,13 @@ def get_available_contestants(
 
     membership_status = membership.get("status")
     if membership_status == "eliminated":
+        score_value = membership["score"]
         return AvailableContestantsResponse(
             pool_id=str(pool_oid),
             user_id=str(user_oid),
             current_week=current_week,
             contestants=[],
+            score=score_value,
             current_pick=None,
             is_eliminated=True,
             elimination_reason=membership.get("elimination_reason"),
@@ -298,11 +389,14 @@ def get_available_contestants(
             locked_at=locked_at,
         )
 
+    score_value = membership["score"]
+
     return AvailableContestantsResponse(
         pool_id=str(pool_oid),
         user_id=str(user_oid),
         current_week=current_week,
         contestants=contestants,
+        score=score_value,
         current_pick=current_pick_summary,
         is_eliminated=False,
         elimination_reason=None,
@@ -437,26 +531,26 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
     current_week = pool["current_week"]
     elimination_reasons: dict[ObjectId, str] = {}
 
+    season_id = pool.get("seasonId")
+    if not isinstance(season_id, ObjectId):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Pool season not configured",
+        )
+
+    season = seasons_collection.find_one(
+        {"_id": season_id},
+        {"contestants": 1, "eliminations": 1},
+    )
+    if not season:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Season not found for pool",
+        )
+
     if payload.skip:
         picks_collection.delete_many({"poolId": pool_oid, "week": current_week})
     else:
-        season_id = pool.get("seasonId")
-        if not isinstance(season_id, ObjectId):
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Pool season not configured",
-            )
-
-        season = seasons_collection.find_one(
-            {"_id": season_id},
-            {"contestants": 1, "eliminations": 1},
-        )
-        if not season:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Season not found for pool",
-            )
-
         _, missing_ids = _compute_pool_advance_status(pool_oid, current_week)
         now = datetime.now()
 
@@ -476,6 +570,8 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
                         "elimination_reason": ELIMINATION_REASON_MISSED_PICK,
                         "eliminated_week": current_week,
                         "eliminated_date": now,
+                        "score": 0,
+                        "available_contestants": [],
                     }
                 },
             )
@@ -517,11 +613,13 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
                             "elimination_reason": ELIMINATION_REASON_CONTESTANT,
                             "eliminated_week": current_week,
                             "eliminated_date": now,
+                            "score": 0,
+                            "available_contestants": [],
                         }
                     },
                 )
-                for member_id in losing_ids:
-                    elimination_reasons[member_id] = ELIMINATION_REASON_CONTESTANT
+            for member_id in losing_ids:
+                elimination_reasons[member_id] = ELIMINATION_REASON_CONTESTANT
 
         next_week = current_week + 1
 
@@ -584,6 +682,8 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
                         "elimination_reason": ELIMINATION_REASON_NO_OPTIONS,
                         "eliminated_week": current_week,
                         "eliminated_date": now,
+                        "score": 0,
+                        "available_contestants": [],
                     }
                 },
             )
@@ -608,6 +708,8 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
         )
 
     new_week = updated_pool["current_week"]
+
+    _recalculate_pool_scores(pool_oid, season, new_week)
 
     eliminated_members: list[PoolEliminatedMember] = []
     if elimination_reasons:
@@ -765,6 +867,30 @@ def respond_to_invite(
     pool_oid = parse_object_id(pool_id, "pool_id")
     user_oid = parse_object_id(payload.user_id, "user_id")
 
+    pool = pools_collection.find_one({"_id": pool_oid})
+    if not pool:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pool not found",
+        )
+
+    season_id = pool.get("seasonId")
+    if not isinstance(season_id, ObjectId):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Pool season not configured",
+        )
+
+    season = seasons_collection.find_one(
+        {"_id": season_id},
+        {"contestants": 1, "eliminations": 1},
+    )
+    if not season:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Season not found",
+        )
+
     action = payload.action.strip().lower()
     if action not in {"accept", "decline"}:
         raise HTTPException(
@@ -801,6 +927,8 @@ def respond_to_invite(
                 "joinedAt": None,
                 "invitedAt": membership.get("invitedAt") or now,
                 "elimination_reason": None,
+                "score": 0,
+                "available_contestants": [],
             }
         }
 
@@ -824,6 +952,12 @@ def respond_to_invite(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
+
+    if action == "accept":
+        current_week = pool.get("current_week", 1)
+        if not isinstance(current_week, int):
+            current_week = 1
+        _recalculate_pool_scores(pool_oid, season, current_week)
 
     member = _build_member_summary(updated_membership, user_doc)
     return PoolInviteDecisionResponse(member=member)

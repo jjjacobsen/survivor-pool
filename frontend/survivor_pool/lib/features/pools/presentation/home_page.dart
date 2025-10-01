@@ -40,6 +40,7 @@ class _HomePageState extends State<HomePage> {
   bool _isLoadingContestants = false;
   String? _contestantsForPoolId;
   CurrentPickSummary? _currentPick;
+  int? _availableScore;
   bool _isEliminated = false;
   String? _eliminationReason;
   int? _eliminatedWeek;
@@ -84,6 +85,7 @@ class _HomePageState extends State<HomePage> {
         _contestantsForPoolId = null;
         _isLoadingContestants = false;
         _currentPick = null;
+        _availableScore = null;
       });
       return;
     }
@@ -93,6 +95,7 @@ class _HomePageState extends State<HomePage> {
       if (_contestantsForPoolId != poolId) {
         _availableContestants = const [];
         _currentPick = null;
+        _availableScore = null;
         _isEliminated = false;
         _eliminationReason = null;
         _eliminatedWeek = null;
@@ -107,6 +110,7 @@ class _HomePageState extends State<HomePage> {
     String? parsedEliminationReason;
     int? parsedEliminatedWeek;
     int? parsedWeek;
+    int? parsedScore;
 
     int? parseOptionalInt(dynamic value) {
       if (value is int) {
@@ -133,6 +137,7 @@ class _HomePageState extends State<HomePage> {
         if (decoded is Map<String, dynamic>) {
           final rawWeek = decoded['current_week'];
           parsedWeek = parseOptionalInt(rawWeek);
+          parsedScore = parseOptionalInt(decoded['score']);
 
           parsedEliminated = decoded['is_eliminated'] == true;
           final rawReason = decoded['elimination_reason'];
@@ -173,11 +178,21 @@ class _HomePageState extends State<HomePage> {
           if (parsedEliminated) {
             _availableContestants = const [];
             _currentPick = null;
+            if (parsedScore != null) {
+              _availableScore = parsedScore;
+            } else {
+              _availableScore = 0;
+            }
           } else {
             if (parsedContestantsUpdated) {
               _availableContestants = parsedContestants;
             }
             _currentPick = parsedCurrentPick;
+            if (parsedScore != null) {
+              _availableScore = parsedScore;
+            } else if (parsedContestantsUpdated) {
+              _availableScore = parsedContestants.length;
+            }
           }
           if (parsedWeek != null) {
             _pools = _pools
@@ -443,6 +458,7 @@ class _HomePageState extends State<HomePage> {
         _availableContestants = const [];
         _currentPick = null;
         _isLoadingContestants = false;
+        _availableScore = null;
       }
       if (_defaultPoolId == poolId) {
         _defaultPoolId = null;
@@ -473,6 +489,7 @@ class _HomePageState extends State<HomePage> {
           _availableContestants = const [];
           _currentPick = null;
           _contestantsForPoolId = null;
+          _availableScore = null;
         }
       });
       unawaited(_loadPools(force: true));
@@ -858,6 +875,7 @@ class _HomePageState extends State<HomePage> {
                 availableContestants: availableContestants,
                 isLoadingContestants: isLoadingContestants,
                 currentPick: currentPick,
+                score: _availableScore,
               ),
             ],
           ),
@@ -892,6 +910,7 @@ class _HomePageState extends State<HomePage> {
     required List<AvailableContestant> availableContestants,
     required bool isLoadingContestants,
     required CurrentPickSummary? currentPick,
+    required int? score,
   }) {
     if (_isLoadingPools && _pools.isEmpty) {
       return const SizedBox(
@@ -906,6 +925,7 @@ class _HomePageState extends State<HomePage> {
         availableContestants: availableContestants,
         isLoadingContestants: isLoadingContestants,
         currentPick: currentPick,
+        score: score,
         isEliminated: _isEliminated,
         eliminationReason: _eliminationReason,
         eliminatedWeek: _eliminatedWeek,

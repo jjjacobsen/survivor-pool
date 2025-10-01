@@ -43,6 +43,7 @@ class AvailableContestantsResponse(BaseModel):
     user_id: str
     current_week: int
     contestants: list[AvailableContestantResponse]
+    score: int
     current_pick: CurrentPickSummary | None = None
     is_eliminated: bool = False
     elimination_reason: str | None = None
