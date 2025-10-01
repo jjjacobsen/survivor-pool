@@ -482,18 +482,19 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
             for member_id in missing_set:
                 elimination_reasons[member_id] = ELIMINATION_REASON_MISSED_PICK
 
-        eliminated_contestant = None
-        for elimination in season.get("eliminations", []):
-            if elimination.get("week") == current_week:
-                eliminated_contestant = elimination.get("eliminated_contestant_id")
-                break
+        eliminated_contestants = [
+            elimination.get("eliminated_contestant_id")
+            for elimination in season.get("eliminations", [])
+            if elimination.get("week") == current_week
+            and elimination.get("eliminated_contestant_id")
+        ]
 
-        if eliminated_contestant:
+        if eliminated_contestants:
             losing_cursor = picks_collection.find(
                 {
                     "poolId": pool_oid,
                     "week": current_week,
-                    "contestant_id": eliminated_contestant,
+                    "contestant_id": {"$in": eliminated_contestants},
                 },
                 {"userId": 1},
             )
