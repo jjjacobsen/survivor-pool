@@ -71,3 +71,26 @@ class PoolAdvanceStatus {
     );
   }
 }
+
+class PoolAdvanceElimination {
+  final String userId;
+  final String displayName;
+  final String reason;
+
+  const PoolAdvanceElimination({
+    required this.userId,
+    required this.displayName,
+    required this.reason,
+  });
+
+  factory PoolAdvanceElimination.fromJson(Map<String, dynamic> json) {
+    final userId = json['user_id'] as String? ?? '';
+    final displayName = json['display_name'] as String? ?? '';
+    final reason = json['reason'] as String? ?? ''; // fall back to empty string
+    return PoolAdvanceElimination(
+      userId: userId,
+      displayName: displayName.isNotEmpty ? displayName : userId,
+      reason: reason,
+    );
+  }
+}

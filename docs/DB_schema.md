@@ -172,7 +172,8 @@ Manages the many-to-many relationship between users and pools, with added game s
   joinedAt: ISODate("..."),
 
   // Game status tracking
-  status: "active", // active, eliminated
+  status: "active", // invited, active, eliminated, declined
+  elimination_reason: null, // missed_pick | contestant_voted_out | no_options_left
   eliminated_week: null,
   eliminated_date: null,
   total_picks: 3,
@@ -182,6 +183,8 @@ Manages the many-to-many relationship between users and pools, with added game s
   available_contestants: ["teeny_chirichillo", "sol_yi", "rachel_lamont"] // cached list
 }
 ```
+
+`elimination_reason` captures why a member left the pool: `missed_pick`, `contestant_voted_out`, or `no_options_left`. Frontends use this field to tailor elimination messaging.
 
 ## Relationships
 

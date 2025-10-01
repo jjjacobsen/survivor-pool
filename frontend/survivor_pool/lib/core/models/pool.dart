@@ -81,6 +81,9 @@ class PoolMemberSummary {
   final String status;
   final DateTime? joinedAt;
   final DateTime? invitedAt;
+  final String? eliminationReason;
+  final int? eliminatedWeek;
+  final DateTime? eliminatedDate;
 
   const PoolMemberSummary({
     required this.userId,
@@ -90,9 +93,25 @@ class PoolMemberSummary {
     required this.status,
     this.joinedAt,
     this.invitedAt,
+    this.eliminationReason,
+    this.eliminatedWeek,
+    this.eliminatedDate,
   });
 
   factory PoolMemberSummary.fromJson(Map<String, dynamic> json) {
+    int? parseWeek(dynamic value) {
+      if (value is int) {
+        return value;
+      }
+      if (value is num) {
+        return value.toInt();
+      }
+      if (value is String) {
+        return int.tryParse(value);
+      }
+      return null;
+    }
+
     return PoolMemberSummary(
       userId: json['user_id'] as String? ?? '',
       displayName: json['display_name'] as String? ?? '',
@@ -101,6 +120,9 @@ class PoolMemberSummary {
       status: json['status'] as String? ?? 'active',
       joinedAt: _parseIsoDate(json['joined_at']),
       invitedAt: _parseIsoDate(json['invited_at']),
+      eliminationReason: json['elimination_reason'] as String?,
+      eliminatedWeek: parseWeek(json['eliminated_week']),
+      eliminatedDate: _parseIsoDate(json['eliminated_date']),
     );
   }
 

@@ -9,6 +9,9 @@ class PoolDashboard extends StatelessWidget {
   final List<AvailableContestant> availableContestants;
   final bool isLoadingContestants;
   final CurrentPickSummary? currentPick;
+  final bool isEliminated;
+  final String? eliminationReason;
+  final int? eliminatedWeek;
   final VoidCallback? onManageMembers;
   final VoidCallback? onManageSettings;
   final VoidCallback? onAdvanceWeek;
@@ -20,6 +23,9 @@ class PoolDashboard extends StatelessWidget {
     this.availableContestants = const [],
     this.isLoadingContestants = false,
     this.currentPick,
+    this.isEliminated = false,
+    this.eliminationReason,
+    this.eliminatedWeek,
     this.onManageMembers,
     this.onManageSettings,
     this.onAdvanceWeek,
@@ -43,7 +49,14 @@ class PoolDashboard extends StatelessWidget {
       children: [
         _buildHeaderCard(theme),
         const SizedBox(height: 24),
-        _buildWeeklyPickCard(theme, listHeight, currentPick),
+        _buildWeeklyPickCard(
+          theme,
+          listHeight,
+          currentPick,
+          isEliminated,
+          eliminationReason,
+          eliminatedWeek,
+        ),
         const SizedBox(height: 24),
       ],
     );
@@ -131,6 +144,9 @@ class PoolDashboard extends StatelessWidget {
     ThemeData theme,
     double listHeight,
     CurrentPickSummary? currentPick,
+    bool isEliminated,
+    String? eliminationReason,
+    int? eliminatedWeek,
   ) {
     return Card(
       margin: EdgeInsets.zero,
@@ -155,23 +171,83 @@ class PoolDashboard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-            Text(
-              currentPick != null
-                  ? 'Pick locked in for this week.'
-                  : 'Choose a contestant below to review their details before locking your pick.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            if (isEliminated)
+              _buildEliminatedMessage(theme, eliminationReason, eliminatedWeek)
+            else ...[
+              Text(
+                currentPick != null
+                    ? 'Pick locked in for this week.'
+                    : 'Choose a contestant below to review their details before locking your pick.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            if (currentPick != null)
-              _buildLockedPickSummary(theme, currentPick)
-            else
-              SizedBox(height: listHeight, child: _buildContestantList(theme)),
+              const SizedBox(height: 24),
+              if (currentPick != null)
+                _buildLockedPickSummary(theme, currentPick)
+              else
+                SizedBox(
+                  height: listHeight,
+                  child: _buildContestantList(theme),
+                ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildEliminatedMessage(
+    ThemeData theme,
+    String? eliminationReason,
+    int? eliminatedWeek,
+  ) {
+    final reasonText = _describeEliminationReason(eliminationReason);
+    final weekDetail = eliminatedWeek != null
+        ? 'Eliminated in week $eliminatedWeek.'
+        : null;
+
+    final details = <String>[];
+    if (reasonText.isNotEmpty) {
+      details.add(reasonText);
+    }
+    if (weekDetail != null) {
+      details.add(weekDetail);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'The tribe has spoken.',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        if (details.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            details.join(' '),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _describeEliminationReason(String? reason) {
+    switch (reason) {
+      case 'missed_pick':
+        return 'You missed your pick.';
+      case 'contestant_voted_out':
+        return 'Your pick was voted out.';
+      case 'no_options_left':
+        return 'You ran out of contestants to choose from.';
+      default:
+        return '';
+    }
   }
 
   Widget _buildContestantList(ThemeData theme) {
@@ -203,12 +279,9 @@ class PoolDashboard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            onPressed: () {
-              final handler = onContestantSelected;
-              if (handler != null) {
-                handler(contestant);
-              }
-            },
+            onPressed: onContestantSelected == null
+                ? null
+                : () => onContestantSelected!(contestant),
             child: Row(
               children: [
                 Expanded(

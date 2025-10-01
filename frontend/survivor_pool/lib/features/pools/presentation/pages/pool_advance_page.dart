@@ -137,8 +137,20 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
         if (decoded is Map<String, dynamic>) {
           final rawWeek = decoded['new_current_week'];
           final newWeek = _asInt(rawWeek);
+          final eliminationData = decoded['eliminations'];
+          final eliminations = eliminationData is List
+              ? eliminationData
+                    .whereType<Map<String, dynamic>>()
+                    .map(PoolAdvanceElimination.fromJson)
+                    .where((entry) => entry.userId.isNotEmpty)
+                    .toList()
+              : <PoolAdvanceElimination>[];
           if (newWeek > 0 && mounted) {
-            Navigator.of(context).pop({'newWeek': newWeek, 'skipped': skip});
+            Navigator.of(context).pop({
+              'newWeek': newWeek,
+              'skipped': skip,
+              'eliminations': eliminations,
+            });
             return;
           }
         }

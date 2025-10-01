@@ -9,6 +9,7 @@ import 'package:survivor_pool/core/constants/api.dart';
 import 'package:survivor_pool/core/models/contestant.dart';
 import 'package:survivor_pool/core/models/pick.dart';
 import 'package:survivor_pool/core/models/pool.dart';
+import 'package:survivor_pool/core/models/pool_advance.dart';
 import 'package:survivor_pool/core/models/season.dart';
 import 'package:survivor_pool/core/models/user.dart';
 import 'package:survivor_pool/features/picks/presentation/pages/contestant_detail_page.dart';
@@ -39,6 +40,9 @@ class _HomePageState extends State<HomePage> {
   bool _isLoadingContestants = false;
   String? _contestantsForPoolId;
   CurrentPickSummary? _currentPick;
+  bool _isEliminated = false;
+  String? _eliminationReason;
+  int? _eliminatedWeek;
   List<PendingInvite> _pendingInvites = const [];
   bool _isLoadingInvites = false;
   final Set<String> _inviteRequests = <String>{};
@@ -89,15 +93,33 @@ class _HomePageState extends State<HomePage> {
       if (_contestantsForPoolId != poolId) {
         _availableContestants = const [];
         _currentPick = null;
+        _isEliminated = false;
+        _eliminationReason = null;
+        _eliminatedWeek = null;
       }
       _contestantsForPoolId = poolId;
     });
 
-    List<AvailableContestant> parsed = const <AvailableContestant>[];
+    List<AvailableContestant> parsedContestants = const <AvailableContestant>[];
+    var parsedContestantsUpdated = false;
     CurrentPickSummary? parsedCurrentPick;
-    var updated = false;
-
+    var parsedEliminated = false;
+    String? parsedEliminationReason;
+    int? parsedEliminatedWeek;
     int? parsedWeek;
+
+    int? parseOptionalInt(dynamic value) {
+      if (value is int) {
+        return value;
+      }
+      if (value is num) {
+        return value.toInt();
+      }
+      if (value is String) {
+        return int.tryParse(value);
+      }
+      return null;
+    }
 
     try {
       final response = await http.get(
@@ -110,23 +132,29 @@ class _HomePageState extends State<HomePage> {
         final decoded = json.decode(response.body);
         if (decoded is Map<String, dynamic>) {
           final rawWeek = decoded['current_week'];
-          if (rawWeek is int) {
-            parsedWeek = rawWeek;
-          } else if (rawWeek is num) {
-            parsedWeek = rawWeek.toInt();
+          parsedWeek = parseOptionalInt(rawWeek);
+
+          parsedEliminated = decoded['is_eliminated'] == true;
+          final rawReason = decoded['elimination_reason'];
+          if (rawReason is String && rawReason.isNotEmpty) {
+            parsedEliminationReason = rawReason;
           }
-          final items = decoded['contestants'];
-          if (items is List) {
-            parsed = items
-                .whereType<Map<String, dynamic>>()
-                .map(AvailableContestant.fromJson)
-                .where((contestant) => contestant.id.isNotEmpty)
-                .toList();
-            updated = true;
-          }
-          final pickData = decoded['current_pick'];
-          if (pickData is Map<String, dynamic>) {
-            parsedCurrentPick = CurrentPickSummary.fromJson(pickData);
+          parsedEliminatedWeek = parseOptionalInt(decoded['eliminated_week']);
+
+          if (!parsedEliminated) {
+            final items = decoded['contestants'];
+            if (items is List) {
+              parsedContestants = items
+                  .whereType<Map<String, dynamic>>()
+                  .map(AvailableContestant.fromJson)
+                  .where((contestant) => contestant.id.isNotEmpty)
+                  .toList();
+              parsedContestantsUpdated = true;
+            }
+            final pickData = decoded['current_pick'];
+            if (pickData is Map<String, dynamic>) {
+              parsedCurrentPick = CurrentPickSummary.fromJson(pickData);
+            }
           }
         }
       } else if (response.statusCode == 404) {
@@ -134,15 +162,23 @@ class _HomePageState extends State<HomePage> {
         return;
       }
     } catch (_) {
-      updated = false;
+      parsedContestantsUpdated = false;
     } finally {
       if (mounted && _contestantsForPoolId == poolId) {
         setState(() {
           _isLoadingContestants = false;
-          if (updated) {
-            _availableContestants = parsed;
+          _isEliminated = parsedEliminated;
+          _eliminationReason = parsedEliminationReason;
+          _eliminatedWeek = parsedEliminatedWeek;
+          if (parsedEliminated) {
+            _availableContestants = const [];
+            _currentPick = null;
+          } else {
+            if (parsedContestantsUpdated) {
+              _availableContestants = parsedContestants;
+            }
+            _currentPick = parsedCurrentPick;
           }
-          _currentPick = parsedCurrentPick;
           if (parsedWeek != null) {
             _pools = _pools
                 .map(
@@ -535,6 +571,11 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
+    final eliminations = result['eliminations'];
+    final eliminationSummaries = eliminations is List
+        ? eliminations.whereType<PoolAdvanceElimination>().toList()
+        : <PoolAdvanceElimination>[];
+
     final newWeek = rawWeek <= 0 ? 1 : rawWeek;
 
     setState(() {
@@ -554,6 +595,56 @@ class _HomePageState extends State<HomePage> {
     });
 
     unawaited(_loadAvailableContestants(pool.id));
+
+    if (eliminationSummaries.isNotEmpty && mounted) {
+      await _showEliminationSummary(eliminationSummaries);
+    }
+  }
+
+  String _describeEliminationReason(String reason) {
+    switch (reason) {
+      case 'missed_pick':
+        return 'Missed their pick';
+      case 'contestant_voted_out':
+        return 'Pick was voted out';
+      case 'no_options_left':
+        return 'No contestants left to choose';
+      default:
+        return 'Eliminated';
+    }
+  }
+
+  Future<void> _showEliminationSummary(
+    List<PoolAdvanceElimination> eliminations,
+  ) async {
+    if (!mounted) {
+      return;
+    }
+
+    final theme = Theme.of(context);
+    final message = eliminations
+        .map(
+          (entry) =>
+              '${entry.displayName}: '
+              '${_describeEliminationReason(entry.reason)}',
+        )
+        .join('\n');
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Eliminations'),
+          content: Text(message, style: theme.textTheme.bodyMedium),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<bool> _handleLockPick(
@@ -815,6 +906,9 @@ class _HomePageState extends State<HomePage> {
         availableContestants: availableContestants,
         isLoadingContestants: isLoadingContestants,
         currentPick: currentPick,
+        isEliminated: _isEliminated,
+        eliminationReason: _eliminationReason,
+        eliminatedWeek: _eliminatedWeek,
         onManageMembers: isOwnerView
             ? () => _handleManageMembers(selectedPool)
             : null,
@@ -824,9 +918,11 @@ class _HomePageState extends State<HomePage> {
         onAdvanceWeek: isOwnerView
             ? () => _handleAdvanceWeek(selectedPool)
             : null,
-        onContestantSelected: (contestant) {
-          _handleContestantSelected(selectedPool, contestant);
-        },
+        onContestantSelected: _isEliminated
+            ? null
+            : (contestant) {
+                _handleContestantSelected(selectedPool, contestant);
+              },
       );
     }
 

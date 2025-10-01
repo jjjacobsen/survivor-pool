@@ -44,6 +44,9 @@ class AvailableContestantsResponse(BaseModel):
     current_week: int
     contestants: list[AvailableContestantResponse]
     current_pick: CurrentPickSummary | None = None
+    is_eliminated: bool = False
+    elimination_reason: str | None = None
+    eliminated_week: int | None = None
 
 
 class ContestantDetail(BaseModel):
@@ -82,8 +85,15 @@ class PoolAdvanceRequest(BaseModel):
     skip: bool = False
 
 
+class PoolEliminatedMember(BaseModel):
+    user_id: str
+    display_name: str
+    reason: str
+
+
 class PoolAdvanceResponse(BaseModel):
     new_current_week: int
+    eliminations: list[PoolEliminatedMember] = Field(default_factory=list)
 
 
 class PoolMemberSummary(BaseModel):
@@ -94,6 +104,9 @@ class PoolMemberSummary(BaseModel):
     status: str
     joined_at: datetime | None = None
     invited_at: datetime | None = None
+    elimination_reason: str | None = None
+    eliminated_week: int | None = None
+    eliminated_date: datetime | None = None
 
 
 class PoolMembershipListResponse(BaseModel):

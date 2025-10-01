@@ -8,7 +8,7 @@ An elimination pool application for the TV show Survivor, where players pick con
 
 1. **Weekly Picks**: Each week, players must choose a Survivor contestant they believe will NOT be voted out
 2. **No Repeats**: Players cannot choose the same contestant more than once throughout the season
-3. **Elimination**: If a player's chosen contestant gets voted out, that player loses the game
+3. **Elimination**: Players are removed when their pick is voted out, when they miss a weekly pick, or when they have no unique contestants left once the week advances
 4. **Scoring**: Player scores are calculated by how many contestants they can still choose from remaining active contestants
 5. **Winner**: Last player with valid picks remaining wins the pool
 
