@@ -157,19 +157,22 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
     if (cached == null) {
       return;
     }
-    final updated = cached
-        .map(
-          (result) => result.id == userId
-              ? UserSearchResult(
-                  id: result.id,
-                  displayName: result.displayName,
-                  email: result.email,
-                  username: result.username,
-                  membershipStatus: status,
-                )
-              : result,
-        )
-        .toList(growable: false);
+    final blocked = {'active', 'invited', 'eliminated'};
+    final updated = blocked.contains(status)
+        ? cached.where((result) => result.id != userId).toList(growable: false)
+        : cached
+              .map(
+                (result) => result.id == userId
+                    ? UserSearchResult(
+                        id: result.id,
+                        displayName: result.displayName,
+                        email: result.email,
+                        username: result.username,
+                        membershipStatus: status,
+                      )
+                    : result,
+              )
+              .toList(growable: false);
     setState(() {
       _searchCache[query] = updated;
       if (_currentNormalizedQuery == query) {

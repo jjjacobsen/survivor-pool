@@ -314,6 +314,8 @@ def search_active_users(
         if not isinstance(user_id, ObjectId):
             continue
         status = pool_membership_status.get(user_id)
+        if status in {"active", "invited", "eliminated"}:
+            continue
         username = doc.get("username") or ""
         results.append(
             UserSearchResult(
