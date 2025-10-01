@@ -330,7 +330,7 @@ def get_available_contestants(
 
     season = seasons_collection.find_one(
         {"_id": season_id},
-        {"contestants": 1, "eliminations": 1},
+        {"contestants": 1},
     )
     if not season:
         raise HTTPException(
@@ -338,35 +338,17 @@ def get_available_contestants(
             detail="Season not found",
         )
 
-    prior_picks_cursor = picks_collection.find(
-        {"userId": user_oid, "poolId": pool_oid},
-        {"contestant_id": 1},
-    )
-    picked_contestants = {
-        pick.get("contestant_id")
-        for pick in prior_picks_cursor
-        if pick.get("contestant_id")
-    }
-
-    eliminated_contestants = {
-        elimination["eliminated_contestant_id"]
-        for elimination in season.get("eliminations", [])
-        if elimination.get("eliminated_contestant_id")
-        and elimination["week"] < current_week
-    }
-
     contestant_catalog: dict[str, dict[str, Any]] = {
-        contestant["id"]: contestant for contestant in season.get("contestants", [])
+        contestant.get("id"): contestant
+        for contestant in season.get("contestants", [])
+        if isinstance(contestant.get("id"), str)
     }
 
     contestants: list[AvailableContestantResponse] = []
-    for contestant_id, contestant in contestant_catalog.items():
-        if (
-            contestant_id in picked_contestants
-            or contestant_id in eliminated_contestants
-        ):
+    for contestant_id in cache:
+        if not isinstance(contestant_id, str):
             continue
-
+        contestant = contestant_catalog.get(contestant_id, {})
         contestants.append(
             AvailableContestantResponse(
                 id=contestant_id,
@@ -374,8 +356,6 @@ def get_available_contestants(
                 subtitle=None,
             )
         )
-
-    contestants.sort(key=lambda c: c.name.lower())
 
     current_pick_summary: CurrentPickSummary | None = None
     current_pick_doc = picks_collection.find_one(

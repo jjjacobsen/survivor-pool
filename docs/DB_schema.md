@@ -179,7 +179,7 @@ Manages the many-to-many relationship between users and pools, with added game s
 
   // Performance metrics (cached for leaderboard performance)
   score: 15, // number of remaining available contestants
-  available_contestants: ["teeny_chirichillo", "sol_yi", "rachel_lamont"] // cached list computed by backend recompute
+  available_contestants: ["teeny_chirichillo", "sol_yi", "rachel_lamont"] // cached list computed by backend recompute; GET /pools/{poolId}/available_contestants returns it as-is
 }
 ```
 
