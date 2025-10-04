@@ -44,6 +44,12 @@ class _HomePageState extends State<HomePage> {
   bool _isEliminated = false;
   String? _eliminationReason;
   int? _eliminatedWeek;
+  bool _isWinner = false;
+  String _poolStatus = 'open';
+  int? _poolCompletedWeek;
+  DateTime? _poolCompletedAt;
+  List<PoolWinner> _winners = const [];
+  bool _didTie = false;
   List<PendingInvite> _pendingInvites = const [];
   bool _isLoadingInvites = false;
   final Set<String> _inviteRequests = <String>{};
@@ -86,6 +92,15 @@ class _HomePageState extends State<HomePage> {
         _isLoadingContestants = false;
         _currentPick = null;
         _availableScore = null;
+        _isEliminated = false;
+        _eliminationReason = null;
+        _eliminatedWeek = null;
+        _isWinner = false;
+        _poolStatus = 'open';
+        _poolCompletedWeek = null;
+        _poolCompletedAt = null;
+        _winners = const [];
+        _didTie = false;
       });
       return;
     }
@@ -99,6 +114,12 @@ class _HomePageState extends State<HomePage> {
         _isEliminated = false;
         _eliminationReason = null;
         _eliminatedWeek = null;
+        _isWinner = false;
+        _poolStatus = 'open';
+        _poolCompletedWeek = null;
+        _poolCompletedAt = null;
+        _winners = const [];
+        _didTie = false;
       }
       _contestantsForPoolId = poolId;
     });
@@ -111,6 +132,12 @@ class _HomePageState extends State<HomePage> {
     int? parsedEliminatedWeek;
     int? parsedWeek;
     int? parsedScore;
+    var parsedIsWinner = false;
+    String parsedPoolStatus = 'open';
+    int? parsedCompletedWeek;
+    DateTime? parsedCompletedAt;
+    List<PoolWinner> parsedWinners = const [];
+    var parsedDidTie = false;
 
     int? parseOptionalInt(dynamic value) {
       if (value is int) {
@@ -121,6 +148,13 @@ class _HomePageState extends State<HomePage> {
       }
       if (value is String) {
         return int.tryParse(value);
+      }
+      return null;
+    }
+
+    DateTime? parseOptionalDate(dynamic value) {
+      if (value is String && value.isNotEmpty) {
+        return DateTime.tryParse(value);
       }
       return null;
     }
@@ -138,6 +172,24 @@ class _HomePageState extends State<HomePage> {
           final rawWeek = decoded['current_week'];
           parsedWeek = parseOptionalInt(rawWeek);
           parsedScore = parseOptionalInt(decoded['score']);
+          parsedIsWinner = decoded['is_winner'] == true;
+          final statusValue = decoded['pool_status'];
+          if (statusValue is String && statusValue.isNotEmpty) {
+            parsedPoolStatus = statusValue;
+          }
+          parsedDidTie = decoded['did_tie'] == true;
+          parsedCompletedWeek = parseOptionalInt(
+            decoded['pool_completed_week'],
+          );
+          parsedCompletedAt = parseOptionalDate(decoded['pool_completed_at']);
+          final winnersData = decoded['winners'];
+          if (winnersData is List) {
+            parsedWinners = winnersData
+                .whereType<Map<String, dynamic>>()
+                .map(PoolWinner.fromJson)
+                .where((winner) => winner.userId.isNotEmpty)
+                .toList();
+          }
 
           parsedEliminated = decoded['is_eliminated'] == true;
           final rawReason = decoded['elimination_reason'];
@@ -175,6 +227,12 @@ class _HomePageState extends State<HomePage> {
           _isEliminated = parsedEliminated;
           _eliminationReason = parsedEliminationReason;
           _eliminatedWeek = parsedEliminatedWeek;
+          _isWinner = parsedIsWinner;
+          _poolStatus = parsedPoolStatus;
+          _poolCompletedWeek = parsedCompletedWeek;
+          _poolCompletedAt = parsedCompletedAt;
+          _winners = parsedWinners;
+          _didTie = parsedDidTie;
           if (parsedEliminated) {
             _availableContestants = const [];
             _currentPick = null;
@@ -194,15 +252,30 @@ class _HomePageState extends State<HomePage> {
               _availableScore = parsedContestants.length;
             }
           }
-          if (parsedWeek != null) {
-            _pools = _pools
-                .map(
-                  (candidate) => candidate.id == poolId
-                      ? candidate.copyWith(currentWeek: parsedWeek)
-                      : candidate,
-                )
-                .toList();
-          }
+          final updatedWinnerIds = parsedPoolStatus == 'completed'
+              ? parsedWinners.map((winner) => winner.userId).toList()
+              : <String>[];
+          _pools = _pools.map((candidate) {
+            if (candidate.id != poolId) {
+              return candidate;
+            }
+            final newWeekValue = parsedWeek ?? candidate.currentWeek;
+            final newCompletedWeek = parsedPoolStatus == 'completed'
+                ? parsedCompletedWeek ?? candidate.completedWeek
+                : candidate.completedWeek;
+            final newCompletedAt = parsedPoolStatus == 'completed'
+                ? parsedCompletedAt ?? candidate.completedAt
+                : candidate.completedAt;
+            return candidate.copyWith(
+              currentWeek: newWeekValue,
+              status: parsedPoolStatus,
+              completedWeek: newCompletedWeek,
+              completedAt: newCompletedAt,
+              winnerUserIds: parsedPoolStatus == 'completed'
+                  ? updatedWinnerIds
+                  : <String>[],
+            );
+          }).toList();
         });
       }
     }
@@ -593,13 +666,30 @@ class _HomePageState extends State<HomePage> {
         ? eliminations.whereType<PoolAdvanceElimination>().toList()
         : <PoolAdvanceElimination>[];
 
+    final poolCompleted = result['poolCompleted'] == true;
+    final winnersData = result['winners'];
+    final winnerSummaries = winnersData is List
+        ? winnersData.whereType<PoolWinner>().toList()
+        : <PoolWinner>[];
+
     final newWeek = rawWeek <= 0 ? 1 : rawWeek;
 
     setState(() {
+      final winnerIds = winnerSummaries.map((winner) => winner.userId).toList();
       _pools = _pools
           .map(
             (candidate) => candidate.id == pool.id
-                ? candidate.copyWith(currentWeek: newWeek)
+                ? candidate.copyWith(
+                    currentWeek: newWeek,
+                    status: poolCompleted ? 'completed' : candidate.status,
+                    completedWeek: poolCompleted
+                        ? candidate.completedWeek ?? newWeek
+                        : candidate.completedWeek,
+                    completedAt: poolCompleted
+                        ? candidate.completedAt
+                        : candidate.completedAt,
+                    winnerUserIds: poolCompleted ? winnerIds : <String>[],
+                  )
                 : candidate,
           )
           .toList();
@@ -608,6 +698,14 @@ class _HomePageState extends State<HomePage> {
         _availableContestants = const [];
         _contestantsForPoolId = null;
         _isLoadingContestants = true;
+        if (poolCompleted) {
+          _poolStatus = 'completed';
+          _winners = winnerSummaries;
+          _didTie = winnerSummaries.length > 1;
+          _isWinner = winnerSummaries.any(
+            (winner) => winner.userId == widget.user.id,
+          );
+        }
       }
     });
 
@@ -929,16 +1027,23 @@ class _HomePageState extends State<HomePage> {
         isEliminated: _isEliminated,
         eliminationReason: _eliminationReason,
         eliminatedWeek: _eliminatedWeek,
+        isWinner: _isWinner,
+        poolStatus: _poolStatus,
+        poolCompletedWeek: _poolCompletedWeek,
+        poolCompletedAt: _poolCompletedAt,
+        winners: _winners,
+        didTie: _didTie,
         onManageMembers: isOwnerView
             ? () => _handleManageMembers(selectedPool)
             : null,
         onManageSettings: isOwnerView
             ? () => _handlePoolSettings(selectedPool)
             : null,
-        onAdvanceWeek: isOwnerView
+        onAdvanceWeek: isOwnerView && _poolStatus != 'completed'
             ? () => _handleAdvanceWeek(selectedPool)
             : null,
-        onContestantSelected: _isEliminated
+        onContestantSelected:
+            _isEliminated || _isWinner || _poolStatus == 'completed'
             ? null
             : (contestant) {
                 _handleContestantSelected(selectedPool, contestant);

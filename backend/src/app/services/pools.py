@@ -33,12 +33,17 @@ from ..schemas.pools import (
     PoolMembershipListResponse,
     PoolMemberSummary,
     PoolResponse,
+    PoolWinnerSummary,
 )
 from .common import parse_object_id
 
 ELIMINATION_REASON_MISSED_PICK = "missed_pick"
 ELIMINATION_REASON_CONTESTANT = "contestant_voted_out"
 ELIMINATION_REASON_NO_OPTIONS = "no_options_left"
+
+POOL_STATUS_OPEN = "open"
+POOL_STATUS_COMPLETED = "completed"
+MEMBERSHIP_STATUS_WINNER = "winner"
 
 
 def _resolve_contestant_tribe(
@@ -159,6 +164,72 @@ def _recalculate_pool_scores(
     )
 
 
+def _maybe_mark_pool_competitive(pool_oid: ObjectId, pool_doc: dict[str, Any]) -> None:
+    if pool_doc.get("is_competitive"):
+        return
+
+    active_count = pool_memberships_collection.count_documents(
+        {"poolId": pool_oid, "status": "active"}
+    )
+    if active_count < 2:
+        return
+
+    current_week = pool_doc.get("current_week", 1)
+    if not isinstance(current_week, int):
+        current_week = 1
+
+    pools_collection.update_one(
+        {"_id": pool_oid, "is_competitive": False},
+        {"$set": {"is_competitive": True, "competitive_since_week": current_week}},
+    )
+
+
+def _mark_members_as_winners(
+    pool_oid: ObjectId, winner_ids: list[ObjectId], finished_week: int, now: datetime
+) -> None:
+    if not winner_ids:
+        return
+
+    pool_memberships_collection.update_many(
+        {"poolId": pool_oid, "userId": {"$in": winner_ids}},
+        {
+            "$set": {
+                "status": MEMBERSHIP_STATUS_WINNER,
+                "elimination_reason": None,
+                "eliminated_week": None,
+                "eliminated_date": None,
+                "finished_week": finished_week,
+                "finished_date": now,
+                "final_rank": 1,
+                "score": 0,
+                "available_contestants": [],
+            }
+        },
+    )
+
+
+def _load_winner_summaries(winner_ids: list[ObjectId]) -> list[PoolWinnerSummary]:
+    if not winner_ids:
+        return []
+
+    users_cursor = users_collection.find(
+        {"_id": {"$in": winner_ids}},
+        {"display_name": 1, "email": 1},
+    )
+    names_by_id: dict[ObjectId, str] = {}
+    for user in users_cursor:
+        label = user.get("display_name") or user.get("email") or ""
+        names_by_id[user["_id"]] = label
+
+    winners: list[PoolWinnerSummary] = []
+    for winner_id in winner_ids:
+        label = names_by_id.get(winner_id, str(winner_id))
+        winners.append(PoolWinnerSummary(user_id=str(winner_id), display_name=label))
+
+    winners.sort(key=lambda winner: winner.display_name.lower())
+    return winners
+
+
 def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
     name = pool_data.name.strip()
     if not name:
@@ -193,6 +264,12 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
         "created_at": now,
         "current_week": 1,
         "settings": {},
+        "status": POOL_STATUS_OPEN,
+        "is_competitive": False,
+        "competitive_since_week": None,
+        "completed_week": None,
+        "completed_at": None,
+        "winners": [],
     }
 
     pool_result = pools_collection.insert_one(pool_doc)
@@ -214,6 +291,9 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
             "eliminated_week": None,
             "eliminated_date": None,
             "score": 0,
+            "final_rank": None,
+            "finished_week": None,
+            "finished_date": None,
         }
     )
 
@@ -265,6 +345,12 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
         current_week=1,
         settings=pool_doc["settings"],
         invited_user_ids=invited_user_ids,
+        status=POOL_STATUS_OPEN,
+        is_competitive=False,
+        competitive_since_week=None,
+        completed_week=None,
+        completed_at=None,
+        winner_user_ids=[],
     )
 
 
@@ -286,6 +372,22 @@ def _build_member_summary(
     if not display_name:
         display_name = email or user_id
 
+    final_rank_value = membership.get("final_rank")
+    if isinstance(final_rank_value, int):
+        final_rank = final_rank_value
+    elif isinstance(final_rank_value, float):
+        final_rank = int(final_rank_value)
+    else:
+        final_rank = None
+
+    finished_week_value = membership.get("finished_week")
+    if isinstance(finished_week_value, int):
+        finished_week = finished_week_value
+    elif isinstance(finished_week_value, float):
+        finished_week = int(finished_week_value)
+    else:
+        finished_week = None
+
     return PoolMemberSummary(
         user_id=user_id,
         display_name=display_name,
@@ -297,6 +399,9 @@ def _build_member_summary(
         elimination_reason=membership.get("elimination_reason"),
         eliminated_week=membership.get("eliminated_week"),
         eliminated_date=_coerce_datetime(membership.get("eliminated_date")),
+        final_rank=final_rank,
+        finished_week=finished_week,
+        finished_date=_coerce_datetime(membership.get("finished_date")),
     )
 
 
@@ -312,6 +417,25 @@ def get_available_contestants(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Pool not found",
         )
+
+    pool_status = pool.get("status", POOL_STATUS_OPEN)
+    completed_week_raw = pool.get("completed_week")
+    if isinstance(completed_week_raw, int):
+        pool_completed_week = completed_week_raw
+    elif isinstance(completed_week_raw, float):
+        pool_completed_week = int(completed_week_raw)
+    else:
+        pool_completed_week = None
+
+    pool_completed_at = _coerce_datetime(pool.get("completed_at"))
+
+    winner_ids: list[ObjectId] = [
+        candidate
+        for candidate in pool.get("winners", []) or []
+        if isinstance(candidate, ObjectId)
+    ]
+    winner_summaries = _load_winner_summaries(winner_ids) if winner_ids else []
+    did_tie = len(winner_summaries) > 1
 
     current_week = pool.get("current_week", 1)
 
@@ -348,6 +472,31 @@ def get_available_contestants(
             is_eliminated=True,
             elimination_reason=membership.get("elimination_reason"),
             eliminated_week=membership.get("eliminated_week"),
+            is_winner=False,
+            pool_status=pool_status,
+            pool_completed_week=pool_completed_week,
+            pool_completed_at=pool_completed_at,
+            winners=winner_summaries,
+            did_tie=did_tie,
+        )
+
+    if membership_status == MEMBERSHIP_STATUS_WINNER:
+        return AvailableContestantsResponse(
+            pool_id=str(pool_oid),
+            user_id=str(user_oid),
+            current_week=current_week,
+            contestants=[],
+            score=score_value,
+            current_pick=None,
+            is_eliminated=False,
+            elimination_reason=None,
+            eliminated_week=None,
+            is_winner=True,
+            pool_status=pool_status,
+            pool_completed_week=pool_completed_week,
+            pool_completed_at=pool_completed_at,
+            winners=winner_summaries,
+            did_tie=did_tie,
         )
 
     if membership_status != "active":
@@ -426,6 +575,12 @@ def get_available_contestants(
         is_eliminated=False,
         elimination_reason=None,
         eliminated_week=None,
+        is_winner=False,
+        pool_status=pool_status,
+        pool_completed_week=pool_completed_week,
+        pool_completed_at=pool_completed_at,
+        winners=winner_summaries,
+        did_tie=did_tie,
     )
 
 
@@ -551,6 +706,11 @@ def get_contestant_detail(
 
 def get_pool_advance_status(pool_id: str, user_id: str) -> PoolAdvanceStatusResponse:
     pool, pool_oid, _ = _require_pool_owner(pool_id, user_id)
+    if pool.get("status") == POOL_STATUS_COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pool already completed",
+        )
     current_week = pool["current_week"]
     status_payload, _ = _compute_pool_advance_status(pool_oid, current_week)
     return status_payload
@@ -559,8 +719,16 @@ def get_pool_advance_status(pool_id: str, user_id: str) -> PoolAdvanceStatusResp
 def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceResponse:
     pool, pool_oid, _ = _require_pool_owner(pool_id, payload.user_id)
 
+    if pool.get("status") == POOL_STATUS_COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pool already completed",
+        )
+
     current_week = pool["current_week"]
     elimination_reasons: dict[ObjectId, str] = {}
+    pool_completed = False
+    winner_ids: list[ObjectId] = []
 
     season_id = pool.get("seasonId")
     if not isinstance(season_id, ObjectId):
@@ -579,11 +747,12 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
             detail="Season not found for pool",
         )
 
+    now = datetime.now()
+
     if payload.skip:
         picks_collection.delete_many({"poolId": pool_oid, "week": current_week})
     else:
         _, missing_ids = _compute_pool_advance_status(pool_oid, current_week)
-        now = datetime.now()
 
         missing_set = {
             member_id for member_id in missing_ids if isinstance(member_id, ObjectId)
@@ -721,26 +890,86 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
             for member_id in no_option_ids:
                 elimination_reasons[member_id] = ELIMINATION_REASON_NO_OPTIONS
 
+    if pool.get("is_competitive"):
+        active_after_cursor = pool_memberships_collection.find(
+            {"poolId": pool_oid, "status": "active"},
+            {"userId": 1},
+        )
+        remaining_active: list[ObjectId] = []
+        for membership in active_after_cursor:
+            member_user = membership.get("userId")
+            if isinstance(member_user, ObjectId):
+                remaining_active.append(member_user)
+
+        if len(remaining_active) == 1:
+            pool_completed = True
+            winner_ids = remaining_active
+        elif len(remaining_active) == 0 and elimination_reasons:
+            tie_ids = [
+                member_id
+                for member_id in elimination_reasons
+                if isinstance(member_id, ObjectId)
+            ]
+            if tie_ids:
+                pool_completed = True
+                winner_ids = tie_ids
+
     update_filter: dict[str, Any] = {
         "_id": pool_oid,
         "current_week": current_week,
     }
 
-    updated_pool = pools_collection.find_one_and_update(
-        update_filter,
-        {"$inc": {"current_week": 1}},
-        return_document=ReturnDocument.AFTER,
-    )
+    seen_winners: set[ObjectId] = set()
+    winner_list: list[ObjectId] = []
+    if pool_completed and winner_ids:
+        for candidate in winner_ids:
+            if candidate not in seen_winners:
+                seen_winners.add(candidate)
+                winner_list.append(candidate)
 
-    if not updated_pool:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Pool week changed, retry",
+    if pool_completed and not winner_list:
+        pool_completed = False
+
+    if pool_completed and winner_ids:
+        _mark_members_as_winners(pool_oid, winner_list, current_week, now)
+
+        pools_collection.update_one(
+            {"_id": pool_oid},
+            {
+                "$set": {
+                    "status": POOL_STATUS_COMPLETED,
+                    "completed_week": current_week,
+                    "completed_at": now,
+                    "winners": winner_list,
+                }
+            },
         )
 
-    new_week = updated_pool["current_week"]
+        updated_pool = pools_collection.find_one({"_id": pool_oid})
+        new_week = updated_pool.get("current_week", current_week)
+        _recalculate_pool_scores(pool_oid, season, current_week)
+    else:
+        updated_pool = pools_collection.find_one_and_update(
+            update_filter,
+            {"$inc": {"current_week": 1}},
+            return_document=ReturnDocument.AFTER,
+        )
 
-    _recalculate_pool_scores(pool_oid, season, new_week)
+        if not updated_pool:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Pool week changed, retry",
+            )
+
+        new_week = updated_pool["current_week"]
+        _recalculate_pool_scores(pool_oid, season, new_week)
+
+    if pool_completed and winner_list:
+        for member_id in list(elimination_reasons.keys()):
+            if member_id in seen_winners:
+                elimination_reasons.pop(member_id, None)
+
+    winner_summaries = _load_winner_summaries(winner_list)
 
     eliminated_members: list[PoolEliminatedMember] = []
     if elimination_reasons:
@@ -755,6 +984,8 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
             names_by_id[user["_id"]] = label
 
         for member_id in eliminated_ids:
+            if member_id in seen_winners:
+                continue
             display_name = names_by_id.get(member_id, str(member_id))
             eliminated_members.append(
                 PoolEliminatedMember(
@@ -769,6 +1000,8 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
     return PoolAdvanceResponse(
         new_current_week=new_week,
         eliminations=eliminated_members,
+        pool_completed=pool_completed,
+        winners=winner_summaries,
     )
 
 
@@ -809,7 +1042,7 @@ def list_pool_memberships(pool_id: str, owner_id: str) -> PoolMembershipListResp
     summaries.sort(
         key=lambda member: (
             0 if member.role == "owner" else 1,
-            0 if member.status == "active" else 1,
+            0 if member.status in {"active", MEMBERSHIP_STATUS_WINNER} else 1,
             member.display_name.lower(),
         )
     )
@@ -858,6 +1091,9 @@ def invite_user_to_pool(pool_id: str, payload: PoolInviteRequest) -> PoolInviteR
                 "elimination_reason": None,
                 "eliminated_week": None,
                 "eliminated_date": None,
+                "final_rank": None,
+                "finished_week": None,
+                "finished_date": None,
             },
             "$setOnInsert": {
                 "score": 0,
@@ -947,6 +1183,9 @@ def respond_to_invite(
                 "elimination_reason": None,
                 "eliminated_week": None,
                 "eliminated_date": None,
+                "final_rank": None,
+                "finished_week": None,
+                "finished_date": None,
             }
         }
     else:
@@ -958,6 +1197,9 @@ def respond_to_invite(
                 "elimination_reason": None,
                 "score": 0,
                 "available_contestants": [],
+                "final_rank": None,
+                "finished_week": None,
+                "finished_date": None,
             }
         }
 
@@ -987,6 +1229,7 @@ def respond_to_invite(
         if not isinstance(current_week, int):
             current_week = 1
         _recalculate_pool_scores(pool_oid, season, current_week)
+        _maybe_mark_pool_competitive(pool_oid, pool)
 
     member = _build_member_summary(updated_membership, user_doc)
     return PoolInviteDecisionResponse(member=member)

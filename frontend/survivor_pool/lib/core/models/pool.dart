@@ -5,6 +5,12 @@ class PoolOption {
   final String? ownerId;
   final int? seasonNumber;
   final int currentWeek;
+  final String status;
+  final bool isCompetitive;
+  final int? competitiveSinceWeek;
+  final int? completedWeek;
+  final DateTime? completedAt;
+  final List<String> winnerUserIds;
 
   const PoolOption({
     required this.id,
@@ -13,6 +19,12 @@ class PoolOption {
     this.ownerId,
     this.seasonNumber,
     this.currentWeek = 1,
+    this.status = 'open',
+    this.isCompetitive = false,
+    this.competitiveSinceWeek,
+    this.completedWeek,
+    this.completedAt,
+    this.winnerUserIds = const <String>[],
   });
 
   factory PoolOption.fromJson(Map<String, dynamic> json) {
@@ -37,6 +49,40 @@ class PoolOption {
     } else if (dynamicCurrentWeek is String) {
       parsedCurrentWeek = int.tryParse(dynamicCurrentWeek) ?? 1;
     }
+    final statusRaw = json['status'];
+    final status = statusRaw is String && statusRaw.isNotEmpty
+        ? statusRaw
+        : 'open';
+    final isCompetitiveValue = json['is_competitive'];
+    final isCompetitive = isCompetitiveValue is bool
+        ? isCompetitiveValue
+        : (isCompetitiveValue == 'true');
+    int? parseInt(dynamic value) {
+      if (value is int) {
+        return value;
+      }
+      if (value is num) {
+        return value.toInt();
+      }
+      if (value is String) {
+        return int.tryParse(value);
+      }
+      return null;
+    }
+
+    final competitiveSinceWeek = parseInt(
+      json['competitive_since_week'] ?? json['competitiveSinceWeek'],
+    );
+    final completedWeek = parseInt(
+      json['completed_week'] ?? json['completedWeek'],
+    );
+    final completedAt = _parseIsoDate(
+      json['completed_at'] ?? json['completedAt'],
+    );
+    final winnersRaw = json['winner_user_ids'] ?? json['winnerUserIds'];
+    final winnerUserIds = winnersRaw is List
+        ? winnersRaw.whereType<String>().where((id) => id.isNotEmpty).toList()
+        : <String>[];
     return PoolOption(
       id: (rawId as String?) ?? '',
       name: json['name'] as String? ?? 'Untitled Pool',
@@ -44,6 +90,12 @@ class PoolOption {
       ownerId: ownerId is String ? ownerId : null,
       seasonNumber: parsedSeasonNumber,
       currentWeek: parsedCurrentWeek,
+      status: status,
+      isCompetitive: isCompetitive,
+      competitiveSinceWeek: competitiveSinceWeek,
+      completedWeek: completedWeek,
+      completedAt: completedAt,
+      winnerUserIds: winnerUserIds,
     );
   }
 
@@ -54,6 +106,12 @@ class PoolOption {
     String? ownerId,
     int? seasonNumber,
     int? currentWeek,
+    String? status,
+    bool? isCompetitive,
+    int? competitiveSinceWeek,
+    int? completedWeek,
+    DateTime? completedAt,
+    List<String>? winnerUserIds,
   }) {
     return PoolOption(
       id: id ?? this.id,
@@ -62,6 +120,12 @@ class PoolOption {
       ownerId: ownerId ?? this.ownerId,
       seasonNumber: seasonNumber ?? this.seasonNumber,
       currentWeek: currentWeek ?? this.currentWeek,
+      status: status ?? this.status,
+      isCompetitive: isCompetitive ?? this.isCompetitive,
+      competitiveSinceWeek: competitiveSinceWeek ?? this.competitiveSinceWeek,
+      completedWeek: completedWeek ?? this.completedWeek,
+      completedAt: completedAt ?? this.completedAt,
+      winnerUserIds: winnerUserIds ?? this.winnerUserIds,
     );
   }
 }
@@ -71,6 +135,22 @@ DateTime? _parseIsoDate(dynamic value) {
     return DateTime.tryParse(value);
   }
   return null;
+}
+
+class PoolWinner {
+  final String userId;
+  final String displayName;
+
+  const PoolWinner({required this.userId, required this.displayName});
+
+  factory PoolWinner.fromJson(Map<String, dynamic> json) {
+    final userId = json['user_id'] as String? ?? '';
+    final displayName = json['display_name'] as String? ?? '';
+    return PoolWinner(
+      userId: userId,
+      displayName: displayName.isNotEmpty ? displayName : userId,
+    );
+  }
 }
 
 class PoolMemberSummary {
@@ -84,6 +164,9 @@ class PoolMemberSummary {
   final String? eliminationReason;
   final int? eliminatedWeek;
   final DateTime? eliminatedDate;
+  final int? finalRank;
+  final int? finishedWeek;
+  final DateTime? finishedDate;
 
   const PoolMemberSummary({
     required this.userId,
@@ -96,6 +179,9 @@ class PoolMemberSummary {
     this.eliminationReason,
     this.eliminatedWeek,
     this.eliminatedDate,
+    this.finalRank,
+    this.finishedWeek,
+    this.finishedDate,
   });
 
   factory PoolMemberSummary.fromJson(Map<String, dynamic> json) {
@@ -123,6 +209,9 @@ class PoolMemberSummary {
       eliminationReason: json['elimination_reason'] as String?,
       eliminatedWeek: parseWeek(json['eliminated_week']),
       eliminatedDate: _parseIsoDate(json['eliminated_date']),
+      finalRank: parseWeek(json['final_rank']),
+      finishedWeek: parseWeek(json['finished_week']),
+      finishedDate: _parseIsoDate(json['finished_date']),
     );
   }
 

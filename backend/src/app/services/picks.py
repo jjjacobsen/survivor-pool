@@ -23,10 +23,23 @@ def create_pick(pool_id: str, payload: PickRequest) -> PickResponse:
             detail="Pool not found",
         )
 
+    if pool.get("status") == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pool already completed",
+        )
+
     membership = pool_memberships_collection.find_one(
         {"poolId": pool_oid, "userId": user_oid}
     )
-    if not membership or membership.get("status") != "active":
+    membership_status = membership.get("status") if membership else None
+    if membership_status == "winner":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Pool already completed",
+        )
+
+    if not membership or membership_status != "active":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User is not active in this pool",

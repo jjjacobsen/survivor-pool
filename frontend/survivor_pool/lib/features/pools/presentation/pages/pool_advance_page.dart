@@ -145,11 +145,22 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
                     .where((entry) => entry.userId.isNotEmpty)
                     .toList()
               : <PoolAdvanceElimination>[];
+          final poolCompleted = decoded['pool_completed'] == true;
+          final winnersData = decoded['winners'];
+          final winners = winnersData is List
+              ? winnersData
+                    .whereType<Map<String, dynamic>>()
+                    .map(PoolWinner.fromJson)
+                    .where((winner) => winner.userId.isNotEmpty)
+                    .toList()
+              : <PoolWinner>[];
           if (newWeek > 0 && mounted) {
             Navigator.of(context).pop({
               'newWeek': newWeek,
               'skipped': skip,
               'eliminations': eliminations,
+              'poolCompleted': poolCompleted,
+              'winners': winners,
             });
             return;
           }

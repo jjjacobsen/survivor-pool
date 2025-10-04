@@ -13,6 +13,12 @@ class PoolDashboard extends StatelessWidget {
   final bool isEliminated;
   final String? eliminationReason;
   final int? eliminatedWeek;
+  final bool isWinner;
+  final String poolStatus;
+  final int? poolCompletedWeek;
+  final DateTime? poolCompletedAt;
+  final List<PoolWinner> winners;
+  final bool didTie;
   final VoidCallback? onManageMembers;
   final VoidCallback? onManageSettings;
   final VoidCallback? onAdvanceWeek;
@@ -28,6 +34,12 @@ class PoolDashboard extends StatelessWidget {
     this.isEliminated = false,
     this.eliminationReason,
     this.eliminatedWeek,
+    this.isWinner = false,
+    this.poolStatus = 'open',
+    this.poolCompletedWeek,
+    this.poolCompletedAt,
+    this.winners = const [],
+    this.didTie = false,
     this.onManageMembers,
     this.onManageSettings,
     this.onAdvanceWeek,
@@ -71,6 +83,10 @@ class PoolDashboard extends StatelessWidget {
         ? 'Season details coming soon'
         : 'Season: ${pool.seasonId}';
     final scoreText = score != null ? 'Remaining choices: ${score!}' : null;
+    final poolCompleted = poolStatus == 'completed';
+    final completionLabel = poolCompletedWeek != null
+        ? 'Completed in week $poolCompletedWeek'
+        : 'Pool completed';
 
     final hasSettings = onManageSettings != null;
     final hasManageMembers = onManageMembers != null;
@@ -134,6 +150,25 @@ class PoolDashboard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              if (poolCompleted) ...[
+                const SizedBox(height: 6),
+                Text(
+                  completionLabel,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (poolCompletedAt != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Completed on ${_formatTimestamp(poolCompletedAt!)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
               if (hasManageMembers || hasAdvance) ...[
                 const SizedBox(height: 24),
               ],
@@ -171,6 +206,7 @@ class PoolDashboard extends StatelessWidget {
     String? eliminationReason,
     int? eliminatedWeek,
   ) {
+    final poolCompleted = poolStatus == 'completed';
     return Card(
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -180,15 +216,27 @@ class PoolDashboard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "This Week's Pick",
+              poolCompleted ? 'Pool Status' : "This Week's Pick",
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 12),
-            if (isEliminated)
-              _buildEliminatedMessage(theme, eliminationReason, eliminatedWeek)
-            else ...[
+            if (isWinner) ...[
+              _buildWinnerMessage(theme),
+            ] else if (isEliminated) ...[
+              _buildEliminatedMessage(theme, eliminationReason, eliminatedWeek),
+              if (poolCompleted && winners.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _buildWinnerList(theme),
+              ],
+            ] else if (poolCompleted) ...[
+              _buildPoolCompletedMessage(theme),
+              if (winners.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _buildWinnerList(theme),
+              ],
+            ] else ...[
               Text(
                 currentPick != null
                     ? 'Pick locked in for this week.'
@@ -247,6 +295,101 @@ class PoolDashboard extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildWinnerMessage(ThemeData theme) {
+    final lines = <String>[];
+    if (poolCompletedWeek != null) {
+      lines.add('Final week: $poolCompletedWeek.');
+    }
+    if (poolCompletedAt != null) {
+      lines.add('Completed on ${_formatTimestamp(poolCompletedAt!)}.');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          didTie
+              ? 'You tied for the win!'
+              : 'Congratulations, you won the pool!',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        if (lines.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            lines.join(' '),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        if (winners.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _buildWinnerList(theme),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPoolCompletedMessage(ThemeData theme) {
+    final lines = <String>[];
+    if (poolCompletedWeek != null) {
+      lines.add('Final week: $poolCompletedWeek.');
+    }
+    if (poolCompletedAt != null) {
+      lines.add('Completed on ${_formatTimestamp(poolCompletedAt!)}.');
+    }
+
+    final headline = winners.isNotEmpty
+        ? (didTie ? 'The pool ended in a tie.' : 'The pool has a winner.')
+        : 'The pool has wrapped up.';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          headline,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          lines.isNotEmpty ? lines.join(' ') : 'No further picks are required.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWinnerList(ThemeData theme) {
+    if (winners.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final label = didTie ? 'Winners' : 'Winner';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$label:',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        for (var i = 0; i < winners.length; i++) ...[
+          Text(winners[i].displayName, style: theme.textTheme.bodyMedium),
+          if (i < winners.length - 1) const SizedBox(height: 6),
         ],
       ],
     );

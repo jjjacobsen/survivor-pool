@@ -171,7 +171,10 @@ def list_user_pools(user_id: str) -> list[PoolResponse]:
     user_oid = parse_object_id(user_id, "user_id")
 
     memberships = pool_memberships_collection.find(
-        {"userId": user_oid, "status": {"$in": ["active", "eliminated"]}}
+        {
+            "userId": user_oid,
+            "status": {"$in": ["active", "eliminated", "winner"]},
+        }
     )
     pool_ids = {membership["poolId"] for membership in memberships}
     if not pool_ids:
@@ -179,8 +182,30 @@ def list_user_pools(user_id: str) -> list[PoolResponse]:
 
     pools = pools_collection.find({"_id": {"$in": list(pool_ids)}})
 
+    def _parse_optional_int(value: Any) -> int | None:
+        if isinstance(value, int):
+            return value
+        if isinstance(value, float):
+            return int(value)
+        return None
+
     responses: list[PoolResponse] = []
     for pool in pools:
+        winners_raw = pool.get("winners", []) or []
+        winner_user_ids = [
+            str(candidate)
+            for candidate in winners_raw
+            if isinstance(candidate, ObjectId)
+        ]
+
+        status_value = pool.get("status")
+        status_text = status_value if isinstance(status_value, str) else "open"
+        competitive_since_week = _parse_optional_int(pool.get("competitive_since_week"))
+        completed_week = _parse_optional_int(pool.get("completed_week"))
+        completed_at = pool.get("completed_at")
+        if not isinstance(completed_at, datetime):
+            completed_at = None
+
         responses.append(
             PoolResponse(
                 id=str(pool["_id"]),
@@ -191,6 +216,12 @@ def list_user_pools(user_id: str) -> list[PoolResponse]:
                 current_week=pool.get("current_week", 1),
                 settings=pool.get("settings", {}),
                 invited_user_ids=[],
+                status=status_text,
+                is_competitive=bool(pool.get("is_competitive")),
+                competitive_since_week=competitive_since_week,
+                completed_week=completed_week,
+                completed_at=completed_at,
+                winner_user_ids=winner_user_ids,
             )
         )
 

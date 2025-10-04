@@ -22,6 +22,12 @@ class PoolResponse(BaseModel):
     current_week: int
     settings: dict[str, Any] = Field(default_factory=dict)
     invited_user_ids: list[str] = Field(default_factory=list)
+    status: str = "open"
+    is_competitive: bool = False
+    competitive_since_week: int | None = None
+    completed_week: int | None = None
+    completed_at: datetime | None = None
+    winner_user_ids: list[str] = Field(default_factory=list)
 
 
 class AvailableContestantResponse(BaseModel):
@@ -50,6 +56,12 @@ class AvailableContestantsResponse(BaseModel):
     is_eliminated: bool = False
     elimination_reason: str | None = None
     eliminated_week: int | None = None
+    is_winner: bool = False
+    pool_status: str = "open"
+    pool_completed_week: int | None = None
+    pool_completed_at: datetime | None = None
+    winners: list[PoolWinnerSummary] = Field(default_factory=list)
+    did_tie: bool = False
 
 
 class ContestantDetail(BaseModel):
@@ -96,9 +108,16 @@ class PoolEliminatedMember(BaseModel):
     reason: str
 
 
+class PoolWinnerSummary(BaseModel):
+    user_id: str
+    display_name: str
+
+
 class PoolAdvanceResponse(BaseModel):
     new_current_week: int
     eliminations: list[PoolEliminatedMember] = Field(default_factory=list)
+    pool_completed: bool = False
+    winners: list[PoolWinnerSummary] = Field(default_factory=list)
 
 
 class PoolMemberSummary(BaseModel):
@@ -112,6 +131,9 @@ class PoolMemberSummary(BaseModel):
     elimination_reason: str | None = None
     eliminated_week: int | None = None
     eliminated_date: datetime | None = None
+    final_rank: int | None = None
+    finished_week: int | None = None
+    finished_date: datetime | None = None
 
 
 class PoolMembershipListResponse(BaseModel):
