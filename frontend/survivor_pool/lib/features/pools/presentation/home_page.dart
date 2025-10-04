@@ -15,6 +15,7 @@ import 'package:survivor_pool/core/models/user.dart';
 import 'package:survivor_pool/features/picks/presentation/pages/contestant_detail_page.dart';
 import 'package:survivor_pool/features/pools/presentation/pages/pool_advance_page.dart';
 import 'package:survivor_pool/features/pools/presentation/pages/manage_pool_members_page.dart';
+import 'package:survivor_pool/features/pools/presentation/pages/pool_leaderboard_page.dart';
 import 'package:survivor_pool/features/pools/presentation/pages/pool_settings_page.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/create_pool_dialog.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/pool_dashboard.dart';
@@ -513,6 +514,14 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute(
         builder: (_) =>
             ManagePoolMembersPage(pool: pool, ownerId: widget.user.id),
+      ),
+    );
+  }
+
+  Future<void> _handleViewLeaderboard(PoolOption pool) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PoolLeaderboardPage(pool: pool, userId: widget.user.id),
       ),
     );
   }
@@ -1042,6 +1051,7 @@ class _HomePageState extends State<HomePage> {
         onAdvanceWeek: isOwnerView && _poolStatus != 'completed'
             ? () => _handleAdvanceWeek(selectedPool)
             : null,
+        onViewLeaderboard: () => _handleViewLeaderboard(selectedPool),
         onContestantSelected:
             _isEliminated || _isWinner || _poolStatus == 'completed'
             ? null

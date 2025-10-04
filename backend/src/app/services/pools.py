@@ -30,6 +30,8 @@ from ..schemas.pools import (
     PoolInviteDecisionResponse,
     PoolInviteRequest,
     PoolInviteResponse,
+    PoolLeaderboardEntry,
+    PoolLeaderboardResponse,
     PoolMembershipListResponse,
     PoolMemberSummary,
     PoolResponse,
@@ -356,6 +358,19 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
 
 def _coerce_datetime(value: Any) -> datetime | None:
     return value if isinstance(value, datetime) else None
+
+
+def _coerce_int(value: Any) -> int | None:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
 
 
 def _build_member_summary(
@@ -1002,6 +1017,128 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
         eliminations=eliminated_members,
         pool_completed=pool_completed,
         winners=winner_summaries,
+    )
+
+
+def get_pool_leaderboard(pool_id: str, user_id: str) -> PoolLeaderboardResponse:
+    pool_oid = parse_object_id(pool_id, "pool_id")
+    user_oid = parse_object_id(user_id, "user_id")
+
+    pool = pools_collection.find_one({"_id": pool_oid})
+    if not pool:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pool not found",
+        )
+
+    viewer_membership = pool_memberships_collection.find_one(
+        {"poolId": pool_oid, "userId": user_oid}
+    )
+    if not viewer_membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not a member of this pool",
+        )
+
+    viewer_status = viewer_membership.get("status") or ""
+    allowed_statuses = {"active", "eliminated", MEMBERSHIP_STATUS_WINNER}
+    if viewer_status not in allowed_statuses:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Leaderboard only available to pool members",
+        )
+
+    membership_docs = list(pool_memberships_collection.find({"poolId": pool_oid}))
+
+    user_ids: list[ObjectId] = []
+    for membership in membership_docs:
+        member_id = membership.get("userId")
+        if isinstance(member_id, ObjectId):
+            user_ids.append(member_id)
+
+    users_by_id: dict[ObjectId, dict[str, Any]] = {}
+    if user_ids:
+        users_cursor = users_collection.find(
+            {"_id": {"$in": user_ids}},
+            {"display_name": 1, "email": 1},
+        )
+        users_by_id = {user["_id"]: user for user in users_cursor}
+
+    winner_ids: list[ObjectId] = [
+        candidate
+        for candidate in pool.get("winners", []) or []
+        if isinstance(candidate, ObjectId)
+    ]
+    winner_summaries = _load_winner_summaries(winner_ids) if winner_ids else []
+    did_tie = len(winner_summaries) > 1
+
+    entry_payloads: list[dict[str, Any]] = []
+    for membership in membership_docs:
+        member_id = membership.get("userId")
+        if not isinstance(member_id, ObjectId):
+            continue
+        status_value = membership.get("status") or "active"
+        if status_value not in allowed_statuses:
+            continue
+        user_doc = users_by_id.get(member_id, {})
+        display_name = (
+            user_doc.get("display_name") or user_doc.get("email") or str(member_id)
+        )
+        score_value = _coerce_int(membership.get("score")) or 0
+        raw_reason = membership.get("elimination_reason")
+        elimination_reason = (
+            raw_reason if isinstance(raw_reason, str) and raw_reason else None
+        )
+        entry_payloads.append(
+            {
+                "user_id": str(member_id),
+                "display_name": display_name,
+                "score": score_value,
+                "status": status_value,
+                "is_winner": status_value == MEMBERSHIP_STATUS_WINNER,
+                "elimination_reason": elimination_reason,
+                "eliminated_week": _coerce_int(membership.get("eliminated_week")),
+                "final_rank": _coerce_int(membership.get("final_rank")),
+                "finished_week": _coerce_int(membership.get("finished_week")),
+                "finished_date": _coerce_datetime(membership.get("finished_date")),
+            }
+        )
+
+    entry_payloads.sort(
+        key=lambda entry: (
+            -entry["score"],
+            entry["display_name"].lower(),
+        )
+    )
+
+    last_score: int | None = None
+    current_rank = 0
+    for index, payload in enumerate(entry_payloads):
+        score_value = payload["score"]
+        if last_score is None or score_value != last_score:
+            current_rank = index + 1
+            last_score = score_value
+        payload["rank"] = current_rank
+
+    entries = [PoolLeaderboardEntry(**payload) for payload in entry_payloads]
+
+    current_week = _coerce_int(pool.get("current_week")) or 1
+    pool_status_value = pool.get("status")
+    status_label = (
+        pool_status_value
+        if isinstance(pool_status_value, str) and pool_status_value
+        else POOL_STATUS_OPEN
+    )
+
+    return PoolLeaderboardResponse(
+        pool_id=str(pool_oid),
+        current_week=current_week,
+        pool_status=status_label,
+        pool_completed_week=_coerce_int(pool.get("completed_week")),
+        pool_completed_at=_coerce_datetime(pool.get("completed_at")),
+        entries=entries,
+        winners=winner_summaries,
+        did_tie=did_tie,
     )
 
 

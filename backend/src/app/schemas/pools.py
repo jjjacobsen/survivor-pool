@@ -120,6 +120,31 @@ class PoolAdvanceResponse(BaseModel):
     winners: list[PoolWinnerSummary] = Field(default_factory=list)
 
 
+class PoolLeaderboardEntry(BaseModel):
+    rank: int
+    user_id: str
+    display_name: str
+    score: int
+    status: str
+    is_winner: bool = False
+    elimination_reason: str | None = None
+    eliminated_week: int | None = None
+    final_rank: int | None = None
+    finished_week: int | None = None
+    finished_date: datetime | None = None
+
+
+class PoolLeaderboardResponse(BaseModel):
+    pool_id: str
+    current_week: int
+    pool_status: str
+    pool_completed_week: int | None = None
+    pool_completed_at: datetime | None = None
+    entries: list[PoolLeaderboardEntry]
+    winners: list[PoolWinnerSummary] = Field(default_factory=list)
+    did_tie: bool = False
+
+
 class PoolMemberSummary(BaseModel):
     user_id: str
     display_name: str

@@ -22,6 +22,7 @@ class PoolDashboard extends StatelessWidget {
   final VoidCallback? onManageMembers;
   final VoidCallback? onManageSettings;
   final VoidCallback? onAdvanceWeek;
+  final VoidCallback? onViewLeaderboard;
   final void Function(AvailableContestant contestant)? onContestantSelected;
 
   const PoolDashboard({
@@ -43,6 +44,7 @@ class PoolDashboard extends StatelessWidget {
     this.onManageMembers,
     this.onManageSettings,
     this.onAdvanceWeek,
+    this.onViewLeaderboard,
     this.onContestantSelected,
   });
 
@@ -91,6 +93,7 @@ class PoolDashboard extends StatelessWidget {
     final hasSettings = onManageSettings != null;
     final hasManageMembers = onManageMembers != null;
     final hasAdvance = onAdvanceWeek != null;
+    final hasLeaderboard = onViewLeaderboard != null;
 
     return SizedBox(
       width: double.infinity,
@@ -168,6 +171,17 @@ class PoolDashboard extends StatelessWidget {
                     ),
                   ),
                 ],
+              ],
+              if (hasLeaderboard) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.tonalIcon(
+                    onPressed: onViewLeaderboard,
+                    icon: const Icon(Icons.leaderboard_outlined),
+                    label: const Text('View leaderboard'),
+                  ),
+                ),
               ],
               if (hasManageMembers || hasAdvance) ...[
                 const SizedBox(height: 24),

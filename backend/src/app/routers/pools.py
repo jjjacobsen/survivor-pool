@@ -11,6 +11,7 @@ from ..schemas.pools import (
     PoolInviteDecisionResponse,
     PoolInviteRequest,
     PoolInviteResponse,
+    PoolLeaderboardResponse,
     PoolMembershipListResponse,
     PoolResponse,
 )
@@ -50,6 +51,14 @@ def get_contestant_detail(
 )
 def get_pool_advance_status(pool_id: str, user_id: str) -> PoolAdvanceStatusResponse:
     return pools_service.get_pool_advance_status(pool_id, user_id)
+
+
+@router.get(
+    "/pools/{pool_id}/leaderboard",
+    response_model=PoolLeaderboardResponse,
+)
+def get_pool_leaderboard(pool_id: str, user_id: str) -> PoolLeaderboardResponse:
+    return pools_service.get_pool_leaderboard(pool_id, user_id)
 
 
 @router.post(
