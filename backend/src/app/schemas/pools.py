@@ -101,7 +101,6 @@ class PoolAdvanceStatusResponse(BaseModel):
 
 class PoolAdvanceRequest(BaseModel):
     user_id: str
-    skip: bool = False
 
 
 class PoolEliminatedMember(BaseModel):

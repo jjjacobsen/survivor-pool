@@ -96,13 +96,11 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
     });
   }
 
-  Future<void> _confirmAdvance({required bool skip}) async {
-    final verb = skip ? 'skip this week' : 'advance to the next week';
-
+  Future<void> _confirmAdvance() async {
     final confirmed = await showConfirmationDialog(
       context: context,
       title: 'Confirm action',
-      message: 'Are you sure you would like to $verb?',
+      message: 'Are you sure you would like to advance to the next week?',
     );
 
     if (!mounted || !confirmed) {
@@ -110,13 +108,11 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
     }
 
     if (!_isSubmitting) {
-      unawaited(
-        Future<void>.delayed(Duration.zero, () => _submitAdvance(skip: skip)),
-      );
+      unawaited(Future<void>.delayed(Duration.zero, _submitAdvance));
     }
   }
 
-  Future<void> _submitAdvance({required bool skip}) async {
+  Future<void> _submitAdvance() async {
     if (_isSubmitting) {
       return;
     }
@@ -129,7 +125,7 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/pools/${widget.pool.id}/advance-week'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'user_id': widget.userId, 'skip': skip}),
+        body: json.encode({'user_id': widget.userId}),
       );
 
       if (response.statusCode == 200) {
@@ -157,7 +153,6 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
           if (newWeek > 0 && mounted) {
             Navigator.of(context).pop({
               'newWeek': newWeek,
-              'skipped': skip,
               'eliminations': eliminations,
               'poolCompleted': poolCompleted,
               'winners': winners,
@@ -365,36 +360,18 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
       ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
-              child: FilledButton.tonal(
-                onPressed: canSubmit ? () => _confirmAdvance(skip: true) : null,
-                child: _isSubmitting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Skip'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: FilledButton(
-                onPressed: canSubmit
-                    ? () => _confirmAdvance(skip: false)
-                    : null,
-                child: _isSubmitting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Advance'),
-              ),
-            ),
-          ],
+        child: SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: canSubmit ? _confirmAdvance : null,
+            child: _isSubmitting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Advance'),
+          ),
         ),
       ),
     );

@@ -201,7 +201,7 @@ class PoolDashboard extends StatelessWidget {
                   width: double.infinity,
                   child: FilledButton.tonalIcon(
                     onPressed: onAdvanceWeek,
-                    icon: const Icon(Icons.skip_next_rounded),
+                    icon: const Icon(Icons.arrow_forward_rounded),
                     label: const Text('Advance to next week'),
                   ),
                 ),

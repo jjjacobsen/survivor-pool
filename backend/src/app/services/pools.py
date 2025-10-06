@@ -773,137 +773,65 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
 
     now = datetime.now()
 
-    if payload.skip:
-        picks_collection.delete_many({"poolId": pool_oid, "week": current_week})
-    else:
-        _, missing_ids = _compute_pool_advance_status(pool_oid, current_week)
+    _, missing_ids = _compute_pool_advance_status(pool_oid, current_week)
 
-        missing_set = {
-            member_id for member_id in missing_ids if isinstance(member_id, ObjectId)
-        }
-        if missing_set:
-            pool_memberships_collection.update_many(
-                {
-                    "poolId": pool_oid,
-                    "userId": {"$in": list(missing_set)},
-                    "status": "active",
-                },
-                {
-                    "$set": {
-                        "status": "eliminated",
-                        "elimination_reason": ELIMINATION_REASON_MISSED_PICK,
-                        "eliminated_week": current_week,
-                        "eliminated_date": now,
-                        "score": 0,
-                        "available_contestants": [],
-                    }
-                },
-            )
-            for member_id in missing_set:
-                elimination_reasons[member_id] = ELIMINATION_REASON_MISSED_PICK
-
-        eliminated_contestants = [
-            elimination.get("eliminated_contestant_id")
-            for elimination in season.get("eliminations", [])
-            if elimination.get("week") == current_week
-            and elimination.get("eliminated_contestant_id")
-        ]
-
-        if eliminated_contestants:
-            losing_cursor = picks_collection.find(
-                {
-                    "poolId": pool_oid,
-                    "week": current_week,
-                    "contestant_id": {"$in": eliminated_contestants},
-                },
-                {"userId": 1},
-            )
-            losing_ids: set[ObjectId] = set()
-            for pick in losing_cursor:
-                user_id = pick.get("userId")
-                if isinstance(user_id, ObjectId) and user_id not in elimination_reasons:
-                    losing_ids.add(user_id)
-
-            if losing_ids:
-                pool_memberships_collection.update_many(
-                    {
-                        "poolId": pool_oid,
-                        "userId": {"$in": list(losing_ids)},
-                        "status": "active",
-                    },
-                    {
-                        "$set": {
-                            "status": "eliminated",
-                            "elimination_reason": ELIMINATION_REASON_CONTESTANT,
-                            "eliminated_week": current_week,
-                            "eliminated_date": now,
-                            "score": 0,
-                            "available_contestants": [],
-                        }
-                    },
-                )
-            for member_id in losing_ids:
-                elimination_reasons[member_id] = ELIMINATION_REASON_CONTESTANT
-
-        next_week = current_week + 1
-
-        eligible_contestants: set[str] = set()
-        eliminated_before_next = {
-            elimination.get("eliminated_contestant_id")
-            for elimination in season.get("eliminations", [])
-            if elimination.get("eliminated_contestant_id")
-            and elimination.get("week", 0) < next_week
-        }
-        for contestant in season.get("contestants", []):
-            contestant_id = contestant.get("id")
-            if (
-                isinstance(contestant_id, str)
-                and contestant_id not in eliminated_before_next
-            ):
-                eligible_contestants.add(contestant_id)
-
-        picks_cursor = picks_collection.find(
+    missing_set = {
+        member_id for member_id in missing_ids if isinstance(member_id, ObjectId)
+    }
+    if missing_set:
+        pool_memberships_collection.update_many(
             {
                 "poolId": pool_oid,
-                "week": {"$lte": current_week},
+                "userId": {"$in": list(missing_set)},
+                "status": "active",
             },
-            {"userId": 1, "contestant_id": 1},
+            {
+                "$set": {
+                    "status": "eliminated",
+                    "elimination_reason": ELIMINATION_REASON_MISSED_PICK,
+                    "eliminated_week": current_week,
+                    "eliminated_date": now,
+                    "score": 0,
+                    "available_contestants": [],
+                }
+            },
         )
-        used_contestants: dict[ObjectId, set[str]] = {}
-        for pick in picks_cursor:
-            pick_user = pick.get("userId")
-            pick_contestant = pick.get("contestant_id")
-            if isinstance(pick_user, ObjectId) and isinstance(pick_contestant, str):
-                used_contestants.setdefault(pick_user, set()).add(pick_contestant)
+        for member_id in missing_set:
+            elimination_reasons[member_id] = ELIMINATION_REASON_MISSED_PICK
 
-        no_option_ids: set[ObjectId] = set()
-        active_cursor = pool_memberships_collection.find(
-            {"poolId": pool_oid, "status": "active"},
+    eliminated_contestants = [
+        elimination.get("eliminated_contestant_id")
+        for elimination in season.get("eliminations", [])
+        if elimination.get("week") == current_week
+        and elimination.get("eliminated_contestant_id")
+    ]
+
+    if eliminated_contestants:
+        losing_cursor = picks_collection.find(
+            {
+                "poolId": pool_oid,
+                "week": current_week,
+                "contestant_id": {"$in": eliminated_contestants},
+            },
             {"userId": 1},
         )
-        for membership in active_cursor:
-            member_user = membership.get("userId")
-            if not isinstance(member_user, ObjectId):
-                continue
-            if member_user in elimination_reasons:
-                continue
-            remaining_options = eligible_contestants - used_contestants.get(
-                member_user, set()
-            )
-            if not remaining_options:
-                no_option_ids.add(member_user)
+        losing_ids: set[ObjectId] = set()
+        for pick in losing_cursor:
+            user_id = pick.get("userId")
+            if isinstance(user_id, ObjectId) and user_id not in elimination_reasons:
+                losing_ids.add(user_id)
 
-        if no_option_ids:
+        if losing_ids:
             pool_memberships_collection.update_many(
                 {
                     "poolId": pool_oid,
-                    "userId": {"$in": list(no_option_ids)},
+                    "userId": {"$in": list(losing_ids)},
                     "status": "active",
                 },
                 {
                     "$set": {
                         "status": "eliminated",
-                        "elimination_reason": ELIMINATION_REASON_NO_OPTIONS,
+                        "elimination_reason": ELIMINATION_REASON_CONTESTANT,
                         "eliminated_week": current_week,
                         "eliminated_date": now,
                         "score": 0,
@@ -911,8 +839,77 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
                     }
                 },
             )
-            for member_id in no_option_ids:
-                elimination_reasons[member_id] = ELIMINATION_REASON_NO_OPTIONS
+        for member_id in losing_ids:
+            elimination_reasons[member_id] = ELIMINATION_REASON_CONTESTANT
+
+    next_week = current_week + 1
+
+    eligible_contestants: set[str] = set()
+    eliminated_before_next = {
+        elimination.get("eliminated_contestant_id")
+        for elimination in season.get("eliminations", [])
+        if elimination.get("eliminated_contestant_id")
+        and elimination.get("week", 0) < next_week
+    }
+    for contestant in season.get("contestants", []):
+        contestant_id = contestant.get("id")
+        if (
+            isinstance(contestant_id, str)
+            and contestant_id not in eliminated_before_next
+        ):
+            eligible_contestants.add(contestant_id)
+
+    picks_cursor = picks_collection.find(
+        {
+            "poolId": pool_oid,
+            "week": {"$lte": current_week},
+        },
+        {"userId": 1, "contestant_id": 1},
+    )
+    used_contestants: dict[ObjectId, set[str]] = {}
+    for pick in picks_cursor:
+        pick_user = pick.get("userId")
+        pick_contestant = pick.get("contestant_id")
+        if isinstance(pick_user, ObjectId) and isinstance(pick_contestant, str):
+            used_contestants.setdefault(pick_user, set()).add(pick_contestant)
+
+    no_option_ids: set[ObjectId] = set()
+    active_cursor = pool_memberships_collection.find(
+        {"poolId": pool_oid, "status": "active"},
+        {"userId": 1},
+    )
+    for membership in active_cursor:
+        member_user = membership.get("userId")
+        if not isinstance(member_user, ObjectId):
+            continue
+        if member_user in elimination_reasons:
+            continue
+        remaining_options = eligible_contestants - used_contestants.get(
+            member_user, set()
+        )
+        if not remaining_options:
+            no_option_ids.add(member_user)
+
+    if no_option_ids:
+        pool_memberships_collection.update_many(
+            {
+                "poolId": pool_oid,
+                "userId": {"$in": list(no_option_ids)},
+                "status": "active",
+            },
+            {
+                "$set": {
+                    "status": "eliminated",
+                    "elimination_reason": ELIMINATION_REASON_NO_OPTIONS,
+                    "eliminated_week": current_week,
+                    "eliminated_date": now,
+                    "score": 0,
+                    "available_contestants": [],
+                }
+            },
+        )
+        for member_id in no_option_ids:
+            elimination_reasons[member_id] = ELIMINATION_REASON_NO_OPTIONS
 
     if pool.get("is_competitive"):
         active_after_cursor = pool_memberships_collection.find(
