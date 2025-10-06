@@ -206,6 +206,10 @@ def list_user_pools(user_id: str) -> list[PoolResponse]:
         if not isinstance(completed_at, datetime):
             completed_at = None
 
+        start_week = _parse_optional_int(pool.get("start_week")) or 1
+        if start_week < 1:
+            start_week = 1
+
         responses.append(
             PoolResponse(
                 id=str(pool["_id"]),
@@ -214,6 +218,7 @@ def list_user_pools(user_id: str) -> list[PoolResponse]:
                 season_id=(str(pool.get("seasonId")) if pool.get("seasonId") else ""),
                 created_at=pool.get("created_at", datetime.now()),
                 current_week=pool.get("current_week", 1),
+                start_week=start_week,
                 settings=pool.get("settings", {}),
                 invited_user_ids=[],
                 status=status_text,

@@ -10,6 +10,7 @@ class PoolCreateRequest(BaseModel):
     name: str
     season_id: str
     owner_id: str
+    start_week: int = 1
     invite_user_ids: list[str] = Field(default_factory=list)
 
 
@@ -20,6 +21,7 @@ class PoolResponse(BaseModel):
     season_id: str
     created_at: datetime
     current_week: int
+    start_week: int = 1
     settings: dict[str, Any] = Field(default_factory=dict)
     invited_user_ids: list[str] = Field(default_factory=list)
     status: str = "open"

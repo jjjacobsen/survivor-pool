@@ -258,13 +258,21 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
             detail="Season not found",
         )
 
+    start_week = pool_data.start_week if isinstance(pool_data.start_week, int) else 1
+    if start_week < 1 or start_week > 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Start week must be between 1 and 6",
+        )
+
     now = datetime.now()
     pool_doc = {
         "name": name,
         "ownerId": owner_id,
         "seasonId": season_id,
         "created_at": now,
-        "current_week": 1,
+        "current_week": start_week,
+        "start_week": start_week,
         "settings": {},
         "status": POOL_STATUS_OPEN,
         "is_competitive": False,
@@ -344,7 +352,8 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
         owner_id=pool_data.owner_id,
         season_id=pool_data.season_id,
         created_at=now,
-        current_week=1,
+        current_week=start_week,
+        start_week=start_week,
         settings=pool_doc["settings"],
         invited_user_ids=invited_user_ids,
         status=POOL_STATUS_OPEN,

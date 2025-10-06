@@ -5,6 +5,7 @@ class PoolOption {
   final String? ownerId;
   final int? seasonNumber;
   final int currentWeek;
+  final int startWeek;
   final String status;
   final bool isCompetitive;
   final int? competitiveSinceWeek;
@@ -19,6 +20,7 @@ class PoolOption {
     this.ownerId,
     this.seasonNumber,
     this.currentWeek = 1,
+    this.startWeek = 1,
     this.status = 'open',
     this.isCompetitive = false,
     this.competitiveSinceWeek,
@@ -33,6 +35,7 @@ class PoolOption {
     final ownerId = json['owner_id'] ?? json['ownerId'];
     final dynamicSeasonNumber = json['season_number'] ?? json['seasonNumber'];
     final dynamicCurrentWeek = json['current_week'] ?? json['currentWeek'];
+    final dynamicStartWeek = json['start_week'] ?? json['startWeek'];
     int? parsedSeasonNumber;
     if (dynamicSeasonNumber is int) {
       parsedSeasonNumber = dynamicSeasonNumber;
@@ -48,6 +51,17 @@ class PoolOption {
       parsedCurrentWeek = dynamicCurrentWeek.toInt();
     } else if (dynamicCurrentWeek is String) {
       parsedCurrentWeek = int.tryParse(dynamicCurrentWeek) ?? 1;
+    }
+    var parsedStartWeek = 1;
+    if (dynamicStartWeek is int) {
+      parsedStartWeek = dynamicStartWeek;
+    } else if (dynamicStartWeek is num) {
+      parsedStartWeek = dynamicStartWeek.toInt();
+    } else if (dynamicStartWeek is String) {
+      parsedStartWeek = int.tryParse(dynamicStartWeek) ?? 1;
+    }
+    if (parsedStartWeek < 1) {
+      parsedStartWeek = 1;
     }
     final statusRaw = json['status'];
     final status = statusRaw is String && statusRaw.isNotEmpty
@@ -90,6 +104,7 @@ class PoolOption {
       ownerId: ownerId is String ? ownerId : null,
       seasonNumber: parsedSeasonNumber,
       currentWeek: parsedCurrentWeek,
+      startWeek: parsedStartWeek,
       status: status,
       isCompetitive: isCompetitive,
       competitiveSinceWeek: competitiveSinceWeek,
@@ -106,6 +121,7 @@ class PoolOption {
     String? ownerId,
     int? seasonNumber,
     int? currentWeek,
+    int? startWeek,
     String? status,
     bool? isCompetitive,
     int? competitiveSinceWeek,
@@ -120,6 +136,7 @@ class PoolOption {
       ownerId: ownerId ?? this.ownerId,
       seasonNumber: seasonNumber ?? this.seasonNumber,
       currentWeek: currentWeek ?? this.currentWeek,
+      startWeek: startWeek ?? this.startWeek,
       status: status ?? this.status,
       isCompetitive: isCompetitive ?? this.isCompetitive,
       competitiveSinceWeek: competitiveSinceWeek ?? this.competitiveSinceWeek,

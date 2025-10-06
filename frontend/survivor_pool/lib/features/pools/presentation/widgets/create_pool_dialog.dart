@@ -26,6 +26,7 @@ class _CreatePoolDialogState extends State<CreatePoolDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _poolNameController;
   String? _selectedSeasonId;
+  int _startWeek = 1;
   bool _isSubmitting = false;
 
   @override
@@ -59,6 +60,7 @@ class _CreatePoolDialogState extends State<CreatePoolDialog> {
           'name': _poolNameController.text.trim(),
           'season_id': _selectedSeasonId,
           'owner_id': widget.ownerId,
+          'start_week': _startWeek,
           'invite_user_ids': const <String>[],
         }),
       );
@@ -129,6 +131,35 @@ class _CreatePoolDialogState extends State<CreatePoolDialog> {
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please select a season';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<int>(
+              initialValue: _startWeek,
+              decoration: const InputDecoration(labelText: 'Start week'),
+              items: List.generate(6, (index) => index + 1)
+                  .map(
+                    (week) => DropdownMenuItem<int>(
+                      value: week,
+                      child: Text('Week $week'),
+                    ),
+                  )
+                  .toList(),
+              onChanged: _isSubmitting
+                  ? null
+                  : (value) {
+                      if (value == null) {
+                        return;
+                      }
+                      setState(() {
+                        _startWeek = value;
+                      });
+                    },
+              validator: (value) {
+                if (value == null) {
+                  return 'Please select a start week';
                 }
                 return null;
               },

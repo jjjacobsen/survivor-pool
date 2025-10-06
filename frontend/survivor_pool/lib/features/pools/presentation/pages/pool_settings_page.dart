@@ -139,6 +139,11 @@ class _PoolSettingsPageState extends State<PoolSettingsPage> {
                     _buildInfoRow(theme, label: 'Season', value: seasonValue),
                     _buildInfoRow(
                       theme,
+                      label: 'Start week',
+                      value: pool.startWeek.toString(),
+                    ),
+                    _buildInfoRow(
+                      theme,
                       label: 'Current week',
                       value: pool.currentWeek.toString(),
                     ),
