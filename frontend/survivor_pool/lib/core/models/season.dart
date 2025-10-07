@@ -27,7 +27,7 @@ class SeasonOption {
 
   String get label {
     if (number != null && number! > 0) {
-      return 'Season $number - $name';
+      return 'Season $number';
     }
     return name.isNotEmpty ? name : 'Unknown season';
   }
