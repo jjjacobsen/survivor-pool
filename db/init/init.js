@@ -205,6 +205,131 @@
     { upsert: true }
   );
 
+  // Initialize Survivor Season 49 (data current through week 3)
+  const season49Number = 49;
+
+  const contestants49 = [
+    { name: "Nicole Mazullo", age: 26, hometown: "Philadelphia, PA", occupation: "Financial crime consultant" },
+    { name: "Kimberly \"Annie\" Davis", age: 49, hometown: "Austin, TX", occupation: "Musician" },
+    { name: "Sage Ahrens-Nichols", age: 30, hometown: "Olympia, WA", occupation: "Clinical social worker" },
+    { name: "Sophia \"Sophi\" Balerdi", age: 27, hometown: "Miami, FL", occupation: "Entrepreneur" },
+    { name: "Michelle \"MC\" Chukwujekwu", age: 29, hometown: "San Diego, CA", occupation: "Fitness trainer" },
+    { name: "Shannon Fairweather", age: 28, hometown: "Boston, MA", occupation: "Wellness specialist" },
+    { name: "Jeremiah Ing", age: 39, hometown: "Toronto, Ontario", occupation: "Global events manager" },
+    { name: "Jake Latimer", age: 36, hometown: "St. Albert, Alberta", occupation: "Correctional officer" },
+    { name: "Savannah Louie", age: 31, hometown: "Atlanta, GA", occupation: "Former reporter" },
+    { name: "Kristina Mills", age: 36, hometown: "Edmond, OK", occupation: "MBA career coach" },
+    { name: "Alex Moore", age: 27, hometown: "Washington, DC", occupation: "Political comms director" },
+    { name: "Nate Moore", age: 47, hometown: "Hermosa Beach, CA", occupation: "Film producer" },
+    { name: "Jawan Pitts", age: 28, hometown: "Los Angeles, CA", occupation: "Video editor" },
+    { name: "Steven Ramm", age: 35, hometown: "Denver, CO", occupation: "Rocket scientist" },
+    { name: "Sophia \"Sophie\" Segreti", age: 31, hometown: "New York City, NY", occupation: "Strategy associate" },
+    { name: "Jason Treul", age: 32, hometown: "Santa Ana, CA", occupation: "Law clerk" },
+    { name: "Rizo Velovic", age: 25, hometown: "Yonkers, NY", occupation: "Tech sales" },
+    { name: "Matthew \"Matt\" Williams", age: 52, hometown: "St. George, UT", occupation: "Airport ramp agent" }
+  ].map(c => ({
+    id: idOf(c.name),
+    name: c.name,
+    age: c.age,
+    occupation: c.occupation,
+    hometown: c.hometown
+  }));
+
+  const eliminations49 = [
+    { week: 1, eliminated_contestant_id: idOf("Nicole Mazullo") },
+    { week: 2, eliminated_contestant_id: idOf("Kimberly \"Annie\" Davis") },
+    { week: 3, eliminated_contestant_id: null }
+  ];
+
+  const tribeTimeline49 = [
+    {
+      week: 1,
+      event: "start",
+      tribes: [
+        {
+          name: "Kele",
+          color: "#32AAD6",
+          members: [
+            idOf("Nicole Mazullo"),
+            idOf("Kimberly \"Annie\" Davis"),
+            idOf("Sophia \"Sophi\" Balerdi"),
+            idOf("Jeremiah Ing"),
+            idOf("Jake Latimer"),
+            idOf("Alex Moore")
+          ]
+        },
+        {
+          name: "Uli",
+          color: "#F26B52",
+          members: [
+            idOf("Sage Ahrens-Nichols"),
+            idOf("Shannon Fairweather"),
+            idOf("Savannah Louie"),
+            idOf("Nate Moore"),
+            idOf("Jawan Pitts"),
+            idOf("Rizo Velovic")
+          ]
+        },
+        {
+          name: "Hina",
+          color: "#FEDA47",
+          members: [
+            idOf("Michelle \"MC\" Chukwujekwu"),
+            idOf("Kristina Mills"),
+            idOf("Steven Ramm"),
+            idOf("Sophia \"Sophie\" Segreti"),
+            idOf("Jason Treul"),
+            idOf("Matthew \"Matt\" Williams")
+          ]
+        }
+      ]
+    }
+  ];
+
+  const advantages49 = [
+    {
+      id: "idol_alex_moore_1",
+      advantage_type: "hidden_immunity_idol",
+      contestant_id: idOf("Alex Moore"),
+      obtained_week: 2,
+      status: "active",
+      played_week: null,
+      transferred_to: null,
+      notes: "Alex completed the beware activation steps on Kele in week 2; idol currently active"
+    }
+  ];
+
+  const season49Doc = {
+    season_name: "Survivor 49",
+    season_number: season49Number,
+    air_date: new Date("2025-09-24T00:00:00Z"),
+    location: "Fiji",
+    format: "new_era",
+    created_at: now,
+    contestants: contestants49,
+    eliminations: eliminations49,
+    tribe_timeline: tribeTimeline49,
+    advantages: advantages49
+  };
+
+  dbApp.seasons.updateOne(
+    { season_number: season49Number },
+    {
+      $set: {
+        season_name: season49Doc.season_name,
+        air_date: season49Doc.air_date,
+        location: season49Doc.location,
+        format: season49Doc.format,
+        contestants: season49Doc.contestants,
+        eliminations: season49Doc.eliminations,
+        tribe_timeline: season49Doc.tribe_timeline,
+        advantages: season49Doc.advantages
+      },
+      $setOnInsert: { created_at: now }
+    },
+    { upsert: true }
+  );
+
   const users = dbApp.users;
   const pools = dbApp.pools;
   const poolMemberships = dbApp.pool_memberships;
