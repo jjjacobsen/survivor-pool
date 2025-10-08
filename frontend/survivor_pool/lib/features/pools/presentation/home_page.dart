@@ -33,6 +33,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   List<SeasonOption> _seasons = [];
   bool _isLoadingSeasons = false;
   List<PoolOption> _pools = [];
@@ -952,14 +953,14 @@ class _HomePageState extends State<HomePage> {
     final currentPick = (_contestantsForPoolId == selectedPool?.id)
         ? _currentPick
         : null;
-    final showInvites = _pendingInvites.isNotEmpty;
+    final hasInvites = _pendingInvites.isNotEmpty;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= AppBreakpoints.medium;
         final appBar = isWide
             ? _buildDesktopAppBar(theme: theme)
-            : _buildMobileAppBar(theme, safeDefaultPoolId);
+            : _buildMobileAppBar(theme, hasInvites: hasInvites);
 
         final body = isWide
             ? _buildDesktopBody(
@@ -970,7 +971,6 @@ class _HomePageState extends State<HomePage> {
                 isLoadingContestants: isLoadingContestants,
                 currentPick: currentPick,
                 score: _availableScore,
-                showInvites: showInvites,
               )
             : _buildMobileBody(
                 theme: theme,
@@ -980,12 +980,19 @@ class _HomePageState extends State<HomePage> {
                 isLoadingContestants: isLoadingContestants,
                 currentPick: currentPick,
                 score: _availableScore,
-                showInvites: showInvites,
               );
 
         return Scaffold(
+          key: _scaffoldKey,
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: appBar,
+          drawer: isWide
+              ? null
+              : _buildMobileDrawer(
+                  context: context,
+                  theme: theme,
+                  selectedPool: selectedPool,
+                ),
           body: body,
         );
       },
@@ -993,16 +1000,36 @@ class _HomePageState extends State<HomePage> {
   }
 
   PreferredSizeWidget _buildMobileAppBar(
-    ThemeData theme,
-    String? selectedPoolId,
-  ) {
+    ThemeData theme, {
+    required bool hasInvites,
+  }) {
     return AppBar(
       automaticallyImplyLeading: false,
       leadingWidth: 56,
-      leading: _buildDefaultPoolSelector(theme, selectedPoolId),
+      leading: _buildMobileDrawerButton(theme, hasInvites: hasInvites),
+      title: const Text('Survivor Pool'),
       backgroundColor: theme.colorScheme.primary,
       foregroundColor: theme.colorScheme.onPrimary,
       actions: [_buildMobileProfileAction(theme)],
+    );
+  }
+
+  Widget _buildMobileDrawerButton(ThemeData theme, {required bool hasInvites}) {
+    final icon = Icon(Icons.menu, color: theme.colorScheme.onPrimary);
+    final showBadge = hasInvites && _pendingInvites.isNotEmpty;
+    final buttonIcon = showBadge
+        ? Badge.count(count: _pendingInvites.length, child: icon)
+        : icon;
+
+    final isBusy = _isUpdatingDefault || _isLoadingPools;
+
+    return IconButton(
+      icon: buttonIcon,
+      onPressed: isBusy
+          ? null
+          : () {
+              _scaffoldKey.currentState?.openDrawer();
+            },
     );
   }
 
@@ -1105,17 +1132,15 @@ class _HomePageState extends State<HomePage> {
     required bool isLoadingContestants,
     required CurrentPickSummary? currentPick,
     required int? score,
-    required bool showInvites,
   }) {
     return SafeArea(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 320,
+            width: 360,
             child: _buildDesktopSidebar(
               theme: theme,
-              showInvites: showInvites,
               selectedPool: selectedPool,
             ),
           ),
@@ -1151,22 +1176,46 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  List<Widget> _buildSidebarItems(ThemeData theme, PoolOption? selectedPool) {
+    return [
+      _buildPoolListCard(theme, selectedPool),
+      const SizedBox(height: 16),
+      _buildInvitesBanner(theme),
+    ];
+  }
+
   Widget _buildDesktopSidebar({
     required ThemeData theme,
-    required bool showInvites,
     required PoolOption? selectedPool,
   }) {
-    final items = <Widget>[];
-
-    items.add(_buildPoolListCard(theme, selectedPool));
-    items.add(const SizedBox(height: 16));
-    items.add(_buildInvitesBanner(theme));
+    final items = _buildSidebarItems(theme, selectedPool);
 
     return Container(
       color: theme.colorScheme.surface,
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         children: items,
+      ),
+    );
+  }
+
+  Widget _buildMobileDrawer({
+    required BuildContext context,
+    required ThemeData theme,
+    required PoolOption? selectedPool,
+  }) {
+    final items = _buildSidebarItems(theme, selectedPool);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final drawerWidth = screenWidth > 480 ? 380.0 : screenWidth * 0.9;
+
+    return Drawer(
+      width: drawerWidth,
+      backgroundColor: theme.colorScheme.surface,
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          children: items,
+        ),
       ),
     );
   }
@@ -1198,7 +1247,12 @@ class _HomePageState extends State<HomePage> {
       );
 
       return InkWell(
-        onTap: (selected || isBusy) ? null : onTap,
+        onTap: (selected || isBusy)
+            ? null
+            : () {
+                onTap?.call();
+                _scaffoldKey.currentState?.closeDrawer();
+              },
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
@@ -1229,23 +1283,29 @@ class _HomePageState extends State<HomePage> {
           children: [
             Row(
               children: [
-                Text(
-                  'Your pools',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    'Your pools',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 if (_isLoadingPools) ...[
-                  const SizedBox(width: 12),
                   const SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
+                  const SizedBox(width: 12),
                 ],
-                const Spacer(),
                 FilledButton.icon(
-                  onPressed: _isLoadingSeasons ? null : _showCreatePoolDialog,
+                  onPressed: _isLoadingSeasons
+                      ? null
+                      : () {
+                          _scaffoldKey.currentState?.closeDrawer();
+                          _showCreatePoolDialog();
+                        },
                   icon: _isLoadingSeasons
                       ? const SizedBox(
                           width: 18,
@@ -1299,13 +1359,10 @@ class _HomePageState extends State<HomePage> {
     required bool isLoadingContestants,
     required CurrentPickSummary? currentPick,
     required int? score,
-    required bool showInvites,
   }) {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (showInvites) _buildInvitesBanner(theme),
-        if (showInvites) const SizedBox(height: 16),
         _buildMainSection(
           theme: theme,
           selectedPool: selectedPool,
@@ -1508,7 +1565,10 @@ class _HomePageState extends State<HomePage> {
               FilledButton(
                 onPressed: busy
                     ? null
-                    : () => _handleInviteAction(invite, 'accept'),
+                    : () {
+                        _scaffoldKey.currentState?.closeDrawer();
+                        _handleInviteAction(invite, 'accept');
+                      },
                 child: busy
                     ? const SizedBox(
                         width: 18,
@@ -1521,7 +1581,10 @@ class _HomePageState extends State<HomePage> {
               TextButton(
                 onPressed: busy
                     ? null
-                    : () => _handleInviteAction(invite, 'decline'),
+                    : () {
+                        _scaffoldKey.currentState?.closeDrawer();
+                        _handleInviteAction(invite, 'decline');
+                      },
                 child: const Text('Decline'),
               ),
             ],
@@ -1540,88 +1603,5 @@ class _HomePageState extends State<HomePage> {
       parts.add('Hosted by ${invite.ownerDisplayName}');
     }
     return parts.join(' • ');
-  }
-
-  Widget _buildDefaultPoolSelector(ThemeData theme, String? selectedPoolId) {
-    final textStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: FontWeight.w500,
-    );
-
-    Widget buildPoolItem(PoolOption pool) {
-      final isSelected = pool.id == selectedPoolId;
-      final baseStyle =
-          textStyle ?? theme.textTheme.bodyMedium ?? const TextStyle();
-      final labelStyle = baseStyle.copyWith(
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-        color: isSelected ? theme.colorScheme.primary : baseStyle.color,
-      );
-
-      return MenuItemButton(
-        onPressed: () {
-          _updateDefaultPool(pool.id);
-        },
-        child: SizedBox(
-          width: 200,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Text(
-              pool.name,
-              overflow: TextOverflow.ellipsis,
-              style: labelStyle,
-            ),
-          ),
-        ),
-      );
-    }
-
-    final canCreatePool = !_isLoadingSeasons;
-
-    final menuChildren = <Widget>[
-      ..._pools.map(buildPoolItem),
-      MenuItemButton(
-        onPressed: canCreatePool ? _showCreatePoolDialog : null,
-        child: SizedBox(
-          width: 200,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.add_circle_outline,
-                  size: 20,
-                  color: canCreatePool
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Create new pool',
-                    style: textStyle ?? theme.textTheme.bodyMedium,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ];
-
-    return MenuAnchor(
-      builder: (context, controller, child) {
-        final isBusy = _isUpdatingDefault || _isLoadingPools;
-        return IconButton(
-          icon: const Icon(Icons.home_outlined),
-          color: Colors.white,
-          onPressed: isBusy
-              ? null
-              : () {
-                  controller.isOpen ? controller.close() : controller.open();
-                },
-        );
-      },
-      menuChildren: menuChildren,
-    );
   }
 }
