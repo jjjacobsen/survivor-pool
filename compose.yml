@@ -6,6 +6,8 @@ services:
     ports:
       - "80:80"
     restart: unless-stopped
+    networks:
+      - app-network
 
   backend:
     build:
@@ -17,13 +19,20 @@ services:
     depends_on:
       - mongo
     restart: unless-stopped
+    networks:
+      - app-network
 
   mongo:
     image: mongo:8.0
     volumes:
       - mongo_data:/data/db
-      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - ./db/init:/init-scripts:ro
     restart: unless-stopped
+    networks:
+      - app-network
 
 volumes:
   mongo_data:
+
+networks:
+  app-network:
