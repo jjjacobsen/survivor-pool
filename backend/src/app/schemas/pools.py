@@ -97,6 +97,7 @@ class PoolAdvanceStatusResponse(BaseModel):
     locked_count: int
     missing_count: int
     missing_members: list[PoolAdvanceMissingMember]
+    can_advance: bool = False
 
 
 class PoolAdvanceRequest(BaseModel):

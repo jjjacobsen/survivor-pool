@@ -287,6 +287,21 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
           ),
         ),
         const SizedBox(height: 24),
+        if (!status.canAdvance)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'Next week data is not available yet. Pull to refresh after the season data is updated.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        if (!status.canAdvance) const SizedBox(height: 24),
         Text(
           'Members without picks',
           style: theme.textTheme.titleMedium?.copyWith(
@@ -348,7 +363,9 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canSubmit = !_isSubmitting && !_isLoading && _status != null;
+    final status = _status;
+    final canSubmit =
+        !_isSubmitting && !_isLoading && status != null && status.canAdvance;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Advance Week')),

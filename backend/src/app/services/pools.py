@@ -739,7 +739,24 @@ def get_pool_advance_status(pool_id: str, user_id: str) -> PoolAdvanceStatusResp
             detail="Pool already completed",
         )
     current_week = pool["current_week"]
-    status_payload, _ = _compute_pool_advance_status(pool_oid, current_week)
+    season_id = pool.get("seasonId")
+    if not isinstance(season_id, ObjectId):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Pool season not configured",
+        )
+
+    season = seasons_collection.find_one(
+        {"_id": season_id},
+        {"eliminations": 1},
+    )
+    if not season:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Season not found for pool",
+        )
+
+    status_payload, _ = _compute_pool_advance_status(pool_oid, current_week, season)
     return status_payload
 
 
@@ -776,7 +793,14 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
 
     now = datetime.now()
 
-    _, missing_ids = _compute_pool_advance_status(pool_oid, current_week)
+    status_payload, missing_ids = _compute_pool_advance_status(
+        pool_oid, current_week, season
+    )
+    if not status_payload.can_advance:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Next week data is not available yet",
+        )
 
     missing_set = {
         member_id for member_id in missing_ids if isinstance(member_id, ObjectId)
@@ -1504,8 +1528,35 @@ def _require_pool_owner(
 
 
 def _compute_pool_advance_status(
-    pool_oid: ObjectId, current_week: int
+    pool_oid: ObjectId, current_week: int, season: dict[str, Any] | None = None
 ) -> tuple[PoolAdvanceStatusResponse, list[ObjectId]]:
+    can_advance = True
+    if season is not None:
+        eliminations = season.get("eliminations") or []
+        can_advance = False
+        # Only allow advancing once the current week's elimination data exists.
+        for elimination in eliminations:
+            week_value = elimination.get("week")
+            if not isinstance(week_value, int) or week_value != current_week:
+                continue
+            contestant_value = elimination.get("eliminated_contestant_id")
+            if isinstance(contestant_value, str):
+                if contestant_value.strip():
+                    can_advance = True
+                    break
+                continue
+            if isinstance(contestant_value, list):
+                if any(
+                    isinstance(entry, str) and entry.strip()
+                    for entry in contestant_value
+                ):
+                    can_advance = True
+                    break
+                continue
+            if contestant_value:
+                can_advance = True
+                break
+
     active_cursor = pool_memberships_collection.find(
         {"poolId": pool_oid, "status": "active"},
         {"userId": 1},
@@ -1525,6 +1576,7 @@ def _compute_pool_advance_status(
             locked_count=0,
             missing_count=0,
             missing_members=[],
+            can_advance=can_advance,
         )
         return empty_status, []
 
@@ -1574,6 +1626,7 @@ def _compute_pool_advance_status(
         locked_count=active_member_count - len(missing_user_ids),
         missing_count=len(missing_user_ids),
         missing_members=missing_members,
+        can_advance=can_advance,
     )
 
     return status_payload, missing_user_ids

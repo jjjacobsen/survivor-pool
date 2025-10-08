@@ -23,6 +23,7 @@ class PoolAdvanceStatus {
   final int lockedCount;
   final int missingCount;
   final List<PoolAdvanceMissingMember> missingMembers;
+  final bool canAdvance;
 
   const PoolAdvanceStatus({
     required this.currentWeek,
@@ -30,6 +31,7 @@ class PoolAdvanceStatus {
     required this.lockedCount,
     required this.missingCount,
     required this.missingMembers,
+    required this.canAdvance,
   });
 
   factory PoolAdvanceStatus.fromJson(Map<String, dynamic> json) {
@@ -61,6 +63,7 @@ class PoolAdvanceStatus {
     );
 
     final week = parseInt(json['current_week']);
+    final canAdvance = json['can_advance'] == true;
 
     return PoolAdvanceStatus(
       currentWeek: week <= 0 ? 1 : week,
@@ -68,6 +71,7 @@ class PoolAdvanceStatus {
       lockedCount: parseInt(json['locked_count']),
       missingCount: parseInt(json['missing_count']),
       missingMembers: parsedMembers,
+      canAdvance: canAdvance,
     );
   }
 }
