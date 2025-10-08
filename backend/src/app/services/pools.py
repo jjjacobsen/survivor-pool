@@ -54,11 +54,14 @@ def _resolve_contestant_tribe(
     if week < 1:
         week = 1
 
+    effective_week = week - 1 if week > 1 else week
+    # Apply tribe changes for the following week to match pick timing.
+
     latest_week = -1
     latest_entry: dict[str, Any] | None = None
     for entry in season.get("tribe_timeline", []) or []:
         entry_week = entry.get("week")
-        if not isinstance(entry_week, int) or entry_week > week:
+        if not isinstance(entry_week, int) or entry_week > effective_week:
             continue
         if entry_week >= latest_week:
             latest_week = entry_week
