@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/core/constants/api.dart';
+import 'package:survivor_pool/core/constants/layout.dart';
+import 'package:survivor_pool/core/layout/adaptive_page.dart';
 import 'package:survivor_pool/core/models/pool.dart';
 import 'package:survivor_pool/core/models/pool_advance.dart';
 import 'package:survivor_pool/core/widgets/confirmation_dialog.dart';
@@ -185,84 +188,49 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
     return 0;
   }
 
-  Widget _buildBody(ThemeData theme) {
-    if (_isLoading) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: const [
-          SizedBox(
-            height: 260,
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        ],
-      );
-    }
+  Widget _buildBody(ThemeData theme, {required bool isWide}) {
+    final padding = isWide
+        ? const EdgeInsets.symmetric(horizontal: 64, vertical: 32)
+        : const EdgeInsets.all(24);
 
-    if (_error != null) {
-      return ListView(
-        padding: const EdgeInsets.all(24),
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          Card(
-            margin: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Unable to load status',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(_error!, style: theme.textTheme.bodyMedium),
-                  const SizedBox(height: 20),
-                  FilledButton.icon(
-                    onPressed: _isSubmitting ? null : _loadStatus,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Retry'),
-                  ),
-                ],
+    Widget wrapContent(List<Widget> content) {
+      if (isWide) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 820),
+              child: Padding(
+                padding: padding,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: content,
+                ),
               ),
             ),
           ),
-        ],
-      );
-    }
+        );
+      }
 
-    final status = _status;
-    if (status == null) {
       return ListView(
+        padding: padding,
         physics: const AlwaysScrollableScrollPhysics(),
-        children: const [SizedBox(height: 1)],
+        children: content,
       );
     }
 
-    final missing = status.missingMembers;
+    if (_isLoading) {
+      return wrapContent(const [
+        SizedBox(
+          height: 320,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ]);
+    }
 
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        Text(
-          widget.pool.name,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Current week ${status.currentWeek}',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 24),
+    if (_error != null) {
+      return wrapContent([
         Card(
           margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
@@ -273,76 +241,135 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildMetricRow(
-                  theme,
-                  'Active members',
-                  status.activeMemberCount,
+                Text(
+                  'Unable to load status',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                _buildMetricRow(theme, 'Picks locked', status.lockedCount),
-                const SizedBox(height: 12),
-                _buildMetricRow(theme, 'Missing picks', status.missingCount),
+                Text(_error!, style: theme.textTheme.bodyMedium),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: _isSubmitting ? null : _loadStatus,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Retry'),
+                ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 24),
-        if (!status.canAdvance)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'Next week data is not available yet. Pull to refresh after the season data is updated.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+      ]);
+    }
+
+    final status = _status;
+    if (status == null) {
+      return wrapContent(const [SizedBox(height: 1)]);
+    }
+
+    final missing = status.missingMembers;
+    final content = <Widget>[
+      Text(
+        widget.pool.name,
+        style: theme.textTheme.headlineSmall?.copyWith(
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      const SizedBox(height: 6),
+      Text(
+        'Current week ${status.currentWeek}',
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      const SizedBox(height: 24),
+      Card(
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildMetricRow(
+                theme,
+                'Active members',
+                status.activeMemberCount,
               ),
-            ),
-          ),
-        if (!status.canAdvance) const SizedBox(height: 24),
-        Text(
-          'Members without picks',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
+              const SizedBox(height: 12),
+              _buildMetricRow(theme, 'Picks locked', status.lockedCount),
+              const SizedBox(height: 12),
+              _buildMetricRow(theme, 'Missing picks', status.missingCount),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        if (missing.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withAlpha(20),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'All active members have locked their picks.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          )
-        else
-          ...missing.map(
-            (member) => Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListTile(
-                title: Text(
-                  member.displayName,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
+      ),
+      const SizedBox(height: 24),
+      if (!status.canAdvance)
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            'Next week data is not available yet. Pull to refresh after the season data is updated.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-        const SizedBox(height: 80),
-      ],
-    );
+        ),
+      if (!status.canAdvance) const SizedBox(height: 24),
+      Text(
+        'Members without picks',
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      const SizedBox(height: 12),
+      if (missing.isEmpty)
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withAlpha(20),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            'All active members have locked their picks.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        )
+      else
+        ...missing.map(
+          (member) => Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListTile(
+              title: Text(
+                member.displayName,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+              subtitle: isWide
+                  ? Text(
+                      'Awaiting pick',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+        ),
+      const SizedBox(height: 80),
+    ];
+
+    return wrapContent(content);
   }
 
   Widget _buildMetricRow(ThemeData theme, String label, int value) {
@@ -370,9 +397,15 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Advance Week')),
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadStatus,
-          child: _buildBody(theme),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= AppBreakpoints.medium;
+            final body = _buildBody(theme, isWide: isWide);
+            return PlatformRefresh(
+              onRefresh: kIsWeb ? null : _loadStatus,
+              child: body,
+            );
+          },
         ),
       ),
       bottomNavigationBar: SafeArea(

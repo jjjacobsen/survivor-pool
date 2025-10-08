@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/app/routes.dart';
 import 'package:survivor_pool/core/constants/api.dart';
+import 'package:survivor_pool/core/constants/layout.dart';
+import 'package:survivor_pool/core/layout/adaptive_page.dart';
 import 'package:survivor_pool/core/models/user.dart';
 import 'package:survivor_pool/core/widgets/confirmation_dialog.dart';
 
@@ -112,57 +114,99 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (final entry in entries) ...[
-              Text(
-                entry.label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= AppBreakpoints.medium;
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: AdaptivePage(
+                maxWidth: 720,
+                compactPadding: const EdgeInsets.all(24),
+                widePadding: const EdgeInsets.symmetric(
+                  horizontal: 64,
+                  vertical: 48,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(entry.value, style: theme.textTheme.bodyLarge),
-              const SizedBox(height: 16),
-            ],
-            if (_error != null) ...[
-              Text(
-                _error!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-            const Spacer(),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: _isDeleting ? null : _confirmDelete,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: theme.colorScheme.error,
-                      foregroundColor: theme.colorScheme.onError,
+                child: Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(isWide ? 40 : 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Account overview',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Manage your Survivor Pool profile and account preferences.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ...entries.expand(
+                          (entry) => [
+                            Text(
+                              entry.label,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(entry.value, style: theme.textTheme.bodyLarge),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                        if (_error != null) ...[
+                          Text(
+                            _error!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.error,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                        Wrap(
+                          spacing: 16,
+                          runSpacing: 12,
+                          children: [
+                            SizedBox(
+                              width: isWide ? 220 : double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: _isDeleting ? null : _confirmDelete,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: theme.colorScheme.error,
+                                  foregroundColor: theme.colorScheme.onError,
+                                ),
+                                icon: const Icon(Icons.delete_outline),
+                                label: Text(
+                                  _isDeleting
+                                      ? 'Deleting...'
+                                      : 'Delete account',
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: isWide ? 220 : double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: _isDeleting ? null : _logout,
+                                icon: const Icon(Icons.logout),
+                                label: const Text('Logout'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    icon: const Icon(Icons.delete_outline),
-                    label: Text(_isDeleting ? 'Deleting...' : 'Delete account'),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: _isDeleting ? null : _logout,
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Logout'),
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            );
+          },
         ),
       ),
     );

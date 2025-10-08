@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:survivor_pool/core/constants/layout.dart';
+import 'package:survivor_pool/core/layout/adaptive_page.dart';
 import 'package:survivor_pool/core/models/contestant.dart';
 import 'package:survivor_pool/core/models/pool.dart';
 import 'package:survivor_pool/core/widgets/confirmation_dialog.dart';
@@ -123,60 +125,103 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
         title: Text(detail.name.isEmpty ? 'Contestant' : detail.name),
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      detail.name,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Week ${widget.pool.currentWeek} · ${widget.pool.name}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (chips.isNotEmpty)
-                      Wrap(spacing: 12, runSpacing: 12, children: chips),
-                    if (statusNotes.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      ...statusNotes,
-                    ],
-                  ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= AppBreakpoints.medium;
+            final footerDecoration = BoxDecoration(
+              color: theme.colorScheme.surface,
+              border: Border(
+                top: BorderSide(
+                  color: theme.dividerColor.withValues(alpha: 0.5),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: widget.detail.isAvailable && !_isSubmitting
-                      ? _handleLock
-                      : null,
-                  icon: _isSubmitting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.lock_outline),
-                  label: Text(
-                    widget.detail.isAvailable ? 'Lock Pick' : 'Unavailable',
+              boxShadow: isWide
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 12,
+                        offset: const Offset(0, -4),
+                      ),
+                    ]
+                  : null,
+            );
+
+            return Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: AdaptivePage(
+                      maxWidth: 900,
+                      compactPadding: const EdgeInsets.all(24),
+                      widePadding: const EdgeInsets.symmetric(
+                        horizontal: 64,
+                        vertical: 32,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            detail.name,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Week ${widget.pool.currentWeek} · ${widget.pool.name}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          if (chips.isNotEmpty)
+                            Wrap(spacing: 12, runSpacing: 12, children: chips),
+                          if (statusNotes.isNotEmpty) ...[
+                            const SizedBox(height: 24),
+                            ...statusNotes,
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ],
+                Container(
+                  width: double.infinity,
+                  decoration: footerDecoration,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isWide ? 64 : 24,
+                    vertical: isWide ? 24 : 20,
+                  ),
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: ElevatedButton.icon(
+                        onPressed: widget.detail.isAvailable && !_isSubmitting
+                            ? _handleLock
+                            : null,
+                        icon: _isSubmitting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.lock_outline),
+                        label: Text(
+                          widget.detail.isAvailable
+                              ? 'Lock Pick'
+                              : 'Unavailable',
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/core/constants/api.dart';
+import 'package:survivor_pool/core/constants/layout.dart';
 import 'package:survivor_pool/core/models/pool.dart';
 import 'package:survivor_pool/core/widgets/confirmation_dialog.dart';
+import 'package:survivor_pool/core/layout/adaptive_page.dart';
 
 class PoolSettingsPage extends StatefulWidget {
   final PoolOption pool;
@@ -116,61 +118,92 @@ class _PoolSettingsPageState extends State<PoolSettingsPage> {
     return Scaffold(
       appBar: AppBar(title: Text('Pool settings — ${pool.name}')),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pool details',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= AppBreakpoints.medium;
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: AdaptivePage(
+                maxWidth: 720,
+                compactPadding: const EdgeInsets.all(24),
+                widePadding: const EdgeInsets.symmetric(
+                  horizontal: 64,
+                  vertical: 48,
+                ),
+                child: Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(isWide ? 40 : 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pool overview',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Manage settings and lifecycle actions for ${pool.name}.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _buildInfoRow(
+                          theme,
+                          label: 'Pool name',
+                          value: pool.name,
+                        ),
+                        _buildInfoRow(
+                          theme,
+                          label: 'Season',
+                          value: seasonValue,
+                        ),
+                        _buildInfoRow(
+                          theme,
+                          label: 'Start week',
+                          value: pool.startWeek.toString(),
+                        ),
+                        _buildInfoRow(
+                          theme,
+                          label: 'Current week',
+                          value: pool.currentWeek.toString(),
+                        ),
+                        if (_error != null) ...[
+                          const SizedBox(height: 24),
+                          Text(
+                            _error!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.error,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 28),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: SizedBox(
+                            width: isWide ? 240 : double.infinity,
+                            child: FilledButton.icon(
+                              onPressed: _isDeleting ? null : _confirmDelete,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: theme.colorScheme.error,
+                                foregroundColor: theme.colorScheme.onError,
+                              ),
+                              icon: const Icon(Icons.delete_outline),
+                              label: Text(
+                                _isDeleting ? 'Deleting...' : 'Delete pool',
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    _buildInfoRow(theme, label: 'Pool name', value: pool.name),
-                    _buildInfoRow(theme, label: 'Season', value: seasonValue),
-                    _buildInfoRow(
-                      theme,
-                      label: 'Start week',
-                      value: pool.startWeek.toString(),
-                    ),
-                    _buildInfoRow(
-                      theme,
-                      label: 'Current week',
-                      value: pool.currentWeek.toString(),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                _error!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: _isDeleting ? null : _confirmDelete,
-              style: FilledButton.styleFrom(
-                backgroundColor: theme.colorScheme.error,
-                foregroundColor: theme.colorScheme.onError,
-              ),
-              icon: const Icon(Icons.delete_outline),
-              label: Text(_isDeleting ? 'Deleting...' : 'Delete pool'),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );

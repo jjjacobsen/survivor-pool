@@ -1,17 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/app/routes.dart';
 import 'package:survivor_pool/core/constants/api.dart';
+import 'package:survivor_pool/core/constants/layout.dart';
 import 'package:survivor_pool/core/models/contestant.dart';
 import 'package:survivor_pool/core/models/pick.dart';
 import 'package:survivor_pool/core/models/pool.dart';
 import 'package:survivor_pool/core/models/pool_advance.dart';
 import 'package:survivor_pool/core/models/season.dart';
 import 'package:survivor_pool/core/models/user.dart';
+import 'package:survivor_pool/core/layout/adaptive_page.dart';
 import 'package:survivor_pool/features/picks/presentation/pages/contestant_detail_page.dart';
 import 'package:survivor_pool/features/pools/presentation/pages/pool_advance_page.dart';
 import 'package:survivor_pool/features/pools/presentation/pages/manage_pool_members_page.dart';
@@ -940,42 +943,17 @@ class _HomePageState extends State<HomePage> {
     final currentPick = (_contestantsForPoolId == selectedPool?.id)
         ? _currentPick
         : null;
-    final showInvites = _pendingInvites.isNotEmpty && safeDefaultPoolId == null;
+    final showInvites = _pendingInvites.isNotEmpty;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leadingWidth: 56,
-        leading: _buildDefaultPoolSelector(theme, safeDefaultPoolId),
-        title: _buildUserSummary(theme),
-        titleSpacing: 12,
-        backgroundColor: theme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            tooltip: 'Profile',
-            onPressed: () {
-              Navigator.of(
-                context,
-              ).pushNamed(AppRoutes.profile, arguments: widget.user);
-            },
-            icon: const Icon(Icons.person_outline),
-            color: Colors.white,
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _refreshHome,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(24),
-            children: [
-              if (showInvites) _buildInvitesBanner(theme),
-              if (showInvites) const SizedBox(height: 16),
-              _buildMainSection(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= AppBreakpoints.medium;
+        final appBar = isWide
+            ? _buildDesktopAppBar(theme: theme)
+            : _buildMobileAppBar(theme, safeDefaultPoolId);
+
+        final body = isWide
+            ? _buildDesktopBody(
                 theme: theme,
                 selectedPool: selectedPool,
                 isOwnerView: isOwnerView,
@@ -983,12 +961,347 @@ class _HomePageState extends State<HomePage> {
                 isLoadingContestants: isLoadingContestants,
                 currentPick: currentPick,
                 score: _availableScore,
-              ),
-            ],
+                showInvites: showInvites,
+              )
+            : _buildMobileBody(
+                theme: theme,
+                selectedPool: selectedPool,
+                isOwnerView: isOwnerView,
+                availableContestants: availableContestants,
+                isLoadingContestants: isLoadingContestants,
+                currentPick: currentPick,
+                score: _availableScore,
+                showInvites: showInvites,
+              );
+
+        return Scaffold(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          appBar: appBar,
+          body: body,
+        );
+      },
+    );
+  }
+
+  PreferredSizeWidget _buildMobileAppBar(
+    ThemeData theme,
+    String? selectedPoolId,
+  ) {
+    return AppBar(
+      automaticallyImplyLeading: false,
+      leadingWidth: 56,
+      leading: _buildDefaultPoolSelector(theme, selectedPoolId),
+      title: _buildUserSummary(theme),
+      titleSpacing: 12,
+      backgroundColor: theme.colorScheme.primary,
+      foregroundColor: theme.colorScheme.onPrimary,
+      actions: [
+        IconButton(
+          tooltip: 'Profile',
+          onPressed: _openProfile,
+          icon: const Icon(Icons.person_outline),
+        ),
+      ],
+    );
+  }
+
+  PreferredSizeWidget _buildDesktopAppBar({required ThemeData theme}) {
+    return AppBar(
+      automaticallyImplyLeading: false,
+      backgroundColor: theme.colorScheme.surface,
+      foregroundColor: theme.colorScheme.onSurface,
+      toolbarHeight: 72,
+      elevation: 0,
+      titleSpacing: 28,
+      title: Row(
+        children: [
+          Icon(Icons.waves, color: theme.colorScheme.primary),
+          const SizedBox(width: 12),
+          Text(
+            'Survivor Pool',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Spacer(),
+          _buildDesktopUserChip(theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopUserChip(ThemeData theme) {
+    final name = widget.user.displayName;
+    final username = widget.user.username;
+    final initialSource = name.isNotEmpty
+        ? name
+        : (username.isNotEmpty ? username : widget.user.email);
+    final initial = initialSource.isNotEmpty
+        ? initialSource[0].toUpperCase()
+        : '?';
+    return OutlinedButton.icon(
+      onPressed: _openProfile,
+      icon: CircleAvatar(
+        radius: 16,
+        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+        child: Text(
+          initial,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: theme.colorScheme.primary,
           ),
         ),
       ),
+      label: Text(name),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
     );
+  }
+
+  Widget _buildDesktopBody({
+    required ThemeData theme,
+    required PoolOption? selectedPool,
+    required bool isOwnerView,
+    required List<AvailableContestant> availableContestants,
+    required bool isLoadingContestants,
+    required CurrentPickSummary? currentPick,
+    required int? score,
+    required bool showInvites,
+  }) {
+    return SafeArea(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 320,
+            child: _buildDesktopSidebar(
+              theme: theme,
+              showInvites: showInvites,
+              selectedPool: selectedPool,
+            ),
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: PlatformRefresh(
+              onRefresh: kIsWeb ? null : _refreshHome,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: AdaptivePage(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 24),
+                      _buildMainSection(
+                        theme: theme,
+                        selectedPool: selectedPool,
+                        isOwnerView: isOwnerView,
+                        availableContestants: availableContestants,
+                        isLoadingContestants: isLoadingContestants,
+                        currentPick: currentPick,
+                        score: score,
+                      ),
+                      const SizedBox(height: 48),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopSidebar({
+    required ThemeData theme,
+    required bool showInvites,
+    required PoolOption? selectedPool,
+  }) {
+    final items = <Widget>[];
+
+    items.add(_buildPoolListCard(theme, selectedPool));
+    items.add(const SizedBox(height: 16));
+    items.add(_buildInvitesBanner(theme));
+
+    return Container(
+      color: theme.colorScheme.surface,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        children: items,
+      ),
+    );
+  }
+
+  Widget _buildPoolListCard(ThemeData theme, PoolOption? selectedPool) {
+    final selectedId = selectedPool?.id;
+    final pools = _pools;
+    final isBusy = _isUpdatingDefault || _isLoadingPools;
+
+    Widget buildTile({
+      required String label,
+      required bool selected,
+      String? subtitle,
+      VoidCallback? onTap,
+    }) {
+      final background = selected
+          ? theme.colorScheme.primary.withAlpha(30)
+          : theme.colorScheme.surface;
+      final titleStyle = theme.textTheme.titleMedium?.copyWith(
+        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        color: selected
+            ? theme.colorScheme.primary
+            : theme.colorScheme.onSurface,
+      );
+      final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+        color: selected
+            ? theme.colorScheme.primary.withValues(alpha: 0.8)
+            : theme.colorScheme.onSurfaceVariant,
+      );
+
+      return InkWell(
+        onTap: (selected || isBusy) ? null : onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: titleStyle),
+              if (subtitle != null && subtitle.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(subtitle, style: subtitleStyle),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Your pools',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (_isLoadingPools) ...[
+                  const SizedBox(width: 12),
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ],
+                const Spacer(),
+                FilledButton.icon(
+                  onPressed: _isLoadingSeasons ? null : _showCreatePoolDialog,
+                  icon: _isLoadingSeasons
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.add_circle_outline),
+                  label: Text(_isLoadingSeasons ? 'Loading...' : 'New pool'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            buildTile(
+              label: 'Home',
+              selected: selectedId == null,
+              subtitle: 'See your default pool details',
+              onTap: () => _updateDefaultPool(null),
+            ),
+            const SizedBox(height: 8),
+            if (pools.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.2,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'No pools yet. Create one to get started.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else ...[
+              for (var i = 0; i < pools.length; i++) ...[
+                buildTile(
+                  label: pools[i].name,
+                  selected: pools[i].id == selectedId,
+                  subtitle: 'Week ${pools[i].currentWeek}',
+                  onTap: () => _updateDefaultPool(pools[i].id),
+                ),
+                if (i != pools.length - 1) const SizedBox(height: 8),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileBody({
+    required ThemeData theme,
+    required PoolOption? selectedPool,
+    required bool isOwnerView,
+    required List<AvailableContestant> availableContestants,
+    required bool isLoadingContestants,
+    required CurrentPickSummary? currentPick,
+    required int? score,
+    required bool showInvites,
+  }) {
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showInvites) _buildInvitesBanner(theme),
+        if (showInvites) const SizedBox(height: 16),
+        _buildMainSection(
+          theme: theme,
+          selectedPool: selectedPool,
+          isOwnerView: isOwnerView,
+          availableContestants: availableContestants,
+          isLoadingContestants: isLoadingContestants,
+          currentPick: currentPick,
+          score: score,
+        ),
+      ],
+    );
+
+    final listView = ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(24),
+      children: [content],
+    );
+
+    return SafeArea(
+      child: PlatformRefresh(
+        onRefresh: kIsWeb ? null : _refreshHome,
+        child: listView,
+      ),
+    );
+  }
+
+  void _openProfile() {
+    Navigator.of(context).pushNamed(AppRoutes.profile, arguments: widget.user);
   }
 
   Widget _buildUserSummary(ThemeData theme) {
@@ -1107,10 +1420,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildInvitesBanner(ThemeData theme) {
-    if (_pendingInvites.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
     return Card(
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -1139,7 +1448,17 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             const SizedBox(height: 16),
-            ..._pendingInvites.map((invite) => _buildInviteRow(theme, invite)),
+            if (_pendingInvites.isEmpty)
+              Text(
+                'No pending invites right now.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              )
+            else
+              ..._pendingInvites.map(
+                (invite) => _buildInviteRow(theme, invite),
+              ),
           ],
         ),
       ),

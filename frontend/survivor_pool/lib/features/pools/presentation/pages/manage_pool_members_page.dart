@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/core/constants/api.dart';
+import 'package:survivor_pool/core/constants/layout.dart';
+import 'package:survivor_pool/core/layout/adaptive_page.dart';
 import 'package:survivor_pool/core/models/pool.dart';
 import 'package:survivor_pool/core/models/user.dart';
 
@@ -268,50 +271,120 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
     return Scaffold(
       appBar: AppBar(title: Text('Manage members — ${widget.pool.name}')),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              _buildSearchCard(theme),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : RefreshIndicator(
-                        onRefresh: _loadMembers,
-                        child: ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          children: [
-                            _buildSection(
-                              theme,
-                              title: 'Active members',
-                              members: activeMembers,
-                              emptyText: 'No active members yet.',
-                            ),
-                            const SizedBox(height: 20),
-                            _buildSection(
-                              theme,
-                              title: 'Pending invites',
-                              members: pendingMembers,
-                              emptyText: 'No pending invites.',
-                              badgeLabel: 'Invited',
-                            ),
-                            if (otherMembers.isNotEmpty) ...[
-                              const SizedBox(height: 20),
-                              _buildSection(
-                                theme,
-                                title: 'Other members',
-                                members: otherMembers,
-                                emptyText: '',
-                              ),
-                            ],
-                          ],
-                        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= AppBreakpoints.medium;
+            if (!isWide) {
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _buildSearchCard(theme),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: _buildMembersPanel(
+                        theme,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        activeMembers: activeMembers,
+                        pendingMembers: pendingMembers,
+                        otherMembers: otherMembers,
                       ),
-              ),
-            ],
-          ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 360,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 24,
+                      ),
+                      child: _buildSearchCard(theme),
+                    ),
+                  ),
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 24,
+                    ),
+                    child: _buildMembersPanel(
+                      theme,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 8,
+                      ),
+                      activeMembers: activeMembers,
+                      pendingMembers: pendingMembers,
+                      otherMembers: otherMembers,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
+      ),
+    );
+  }
+
+  Widget _buildMembersPanel(
+    ThemeData theme, {
+    required EdgeInsets padding,
+    required List<PoolMemberSummary> activeMembers,
+    required List<PoolMemberSummary> pendingMembers,
+    required List<PoolMemberSummary> otherMembers,
+  }) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final sections = <Widget>[
+      _buildSection(
+        theme,
+        title: 'Active members',
+        members: activeMembers,
+        emptyText: 'No active members yet.',
+      ),
+      const SizedBox(height: 20),
+      _buildSection(
+        theme,
+        title: 'Pending invites',
+        members: pendingMembers,
+        emptyText: 'No pending invites.',
+        badgeLabel: 'Invited',
+      ),
+    ];
+
+    if (otherMembers.isNotEmpty) {
+      sections
+        ..add(const SizedBox(height: 20))
+        ..add(
+          _buildSection(
+            theme,
+            title: 'Other members',
+            members: otherMembers,
+            emptyText: '',
+          ),
+        );
+    }
+
+    return PlatformRefresh(
+      onRefresh: kIsWeb ? null : _loadMembers,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: padding,
+        children: sections,
       ),
     );
   }

@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/core/constants/api.dart';
+import 'package:survivor_pool/core/constants/layout.dart';
 import 'package:survivor_pool/core/models/pool.dart';
 import 'package:survivor_pool/core/models/pool_leaderboard.dart';
+import 'package:survivor_pool/core/layout/adaptive_page.dart';
 
 class PoolLeaderboardPage extends StatefulWidget {
   final PoolOption pool;
@@ -96,14 +99,24 @@ class _PoolLeaderboardPageState extends State<PoolLeaderboardPage> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: Text('Leaderboard — ${widget.pool.name}')),
-      body: RefreshIndicator(
-        onRefresh: _loadLeaderboard,
-        child: _buildBody(theme),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final body = _buildBody(theme, constraints);
+          return PlatformRefresh(
+            onRefresh: kIsWeb ? null : _loadLeaderboard,
+            child: body,
+          );
+        },
       ),
     );
   }
 
-  Widget _buildBody(ThemeData theme) {
+  Widget _buildBody(ThemeData theme, BoxConstraints constraints) {
+    final isWide = constraints.maxWidth >= AppBreakpoints.medium;
+    final pagePadding = isWide
+        ? const EdgeInsets.symmetric(horizontal: 64, vertical: 32)
+        : const EdgeInsets.symmetric(horizontal: 24, vertical: 24);
+
     if (_isLoading) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -118,39 +131,40 @@ class _PoolLeaderboardPageState extends State<PoolLeaderboardPage> {
 
     if (_error != null) {
       return ListView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.zero,
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          Card(
-            margin: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Something went wrong',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+          AdaptivePage(
+            maxWidth: 900,
+            compactPadding: pagePadding,
+            widePadding: pagePadding,
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Something went wrong',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _error!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    const SizedBox(height: 12),
+                    Text(
+                      _error!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  FilledButton.tonalIcon(
-                    onPressed: _loadLeaderboard,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Try again'),
-                  ),
-                ],
+                    const SizedBox(height: 20),
+                    FilledButton.tonalIcon(
+                      onPressed: _loadLeaderboard,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Try again'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -174,46 +188,62 @@ class _PoolLeaderboardPageState extends State<PoolLeaderboardPage> {
     if (leaderboard.entries.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.zero,
         children: [
-          _buildHeaderCard(theme, leaderboard),
-          const SizedBox(height: 24),
-          Card(
-            margin: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                'No leaderboard standings yet. Check back once members start playing.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+          AdaptivePage(
+            maxWidth: 900,
+            compactPadding: pagePadding,
+            widePadding: pagePadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeaderCard(theme, leaderboard),
+                const SizedBox(height: 24),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'No leaderboard standings yet. Check back once members start playing.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
       );
     }
 
-    final children = <Widget>[
+    final entryCards = <Widget>[
       _buildHeaderCard(theme, leaderboard),
       const SizedBox(height: 24),
+      ...List.generate(leaderboard.entries.length, (index) {
+        final entry = leaderboard.entries[index];
+        final card = _buildEntryCard(theme, entry);
+        if (index == leaderboard.entries.length - 1) {
+          return card;
+        }
+        return Column(children: [card, const SizedBox(height: 16)]);
+      }),
     ];
-
-    for (var i = 0; i < leaderboard.entries.length; i++) {
-      final entry = leaderboard.entries[i];
-      children.add(_buildEntryCard(theme, entry));
-      if (i < leaderboard.entries.length - 1) {
-        children.add(const SizedBox(height: 16));
-      }
-    }
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(24),
-      children: children,
+      padding: EdgeInsets.zero,
+      children: [
+        AdaptivePage(
+          maxWidth: 1000,
+          compactPadding: pagePadding,
+          widePadding: pagePadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: entryCards,
+          ),
+        ),
+      ],
     );
   }
 

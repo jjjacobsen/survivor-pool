@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/core/constants/api.dart';
+import 'package:survivor_pool/core/constants/layout.dart';
 import 'package:survivor_pool/core/models/user.dart';
 import 'package:survivor_pool/features/pools/presentation/home_page.dart';
 
@@ -98,204 +99,287 @@ class _LoginPageState extends State<LoginPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF0077BE),
-                  Color(0xFF00B4D8),
-                  Color(0xFF90E0EF),
-                ],
-              ),
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withAlpha(51),
-                  Colors.black.withAlpha(102),
-                ],
-              ),
-            ),
-          ),
-          Center(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 400),
-                  child: Card(
-                    elevation: 20,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.waves,
-                              size: 64,
-                              color: theme.primaryColor,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Survivor Pool',
-                              style: theme.textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: theme.primaryColor,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Outlast, Outplay, Outwin',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                            if (!_isLoginMode) ...[
-                              TextFormField(
-                                controller: _usernameController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Username',
-                                  prefixIcon: Icon(Icons.person),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter a username';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _displayNameController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Display Name (optional)',
-                                  prefixIcon: Icon(Icons.badge),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                            TextFormField(
-                              controller: _emailController,
-                              decoration: InputDecoration(
-                                labelText: _isLoginMode
-                                    ? 'Email or Username'
-                                    : 'Email',
-                                prefixIcon: const Icon(Icons.email),
-                              ),
-                              keyboardType: _isLoginMode
-                                  ? TextInputType.text
-                                  : TextInputType.emailAddress,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return _isLoginMode
-                                      ? 'Please enter your email or username'
-                                      : 'Please enter your email';
-                                }
-                                if (!_isLoginMode && !value.contains('@')) {
-                                  return 'Please enter a valid email';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _passwordController,
-                              decoration: const InputDecoration(
-                                labelText: 'Password',
-                                prefixIcon: Icon(Icons.lock),
-                              ),
-                              obscureText: true,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your password';
-                                }
-                                if (!_isLoginMode && value.length < 6) {
-                                  return 'Password must be at least 6 characters';
-                                }
-                                return null;
-                              },
-                            ),
-                            if (!_isLoginMode) ...[
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _confirmPasswordController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Confirm Password',
-                                  prefixIcon: Icon(Icons.lock_outline),
-                                ),
-                                obscureText: true,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please confirm your password';
-                                  }
-                                  if (value != _passwordController.text) {
-                                    return 'Passwords do not match';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ],
-                            const SizedBox(height: 32),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _handleSubmit,
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : Text(_isLoginMode ? 'Login' : 'Sign Up'),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _isLoginMode = !_isLoginMode;
-                                  _formKey.currentState?.reset();
-                                  _emailController.clear();
-                                  _passwordController.clear();
-                                  _confirmPasswordController.clear();
-                                  _usernameController.clear();
-                                  _displayNameController.clear();
-                                });
-                              },
-                              child: Text(
-                                _isLoginMode
-                                    ? "Don't have an account? Sign up"
-                                    : "Already have an account? Login",
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= AppBreakpoints.medium;
+        final gradient = _buildGradientLayer();
+        final overlay = _buildOverlayLayer();
+        final authCard = _buildAuthCard(theme, isWide: isWide);
+
+        if (isWide) {
+          return Scaffold(
+            body: Row(
+              children: [
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [gradient, overlay, _buildWideBranding(theme)],
                   ),
                 ),
+                Expanded(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(color: theme.colorScheme.surface),
+                    child: authCard,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Scaffold(
+          body: Stack(
+            fit: StackFit.expand,
+            children: [gradient, overlay, authCard],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGradientLayer() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0077BE), Color(0xFF00B4D8), Color(0xFF90E0EF)],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverlayLayer() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.black.withAlpha(51), Colors.black.withAlpha(102)],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWideBranding(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 64),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.waves, size: 64, color: theme.colorScheme.onPrimary),
+              const SizedBox(width: 16),
+              Text(
+                'Survivor Pool',
+                style: theme.textTheme.headlineLarge?.copyWith(
+                  color: theme.colorScheme.onPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Host pools, lock picks, and track standings every week.',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onPrimary.withValues(alpha: 0.85),
             ),
           ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _buildBrandChip(theme, Icons.group, 'Run private pools'),
+              _buildBrandChip(theme, Icons.timeline, 'See live standings'),
+              _buildBrandChip(
+                theme,
+                Icons.emoji_events_outlined,
+                'Celebrate winners',
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBrandChip(ThemeData theme, IconData icon, String label) {
+    return Chip(
+      avatar: Icon(icon, color: theme.colorScheme.primary),
+      label: Text(label),
+      backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.85),
+    );
+  }
+
+  Widget _buildAuthCard(ThemeData theme, {required bool isWide}) {
+    final card = Card(
+      elevation: isWide ? 6 : 20,
+      child: Padding(
+        padding: EdgeInsets.all(isWide ? 40 : 32),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Icon(Icons.waves, size: 64, color: theme.colorScheme.primary),
+              const SizedBox(height: 16),
+              Text(
+                'Survivor Pool',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Outlast, Outplay, Outwin',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              if (!_isLoginMode) ...[
+                TextFormField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Username',
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a username';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _displayNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Display Name (optional)',
+                    prefixIcon: Icon(Icons.badge),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              TextFormField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: _isLoginMode ? 'Email or Username' : 'Email',
+                  prefixIcon: const Icon(Icons.email),
+                ),
+                keyboardType: _isLoginMode
+                    ? TextInputType.text
+                    : TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return _isLoginMode
+                        ? 'Please enter your email or username'
+                        : 'Please enter your email';
+                  }
+                  if (!_isLoginMode && !value.contains('@')) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: Icon(Icons.lock),
+                ),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your password';
+                  }
+                  if (!_isLoginMode && value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
+              ),
+              if (!_isLoginMode) ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm Password',
+                    prefixIcon: Icon(Icons.lock_outline),
+                  ),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please confirm your password';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _handleSubmit,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(_isLoginMode ? 'Login' : 'Sign Up'),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isLoginMode = !_isLoginMode;
+                    _formKey.currentState?.reset();
+                    _emailController.clear();
+                    _passwordController.clear();
+                    _confirmPasswordController.clear();
+                    _usernameController.clear();
+                    _displayNameController.clear();
+                  });
+                },
+                child: Text(
+                  _isLoginMode
+                      ? "Don't have an account? Sign up"
+                      : "Already have an account? Login",
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: isWide ? 80 : 24,
+            vertical: isWide ? 72 : 24,
+          ),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: card,
+            ),
+          ),
+        ),
       ),
     );
   }
