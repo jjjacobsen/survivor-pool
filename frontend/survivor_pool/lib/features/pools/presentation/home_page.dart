@@ -1611,7 +1611,7 @@ class _HomePageState extends State<HomePage> {
     return MenuAnchor(
       builder: (context, controller, child) {
         final isBusy = _isUpdatingDefault || _isLoadingPools;
-        final button = IconButton(
+        return IconButton(
           icon: const Icon(Icons.home_outlined),
           color: Colors.white,
           onPressed: isBusy
@@ -1619,14 +1619,6 @@ class _HomePageState extends State<HomePage> {
               : () {
                   controller.isOpen ? controller.close() : controller.open();
                 },
-        );
-        if (_pendingInvites.isEmpty) {
-          return button;
-        }
-        return Badge.count(
-          count: _pendingInvites.length,
-          offset: const Offset(0, 2),
-          child: button,
         );
       },
       menuChildren: menuChildren,
