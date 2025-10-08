@@ -184,7 +184,7 @@ class PoolDashboard extends StatelessWidget {
                 ),
               ],
               if (hasManageMembers || hasAdvance) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
               ],
               if (hasManageMembers)
                 SizedBox(
