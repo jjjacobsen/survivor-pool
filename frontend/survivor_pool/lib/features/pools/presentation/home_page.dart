@@ -1000,17 +1000,9 @@ class _HomePageState extends State<HomePage> {
       automaticallyImplyLeading: false,
       leadingWidth: 56,
       leading: _buildDefaultPoolSelector(theme, selectedPoolId),
-      title: _buildUserSummary(theme),
-      titleSpacing: 12,
       backgroundColor: theme.colorScheme.primary,
       foregroundColor: theme.colorScheme.onPrimary,
-      actions: [
-        IconButton(
-          tooltip: 'Profile',
-          onPressed: _openProfile,
-          icon: const Icon(Icons.person_outline),
-        ),
-      ],
+      actions: [_buildMobileProfileAction(theme)],
     );
   }
 
@@ -1039,30 +1031,68 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildMobileProfileAction(ThemeData theme) {
+    final onPrimary = theme.colorScheme.onPrimary;
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: _buildProfileButton(
+        theme: theme,
+        foreground: onPrimary,
+        avatarBackground: onPrimary.withValues(alpha: 0.12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        side: BorderSide(color: onPrimary.withValues(alpha: 0.3)),
+      ),
+    );
+  }
+
   Widget _buildDesktopUserChip(ThemeData theme) {
-    final name = widget.user.displayName;
-    final username = widget.user.username;
-    final initialSource = name.isNotEmpty
-        ? name
-        : (username.isNotEmpty ? username : widget.user.email);
+    final primary = theme.colorScheme.primary;
+    return _buildProfileButton(
+      theme: theme,
+      foreground: primary,
+      avatarBackground: primary.withValues(alpha: 0.12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      side: BorderSide(color: primary.withValues(alpha: 0.2)),
+    );
+  }
+
+  Widget _buildProfileButton({
+    required ThemeData theme,
+    required Color foreground,
+    required Color avatarBackground,
+    required EdgeInsetsGeometry padding,
+    BorderSide? side,
+  }) {
+    final displayName = widget.user.displayName.trim();
+    final username = widget.user.username.trim();
+    final email = widget.user.email.trim();
+    final label = displayName.isNotEmpty
+        ? displayName
+        : (username.isNotEmpty ? username : email);
+    final initialSource = displayName.isNotEmpty
+        ? displayName
+        : (username.isNotEmpty ? username : email);
     final initial = initialSource.isNotEmpty
         ? initialSource[0].toUpperCase()
         : '?';
+
     return OutlinedButton.icon(
       onPressed: _openProfile,
       icon: CircleAvatar(
         radius: 16,
-        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+        backgroundColor: avatarBackground,
         child: Text(
           initial,
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: theme.colorScheme.primary,
-          ),
+          style: theme.textTheme.labelLarge?.copyWith(color: foreground),
         ),
       ),
-      label: Text(name),
+      label: Text(label),
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        foregroundColor: foreground,
+        padding: padding,
+        side: side,
+        shape: const StadiumBorder(),
+        textStyle: theme.textTheme.labelLarge,
       ),
     );
   }
@@ -1304,25 +1334,6 @@ class _HomePageState extends State<HomePage> {
 
   void _openProfile() {
     Navigator.of(context).pushNamed(AppRoutes.profile, arguments: widget.user);
-  }
-
-  Widget _buildUserSummary(ThemeData theme) {
-    final headlineStyle = theme.textTheme.titleSmall?.copyWith(
-      color: Colors.white,
-      fontWeight: FontWeight.w600,
-    );
-    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
-      color: Colors.white70,
-    );
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(widget.user.displayName, style: headlineStyle),
-        Text('@${widget.user.username}', style: subtitleStyle),
-      ],
-    );
   }
 
   Widget _buildMainSection({
