@@ -403,15 +403,24 @@ class _HomePageState extends State<HomePage> {
                 seasonNumber: pool.seasonNumber,
               );
             }).toList();
+            var nextDefault = _defaultPoolId;
+            if (nextDefault != null &&
+                !merged.any((pool) => pool.id == nextDefault)) {
+              nextDefault = null;
+            }
             setState(() {
               _pools = merged;
-              if (_defaultPoolId != null &&
-                  !merged.any((pool) => pool.id == _defaultPoolId)) {
-                _defaultPoolId = null;
-              }
+              _defaultPoolId = nextDefault;
             });
             if (loadDefaultContestants) {
-              unawaited(_loadAvailableContestants(_defaultPoolId));
+              if (nextDefault == null && merged.isNotEmpty) {
+                final firstPoolId = merged.first.id;
+                if (firstPoolId.isNotEmpty && !_isUpdatingDefault) {
+                  _updateDefaultPool(firstPoolId);
+                }
+              } else {
+                unawaited(_loadAvailableContestants(nextDefault));
+              }
             }
           }
         }
@@ -1219,13 +1228,6 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             const SizedBox(height: 16),
-            buildTile(
-              label: 'Home',
-              selected: selectedId == null,
-              subtitle: 'See your default pool details',
-              onTap: () => _updateDefaultPool(null),
-            ),
-            const SizedBox(height: 8),
             if (pools.isEmpty)
               Container(
                 padding: const EdgeInsets.all(16),
@@ -1392,7 +1394,7 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 12),
             Text(
               _pools.isEmpty
-                  ? 'Create a new pool or use an invite to get started.'
+                  ? 'No pools yet. Create one to get started.'
                   : 'Choose a default pool from the dropdown above to view its details.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: Colors.grey[600],
@@ -1530,14 +1532,70 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildDefaultPoolSelector(ThemeData theme, String? selectedPoolId) {
-    final allPools = <({String? id, String label})>[
-      (id: null, label: 'Home'),
-      ..._pools.map((pool) => (id: pool.id, label: pool.name)),
-    ];
-
     final textStyle = theme.textTheme.bodyMedium?.copyWith(
       fontWeight: FontWeight.w500,
     );
+
+    Widget buildPoolItem(PoolOption pool) {
+      final isSelected = pool.id == selectedPoolId;
+      final baseStyle =
+          textStyle ?? theme.textTheme.bodyMedium ?? const TextStyle();
+      final labelStyle = baseStyle.copyWith(
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+        color: isSelected ? theme.colorScheme.primary : baseStyle.color,
+      );
+
+      return MenuItemButton(
+        onPressed: () {
+          _updateDefaultPool(pool.id);
+        },
+        child: SizedBox(
+          width: 200,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Text(
+              pool.name,
+              overflow: TextOverflow.ellipsis,
+              style: labelStyle,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final canCreatePool = !_isLoadingSeasons;
+
+    final menuChildren = <Widget>[
+      ..._pools.map(buildPoolItem),
+      MenuItemButton(
+        onPressed: canCreatePool ? _showCreatePoolDialog : null,
+        child: SizedBox(
+          width: 200,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.add_circle_outline,
+                  size: 20,
+                  color: canCreatePool
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Create new pool',
+                    style: textStyle ?? theme.textTheme.bodyMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ];
 
     return MenuAnchor(
       builder: (context, controller, child) {
@@ -1560,29 +1618,7 @@ class _HomePageState extends State<HomePage> {
           child: button,
         );
       },
-      menuChildren: allPools
-          .map(
-            (entry) => MenuItemButton(
-              onPressed: () {
-                _updateDefaultPool(entry.id);
-              },
-              child: SizedBox(
-                width: 200,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  child: Text(
-                    entry.label,
-                    overflow: TextOverflow.ellipsis,
-                    style: textStyle,
-                  ),
-                ),
-              ),
-            ),
-          )
-          .toList(),
+      menuChildren: menuChildren,
     );
   }
 }
