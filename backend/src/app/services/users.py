@@ -6,7 +6,7 @@ from typing import Any
 from bson import ObjectId
 from fastapi import HTTPException, status
 
-from ..core.security import hash_password, verify_password
+from ..core.security import DUMMY_PASSWORD_HASH, hash_password, verify_password
 from ..db.mongo import (
     picks_collection,
     pool_memberships_collection,
@@ -79,13 +79,10 @@ def login_user(user_data: UserLoginRequest) -> UserResponse:
     user = users_collection.find_one(
         {"$or": [{"email": identifier}, {"username": identifier}]}
     )
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username/email or password",
-        )
+    hashed_password = user["password_hash"] if user else DUMMY_PASSWORD_HASH
+    password_valid = verify_password(user_data.password, hashed_password)
 
-    if not verify_password(user_data.password, user["password_hash"]):
+    if not user or not password_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username/email or password",
