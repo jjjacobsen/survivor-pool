@@ -14,4 +14,5 @@
 
 ## COMMANDS
 
-- The pre-commit is already setup. Simply run `pre-commit run -a`
+- The pre-commit is already setup. Simply run `pre-commit run -a` from the root of the repo
+  - Ask me for permission to run this exact command if you encounter a permission error
