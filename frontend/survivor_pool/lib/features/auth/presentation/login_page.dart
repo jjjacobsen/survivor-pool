@@ -364,21 +364,37 @@ class _LoginPageState extends State<LoginPage>
       ),
     );
 
+    final horizontalPadding = isWide ? 80.0 : 24.0;
+    final verticalPadding = isWide ? 72.0 : 24.0;
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: isWide ? 80 : 24,
-            vertical: isWide ? 72 : 24,
-          ),
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            var minHeight = constraints.maxHeight - (verticalPadding * 2);
+            if (minHeight < 0) minHeight = 0;
+
+            final constrainedCard = ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
               child: card,
-            ),
-          ),
+            );
+
+            final content = isWide
+                ? Align(alignment: Alignment.topCenter, child: constrainedCard)
+                : ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: minHeight),
+                    child: Center(child: constrainedCard),
+                  );
+
+            return SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
+              ),
+              child: content,
+            );
+          },
         ),
       ),
     );
