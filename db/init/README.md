@@ -14,3 +14,8 @@ Interactive mongosh
 - Load dev script: `load("/app/mongo-init/init.js")`
 - Load prod script: `load("/init-scripts/init.js")`
 - Verify: `db.getSiblingDB('survivor_pool').seasons.findOne({season_number:48},{season_name:1})`
+
+Indexes
+
+- List indexes on current DB: `db.getCollectionInfos().forEach(c => print(c.name, JSON.stringify(db.getCollection(c.name).getIndexes(), null, 2)))`
+- Specific collection example: `db.getCollection('picks').getIndexes()`

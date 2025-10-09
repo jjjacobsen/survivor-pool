@@ -333,6 +333,29 @@
   const users = dbApp.users;
   const pools = dbApp.pools;
   const poolMemberships = dbApp.pool_memberships;
+  const picks = dbApp.picks;
+  const seasons = dbApp.seasons;
+
+  users.createIndex({ email: 1 }, { name: "users_email_unique", unique: true });
+  users.createIndex({ username: 1 }, { name: "users_username_unique", unique: true });
+  users.createIndex({ default_pool: 1 }, { name: "users_default_pool_idx" });
+
+  seasons.createIndex({ season_number: 1 }, { name: "seasons_season_number_unique", unique: true });
+
+  pools.createIndex({ ownerId: 1 }, { name: "pools_owner_idx" });
+  pools.createIndex({ seasonId: 1 }, { name: "pools_season_idx" });
+
+  poolMemberships.createIndex(
+    { poolId: 1, userId: 1 },
+    { name: "pool_memberships_pool_user_unique", unique: true }
+  );
+
+  picks.createIndex(
+    { poolId: 1, userId: 1, week: 1 },
+    { name: "picks_pool_user_week_unique", unique: true }
+  );
+  picks.createIndex({ poolId: 1, week: 1 }, { name: "picks_pool_week_idx" });
+
   const spacePasswordHash = "$2b$12$dCJv2DzGaDpGDNkat1ohn.21VPhwo0H/pXvuXOGhKbmHpSmHhQ.DK";
 
   function collectionExists(dbConn, name) {

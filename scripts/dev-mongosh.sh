@@ -4,6 +4,7 @@ set -euo pipefail
 container=${1:-dev-mongo}
 target_db=${2:-survivor_pool}
 seed_file=${3:-/app/mongo-init/init.js}
+host_seed=${4:-db/init/init.js}
 
 ping_eval=$(cat <<'JS'
 const ok = db.runCommand({ ping: 1 }).ok === 1;
@@ -28,7 +29,13 @@ until docker exec "$container" \
   sleep 1
 done
 
-docker exec "$container" test -f "$seed_file"
+if [ ! -f "$host_seed" ]; then
+  echo "Seed file not found on host at $host_seed" >&2
+  exit 1
+fi
+
+docker exec "$container" mkdir -p "$(dirname "$seed_file")"
+docker cp "$host_seed" "$container":"$seed_file"
 
 echo "Running Mongo init script: $seed_file"
 docker exec "$container" mongosh --file "$seed_file"
