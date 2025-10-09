@@ -11,6 +11,9 @@
 - Don't use SnackBar's in flutter
 - When working on core logic don't add unnecessary type checking and default values. Validate at the edges, trust on the inside
 - Do not have code that fails silently. Allow things to fail if something is wrong
+- Never use dynamic imports (unless asked to) like `await import(..)`
+- never cast to `any`
+- do not add extra defensive checks or try/catch blocks
 
 ## COMMANDS
 
