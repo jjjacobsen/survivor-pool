@@ -1509,6 +1509,12 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const Spacer(),
+                IconButton(
+                  onPressed: _isLoadingInvites ? null : () => _loadInvites(),
+                  icon: const Icon(Icons.refresh),
+                  tooltip: 'Reload invites',
+                ),
+                if (_isLoadingInvites) const SizedBox(width: 4),
                 if (_isLoadingInvites)
                   const SizedBox(
                     width: 18,
