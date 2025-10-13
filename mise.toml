@@ -51,5 +51,5 @@ stop = { run = [
 attach = { run = ["tmux attach -t survivor-dev"], description = "Attach to tmux session" }
 
 prod = { run = [
-    "docker compose up -d",
+    "docker compose up -d --build",
 ], description = "Start production services" }
