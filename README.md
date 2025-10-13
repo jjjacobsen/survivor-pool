@@ -72,6 +72,12 @@ mise run frontend
 - `mise run bootstrap` wires up Flutter packages and uses `uv` to sync backend requirements.
 - `mise attach` drops you into the dev tmux session; `mise run stop` shuts everything down cleanly.
 
+### Environment config
+
+- `backend/env/.env.dev` and `backend/env/.env.prod` (both tracked) power local and Compose deployments (`MONGO_URL`, `DATABASE_NAME`, `API_BASE_URL`, `CORS_ALLOW_ORIGIN_REGEX`).
+- The Flutter app loads `assets/env/.env.dev` by default; pair it with `assets/env/.env.prod` and build using `--dart-define=APP_ENV=prod` to switch environments.
+- `mise run prod` builds the web bundle with `APP_ENV=prod` baked into the Docker image, and the backend image hardcodes `APP_ENV=prod` while pulling settings from its bundled `env/.env.prod`.
+
 ## Architecture Snapshot
 
 - 🎨 **Frontend**: Flutter app lives in `frontend/survivor_pool`, designed mobile-first with web support.

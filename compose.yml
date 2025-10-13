@@ -6,33 +6,28 @@ services:
     ports:
       - "80:80"
     restart: unless-stopped
-    networks:
-      - app-network
 
   backend:
     build:
       context: backend
     ports:
-      - "8000:8000"
-    environment:
-      - MONGO_URL=mongodb://mongo:27017
+      - "8001:8001"
     depends_on:
       - mongo
     restart: unless-stopped
     networks:
-      - app-network
+      - survivor-pool-network
 
   mongo:
     image: mongo:8.0
     volumes:
       - mongo_data:/data/db
-      - ./db/init:/init-scripts:ro
     restart: unless-stopped
     networks:
-      - app-network
+      - survivor-pool-network
 
 volumes:
   mongo_data:
 
 networks:
-  app-network:
+  survivor-pool-network:

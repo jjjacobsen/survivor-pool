@@ -28,7 +28,7 @@ RUN flutter pub get
 COPY . .
 
 # Build web app
-RUN flutter build web
+RUN flutter build web --dart-define=APP_ENV=prod
 
 # Configure nginx
 COPY web/nginx.conf /etc/nginx/sites-available/default
