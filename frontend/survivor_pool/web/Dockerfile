@@ -27,8 +27,9 @@ RUN flutter pub get
 # Copy source code
 COPY . .
 
-# Build web app
-RUN flutter build web --dart-define=APP_ENV=prod
+# Build web app with API_BASE_URL as a build-time constant
+ARG API_BASE_URL
+RUN flutter build web --dart-define=API_BASE_URL=${API_BASE_URL}
 
 # Configure nginx
 COPY web/nginx.conf /etc/nginx/sites-available/default

@@ -9,20 +9,20 @@ bootstrap = { run = [
 ], description = "Install all project dependencies" }
 
 backend = { run = [
-    "cd backend && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
-], description = "Start backend server" }
+    "uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
+], dir = "backend", env = { _.file = ".env.dev" }, description = "Start backend server" }
 
 frontend = { run = [
-    "cd frontend/survivor_pool && flutter run -d 'iPhone 17 Pro Max'",
-], description = "Start frontend server" }
+    "flutter run -d \"iPhone 17 Pro Max\" --dart-define=API_BASE_URL=http://localhost:8000",
+], dir = "frontend/survivor_pool", description = "Start frontend server" }
 
 frontend2 = { run = [
-    "cd frontend/survivor_pool && flutter run -d 'iPhone 17 Pro'",
-], description = "Start frontend server" }
+    "flutter run -d \"iPhone 17 Pro\" --dart-define=API_BASE_URL=http://localhost:8000",
+], dir = "frontend/survivor_pool", description = "Start frontend server" }
 
 web = { run = [
-    "cd frontend/survivor_pool && flutter run -d web-server",
-], description = "Start web server" }
+    "flutter run -d web-server --dart-define=API_BASE_URL=http://localhost:8000",
+], dir = "frontend/survivor_pool", description = "Start web server" }
 
 mongo = { run = [
     "docker run --rm --name dev-mongo -d -p 27017:27017 -v dev-mongo-data:/data/db mongo:8.0",

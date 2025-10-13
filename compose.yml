@@ -3,6 +3,8 @@ services:
     build:
       context: frontend/survivor_pool
       dockerfile: web/Dockerfile
+      args:
+        API_BASE_URL: http://localhost:8001
     ports:
       - "80:80"
     restart: unless-stopped
@@ -17,6 +19,8 @@ services:
     restart: unless-stopped
     networks:
       - survivor-pool-network
+    env_file:
+      - .env.prod
 
   mongo:
     image: mongo:8.0

@@ -74,9 +74,10 @@ mise run frontend
 
 ### Environment config
 
-- `backend/env/.env.dev` and `backend/env/.env.prod` (both tracked) power local and Compose deployments (`MONGO_URL`, `DATABASE_NAME`, `API_BASE_URL`, `CORS_ALLOW_ORIGIN_REGEX`).
-- The Flutter app loads `assets/env/.env.dev` by default; pair it with `assets/env/.env.prod` and build using `--dart-define=APP_ENV=prod` to switch environments.
-- `mise run prod` builds the web bundle with `APP_ENV=prod` baked into the Docker image, and the backend image hardcodes `APP_ENV=prod` while pulling settings from its bundled `env/.env.prod`.
+- `.env.dev` and `.env.prod` live in the repo root and only carry backend settings (Mongo URL, DB name, CORS rule).
+- The `backend` task in `mise.toml` loads `.env.dev`, so `mise run backend` (and `mise run start`, which shells into that task) get their env from that file; other tasks run clean.
+- `mise run prod` delegates to Docker Compose, whose backend service references `.env.prod` through `env_file`, so production containers read the same values.
+- don't put secrets in frontend
 
 ## Architecture Snapshot
 
