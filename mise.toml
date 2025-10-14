@@ -52,4 +52,5 @@ attach = { run = ["tmux attach -t survivor-dev"], description = "Attach to tmux 
 
 prod = { run = [
     "docker compose up -d --build",
+    "./scripts/prod-mongosh.sh",
 ], description = "Start production services" }
