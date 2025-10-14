@@ -30,20 +30,20 @@ mongo = { run = [
 
 start = { run = [
     "mise run mongo",
-    "bash -lc 'if tmux has-session -t survivor-dev 2>/dev/null; then echo \"tmux session survivor-dev already running\"; exit 1; fi'",
-    "bash -lc 'tmux new-session -d -s survivor-dev -n mongosh -c .'",
-    "bash -lc 'tmux send-keys -t survivor-dev:mongosh \"./scripts/dev-mongosh.sh\" C-m'",
-    "bash -lc 'tmux new-window -t survivor-dev -n backend -c .'",
-    "bash -lc 'tmux send-keys -t survivor-dev:backend \"mise run backend\" C-m'",
-    "bash -lc 'tmux new-window -t survivor-dev -n frontend -c .'",
-    "bash -lc 'tmux send-keys -t survivor-dev:frontend \"mise run frontend\" C-m'",
+    "if tmux has-session -t survivor-dev 2>/dev/null; then echo \"tmux session survivor-dev already running\"; exit 1; fi",
+    "tmux new-session -d -s survivor-dev -n mongosh -c .",
+    "tmux send-keys -t survivor-dev:mongosh \"./scripts/dev-mongosh.sh\" C-m",
+    "tmux new-window -t survivor-dev -n backend -c .",
+    "tmux send-keys -t survivor-dev:backend \"mise run backend\" C-m",
+    "tmux new-window -t survivor-dev -n frontend -c .",
+    "tmux send-keys -t survivor-dev:frontend \"mise run frontend\" C-m",
     "echo 'Services running in tmux session survivor-dev. Attach with: mise attach'",
 ], description = "Start all development services in background" }
 
 stop = { run = [
     "docker compose down 2>/dev/null",
-    "bash -lc 'tmux send-keys -t survivor-dev:frontend q 2>/dev/null || true; sleep 1'",
-    "bash -lc 'tmux kill-session -t survivor-dev 2>/dev/null || echo \"tmux session survivor-dev not found\"'",
+    "tmux send-keys -t survivor-dev:frontend q 2>/dev/null || true; sleep 1",
+    "tmux kill-session -t survivor-dev 2>/dev/null || echo \"tmux session survivor-dev not found\"",
     "docker stop dev-mongo 2>/dev/null || echo 'MongoDB not running'",
     "echo 'All development services stopped'",
 ], description = "Stop all development services" }
