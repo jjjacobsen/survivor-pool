@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/app/routes.dart';
@@ -24,9 +26,8 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _error;
 
   void _logout() {
-    Navigator.of(
-      context,
-    ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+    AppSession.currentUser.value = null;
+    context.goNamed(AppRouteNames.login);
   }
 
   Future<void> _confirmDelete() async {
@@ -113,7 +114,10 @@ class _ProfilePageState extends State<ProfilePage> {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        title: const Text('Profile'),
+        automaticallyImplyLeading: !kIsWeb,
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {

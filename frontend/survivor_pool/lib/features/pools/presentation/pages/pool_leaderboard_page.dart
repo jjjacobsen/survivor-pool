@@ -98,7 +98,10 @@ class _PoolLeaderboardPageState extends State<PoolLeaderboardPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text('Leaderboard — ${widget.pool.name}')),
+      appBar: AppBar(
+        title: Text('Leaderboard — ${widget.pool.name}'),
+        automaticallyImplyLeading: !kIsWeb,
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final body = _buildBody(theme, constraints);

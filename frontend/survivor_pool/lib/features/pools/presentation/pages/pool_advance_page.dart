@@ -395,7 +395,10 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
         !_isSubmitting && !_isLoading && status != null && status.canAdvance;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Advance Week')),
+      appBar: AppBar(
+        title: const Text('Advance Week'),
+        automaticallyImplyLeading: !kIsWeb,
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {

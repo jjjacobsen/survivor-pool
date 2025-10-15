@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:survivor_pool/core/constants/layout.dart';
@@ -123,6 +124,7 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(detail.name.isEmpty ? 'Contestant' : detail.name),
+        automaticallyImplyLeading: !kIsWeb,
       ),
       body: SafeArea(
         child: LayoutBuilder(

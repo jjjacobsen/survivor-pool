@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -116,7 +117,10 @@ class _PoolSettingsPageState extends State<PoolSettingsPage> {
         : pool.seasonId;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Pool settings — ${pool.name}')),
+      appBar: AppBar(
+        title: Text('Pool settings — ${pool.name}'),
+        automaticallyImplyLeading: !kIsWeb,
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {

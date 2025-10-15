@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/app/routes.dart';
@@ -15,11 +16,6 @@ import 'package:survivor_pool/core/models/pool_advance.dart';
 import 'package:survivor_pool/core/models/season.dart';
 import 'package:survivor_pool/core/models/user.dart';
 import 'package:survivor_pool/core/layout/adaptive_page.dart';
-import 'package:survivor_pool/features/picks/presentation/pages/contestant_detail_page.dart';
-import 'package:survivor_pool/features/pools/presentation/pages/pool_advance_page.dart';
-import 'package:survivor_pool/features/pools/presentation/pages/manage_pool_members_page.dart';
-import 'package:survivor_pool/features/pools/presentation/pages/pool_leaderboard_page.dart';
-import 'package:survivor_pool/features/pools/presentation/pages/pool_settings_page.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/create_pool_dialog.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/pool_dashboard.dart';
 
@@ -523,19 +519,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _handleManageMembers(PoolOption pool) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) =>
-            ManagePoolMembersPage(pool: pool, ownerId: widget.user.id),
-      ),
+    await context.pushNamed(
+      AppRouteNames.manageMembers,
+      pathParameters: {'poolId': pool.id},
+      extra: (pool: pool, ownerId: widget.user.id),
     );
   }
 
   Future<void> _handleViewLeaderboard(PoolOption pool) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PoolLeaderboardPage(pool: pool, userId: widget.user.id),
-      ),
+    await context.pushNamed(
+      AppRouteNames.poolLeaderboard,
+      pathParameters: {'poolId': pool.id},
+      extra: (pool: pool, userId: widget.user.id),
     );
   }
 
@@ -564,10 +559,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _handlePoolSettings(PoolOption pool) async {
-    final result = await Navigator.of(context).push<Map<String, dynamic>>(
-      MaterialPageRoute(
-        builder: (_) => PoolSettingsPage(pool: pool, ownerId: widget.user.id),
-      ),
+    final result = await context.pushNamed<Map<String, dynamic>>(
+      AppRouteNames.poolSettings,
+      pathParameters: {'poolId': pool.id},
+      extra: (pool: pool, ownerId: widget.user.id),
     );
 
     if (!mounted || result == null) {
@@ -655,23 +650,22 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ContestantDetailPage(
-          pool: pool,
-          detail: detail,
-          onLockPick: () => _handleLockPick(pool, detail.contestant),
-        ),
+    await context.pushNamed(
+      AppRouteNames.contestantDetail,
+      pathParameters: {'poolId': pool.id, 'contestantId': contestant.id},
+      extra: (
+        pool: pool,
+        detail: detail,
+        onLockPick: () => _handleLockPick(pool, detail.contestant),
       ),
     );
   }
 
   Future<void> _handleAdvanceWeek(PoolOption pool) async {
-    final result = await Navigator.of(context).push<Map<String, dynamic>>(
-      MaterialPageRoute(
-        builder: (context) =>
-            PoolAdvancePage(pool: pool, userId: widget.user.id),
-      ),
+    final result = await context.pushNamed<Map<String, dynamic>>(
+      AppRouteNames.poolAdvance,
+      pathParameters: {'poolId': pool.id},
+      extra: (pool: pool, userId: widget.user.id),
     );
 
     if (!mounted || result == null) {
@@ -1390,7 +1384,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openProfile() {
-    Navigator.of(context).pushNamed(AppRoutes.profile, arguments: widget.user);
+    context.pushNamed(AppRouteNames.profile, extra: widget.user);
   }
 
   Widget _buildMainSection({

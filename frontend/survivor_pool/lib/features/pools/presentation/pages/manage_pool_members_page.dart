@@ -269,7 +269,10 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
         .toList(growable: false);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Manage members — ${widget.pool.name}')),
+      appBar: AppBar(
+        title: Text('Manage members — ${widget.pool.name}'),
+        automaticallyImplyLeading: !kIsWeb,
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {

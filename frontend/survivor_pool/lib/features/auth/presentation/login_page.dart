@@ -2,11 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:go_router/go_router.dart';
 
+import 'package:survivor_pool/app/routes.dart';
 import 'package:survivor_pool/core/constants/api.dart';
 import 'package:survivor_pool/core/constants/layout.dart';
 import 'package:survivor_pool/core/models/user.dart';
-import 'package:survivor_pool/features/pools/presentation/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -84,9 +85,8 @@ class _LoginPageState extends State<LoginPage>
         final data = json.decode(response.body) as Map<String, dynamic>;
         final user = AppUser.fromJson(data);
         if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => HomePage(user: user)),
-          );
+          AppSession.currentUser.value = user;
+          context.goNamed(AppRouteNames.home, extra: user);
         }
       }
     } catch (_) {
