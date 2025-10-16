@@ -32,6 +32,8 @@ class AppSession {
   );
   static String? _token;
   static final Map<String, Object?> _cachedExtras = <String, Object?>{};
+  static Future<void> Function()? _onUnauthorized;
+  static bool _isForceLogoutInFlight = false;
 
   static String? get token => _token;
 
@@ -68,6 +70,26 @@ class AppSession {
     currentUser.value = null;
     _cachedExtras.clear();
     await AuthStorage.clearSession();
+  }
+
+  static void registerUnauthorizedHandler(Future<void> Function() handler) {
+    _onUnauthorized = handler;
+  }
+
+  static Future<void> forceLogout() async {
+    if (_isForceLogoutInFlight) {
+      return;
+    }
+    _isForceLogoutInFlight = true;
+    try {
+      await clear();
+      final handler = _onUnauthorized;
+      if (handler != null) {
+        await handler();
+      }
+    } finally {
+      _isForceLogoutInFlight = false;
+    }
   }
 
   static Future<void> updateUser(AppUser user) async {

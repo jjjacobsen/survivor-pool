@@ -389,7 +389,8 @@
           email: account.email,
           password_hash: spacePasswordHash,
           display_name: account.display_name,
-          account_status: "active"
+          account_status: "active",
+          token_invalidated_at: now
         },
         $setOnInsert: {
           _id: account.id,
@@ -439,6 +440,7 @@
     display_name: resetUsername,
     account_status: "active",
     created_at: now,
-    default_pool: null
+    default_pool: null,
+    token_invalidated_at: now
   });
 })();

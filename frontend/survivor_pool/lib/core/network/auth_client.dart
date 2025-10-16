@@ -13,6 +13,7 @@ class AuthHttpClient {
   }) async {
     final response = await http.get(uri, headers: _prepareHeaders(headers));
     _captureToken(response);
+    _handleUnauthorized(response);
     return response;
   }
 
@@ -27,6 +28,7 @@ class AuthHttpClient {
       body: body,
     );
     _captureToken(response);
+    _handleUnauthorized(response);
     return response;
   }
 
@@ -41,6 +43,7 @@ class AuthHttpClient {
       body: body,
     );
     _captureToken(response);
+    _handleUnauthorized(response);
     return response;
   }
 
@@ -55,6 +58,7 @@ class AuthHttpClient {
       body: body,
     );
     _captureToken(response);
+    _handleUnauthorized(response);
     return response;
   }
 
@@ -79,5 +83,11 @@ class AuthHttpClient {
       return;
     }
     unawaited(AppSession.updateToken(newToken));
+  }
+
+  static void _handleUnauthorized(http.Response response) {
+    if (response.statusCode == 401) {
+      unawaited(AppSession.forceLogout());
+    }
   }
 }

@@ -145,6 +145,17 @@ class SurvivorPoolApp extends StatelessWidget {
       ),
     ],
   );
+  static bool _sessionHandlerRegistered = false;
+
+  void _ensureSessionHandler() {
+    if (_sessionHandlerRegistered) {
+      return;
+    }
+    _sessionHandlerRegistered = true;
+    AppSession.registerUnauthorizedHandler(() async {
+      _router.go(AppRoutes.login);
+    });
+  }
 
   ThemeData _buildTheme() {
     final base = ThemeData(
@@ -206,6 +217,7 @@ class SurvivorPoolApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    _ensureSessionHandler();
     return MaterialApp.router(
       title: 'Survivor Pool',
       theme: _buildTheme(),

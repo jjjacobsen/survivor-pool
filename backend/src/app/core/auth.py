@@ -72,6 +72,17 @@ def get_current_active_user(
             status_code=status.HTTP_403_FORBIDDEN, detail="Account inactive"
         )
 
+    invalidated_at = user_doc.get("token_invalidated_at")
+    if isinstance(invalidated_at, datetime):
+        if invalidated_at.tzinfo is None:
+            invalidated_at = invalidated_at.replace(tzinfo=UTC)
+        else:
+            invalidated_at = invalidated_at.astimezone(UTC)
+        if token_data.issued_at <= invalidated_at:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired"
+            )
+
     if token_data.should_refresh(now=datetime.now(UTC)):
         token = create_access_token(token_data.user_id)
         response.headers[REFRESH_HEADER_NAME] = token
