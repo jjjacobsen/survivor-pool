@@ -53,6 +53,7 @@ stop = { run = [
 attach = { run = ["tmux attach -t survivor-dev"], description = "Attach to tmux session" }
 
 prod = { run = [
-    "docker compose up -d --build",
+    "docker compose build --no-cache",
+    "docker compose up -d",
     "./scripts/prod-mongosh.sh",
 ], description = "Start production services" }
