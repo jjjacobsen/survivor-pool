@@ -521,7 +521,6 @@ class _HomePageState extends State<HomePage> {
   Future<void> _handleManageMembers(PoolOption pool) async {
     await context.pushNamed(
       AppRouteNames.manageMembers,
-      pathParameters: {'poolId': pool.id},
       extra: (pool: pool, ownerId: widget.user.id),
     );
   }
@@ -529,7 +528,6 @@ class _HomePageState extends State<HomePage> {
   Future<void> _handleViewLeaderboard(PoolOption pool) async {
     await context.pushNamed(
       AppRouteNames.poolLeaderboard,
-      pathParameters: {'poolId': pool.id},
       extra: (pool: pool, userId: widget.user.id),
     );
   }
@@ -561,7 +559,6 @@ class _HomePageState extends State<HomePage> {
   Future<void> _handlePoolSettings(PoolOption pool) async {
     final result = await context.pushNamed<Map<String, dynamic>>(
       AppRouteNames.poolSettings,
-      pathParameters: {'poolId': pool.id},
       extra: (pool: pool, ownerId: widget.user.id),
     );
 
@@ -652,7 +649,7 @@ class _HomePageState extends State<HomePage> {
 
     await context.pushNamed(
       AppRouteNames.contestantDetail,
-      pathParameters: {'poolId': pool.id, 'contestantId': contestant.id},
+      pathParameters: {'contestantId': contestant.id},
       extra: (
         pool: pool,
         detail: detail,
@@ -664,7 +661,6 @@ class _HomePageState extends State<HomePage> {
   Future<void> _handleAdvanceWeek(PoolOption pool) async {
     final result = await context.pushNamed<Map<String, dynamic>>(
       AppRouteNames.poolAdvance,
-      pathParameters: {'poolId': pool.id},
       extra: (pool: pool, userId: widget.user.id),
     );
 

@@ -7,12 +7,11 @@ class AppRoutes {
   static const String login = '/login';
   static const String home = '/home';
   static const String profile = '/profile';
-  static const String poolSettings = '/pools/:poolId/settings';
-  static const String poolAdvance = '/pools/:poolId/advance';
-  static const String poolLeaderboard = '/pools/:poolId/leaderboard';
-  static const String manageMembers = '/pools/:poolId/members';
-  static const String contestantDetail =
-      '/pools/:poolId/contestants/:contestantId';
+  static const String poolSettings = '/settings';
+  static const String poolAdvance = '/advance';
+  static const String poolLeaderboard = '/leaderboard';
+  static const String manageMembers = '/members';
+  static const String contestantDetail = '/contestants/:contestantId';
 }
 
 class AppRouteNames {
