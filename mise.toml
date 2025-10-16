@@ -37,6 +37,8 @@ start = { run = [
     "tmux send-keys -t survivor-dev:backend \"mise run backend\" C-m",
     "tmux new-window -t survivor-dev -n frontend -c .",
     "tmux send-keys -t survivor-dev:frontend \"mise run frontend\" C-m",
+    "tmux new-window -t survivor-dev -n web -c .",
+    "tmux send-keys -t survivor-dev:web \"mise run web\" C-m",
     "echo 'Services running in tmux session survivor-dev. Attach with: mise attach'",
 ], description = "Start all development services in background" }
 
