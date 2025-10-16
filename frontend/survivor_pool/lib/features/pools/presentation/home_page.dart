@@ -519,6 +519,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _handleManageMembers(PoolOption pool) async {
+    AppSession.cacheRouteExtra(AppRouteNames.manageMembers, (
+      pool: pool,
+      ownerId: widget.user.id,
+    ));
     await context.pushNamed(
       AppRouteNames.manageMembers,
       extra: (pool: pool, ownerId: widget.user.id),
@@ -526,6 +530,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _handleViewLeaderboard(PoolOption pool) async {
+    AppSession.cacheRouteExtra(AppRouteNames.poolLeaderboard, (
+      pool: pool,
+      userId: widget.user.id,
+    ));
     await context.pushNamed(
       AppRouteNames.poolLeaderboard,
       extra: (pool: pool, userId: widget.user.id),
@@ -557,6 +565,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _handlePoolSettings(PoolOption pool) async {
+    AppSession.cacheRouteExtra(AppRouteNames.poolSettings, (
+      pool: pool,
+      ownerId: widget.user.id,
+    ));
     final result = await context.pushNamed<Map<String, dynamic>>(
       AppRouteNames.poolSettings,
       extra: (pool: pool, ownerId: widget.user.id),
@@ -647,6 +659,11 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
+    AppSession.cacheRouteExtra(AppRouteNames.contestantDetail, (
+      pool: pool,
+      detail: detail,
+      onLockPick: () => _handleLockPick(pool, detail.contestant),
+    ));
     await context.pushNamed(
       AppRouteNames.contestantDetail,
       pathParameters: {'contestantId': contestant.id},
@@ -659,6 +676,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _handleAdvanceWeek(PoolOption pool) async {
+    AppSession.cacheRouteExtra(AppRouteNames.poolAdvance, (
+      pool: pool,
+      userId: widget.user.id,
+    ));
     final result = await context.pushNamed<Map<String, dynamic>>(
       AppRouteNames.poolAdvance,
       extra: (pool: pool, userId: widget.user.id),

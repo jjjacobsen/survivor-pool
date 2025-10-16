@@ -65,77 +65,82 @@ class SurvivorPoolApp extends StatelessWidget {
         path: AppRoutes.poolSettings,
         name: AppRouteNames.poolSettings,
         builder: (context, state) {
-          final extra = state.extra;
-          return switch (extra) {
-            ({PoolOption pool, String ownerId}) data => PoolSettingsPage(
-              pool: data.pool,
-              ownerId: data.ownerId,
-            ),
-            _ => const LoginPage(),
-          };
+          final extra =
+              state.extra ??
+              AppSession.getRouteExtra(AppRouteNames.poolSettings);
+          if (extra is ({PoolOption pool, String ownerId})) {
+            AppSession.cacheRouteExtra(AppRouteNames.poolSettings, extra);
+            return PoolSettingsPage(pool: extra.pool, ownerId: extra.ownerId);
+          }
+          return const LoginPage();
         },
       ),
       GoRoute(
         path: AppRoutes.poolAdvance,
         name: AppRouteNames.poolAdvance,
         builder: (context, state) {
-          final extra = state.extra;
-          return switch (extra) {
-            ({PoolOption pool, String userId}) data => PoolAdvancePage(
-              pool: data.pool,
-              userId: data.userId,
-            ),
-            _ => const LoginPage(),
-          };
+          final extra =
+              state.extra ??
+              AppSession.getRouteExtra(AppRouteNames.poolAdvance);
+          if (extra is ({PoolOption pool, String userId})) {
+            AppSession.cacheRouteExtra(AppRouteNames.poolAdvance, extra);
+            return PoolAdvancePage(pool: extra.pool, userId: extra.userId);
+          }
+          return const LoginPage();
         },
       ),
       GoRoute(
         path: AppRoutes.poolLeaderboard,
         name: AppRouteNames.poolLeaderboard,
         builder: (context, state) {
-          final extra = state.extra;
-          return switch (extra) {
-            ({PoolOption pool, String userId}) data => PoolLeaderboardPage(
-              pool: data.pool,
-              userId: data.userId,
-            ),
-            _ => const LoginPage(),
-          };
+          final extra =
+              state.extra ??
+              AppSession.getRouteExtra(AppRouteNames.poolLeaderboard);
+          if (extra is ({PoolOption pool, String userId})) {
+            AppSession.cacheRouteExtra(AppRouteNames.poolLeaderboard, extra);
+            return PoolLeaderboardPage(pool: extra.pool, userId: extra.userId);
+          }
+          return const LoginPage();
         },
       ),
       GoRoute(
         path: AppRoutes.manageMembers,
         name: AppRouteNames.manageMembers,
         builder: (context, state) {
-          final extra = state.extra;
-          return switch (extra) {
-            ({PoolOption pool, String ownerId}) data => ManagePoolMembersPage(
-              pool: data.pool,
-              ownerId: data.ownerId,
-            ),
-            _ => const LoginPage(),
-          };
+          final extra =
+              state.extra ??
+              AppSession.getRouteExtra(AppRouteNames.manageMembers);
+          if (extra is ({PoolOption pool, String ownerId})) {
+            AppSession.cacheRouteExtra(AppRouteNames.manageMembers, extra);
+            return ManagePoolMembersPage(
+              pool: extra.pool,
+              ownerId: extra.ownerId,
+            );
+          }
+          return const LoginPage();
         },
       ),
       GoRoute(
         path: AppRoutes.contestantDetail,
         name: AppRouteNames.contestantDetail,
         builder: (context, state) {
-          final extra = state.extra;
-          return switch (extra) {
-            ({
-              PoolOption pool,
-              ContestantDetailResponse detail,
-              Future<bool> Function() onLockPick,
-            })
-            data =>
-              ContestantDetailPage(
-                pool: data.pool,
-                detail: data.detail,
-                onLockPick: data.onLockPick,
-              ),
-            _ => const LoginPage(),
-          };
+          final extra =
+              state.extra ??
+              AppSession.getRouteExtra(AppRouteNames.contestantDetail);
+          if (extra
+              is ({
+                PoolOption pool,
+                ContestantDetailResponse detail,
+                Future<bool> Function() onLockPick,
+              })) {
+            AppSession.cacheRouteExtra(AppRouteNames.contestantDetail, extra);
+            return ContestantDetailPage(
+              pool: extra.pool,
+              detail: extra.detail,
+              onLockPick: extra.onLockPick,
+            );
+          }
+          return const LoginPage();
         },
       ),
     ],

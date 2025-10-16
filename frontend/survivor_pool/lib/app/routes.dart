@@ -31,6 +31,7 @@ class AppSession {
     null,
   );
   static String? _token;
+  static final Map<String, Object?> _cachedExtras = <String, Object?>{};
 
   static String? get token => _token;
 
@@ -65,6 +66,7 @@ class AppSession {
   static Future<void> clear() async {
     _token = null;
     currentUser.value = null;
+    _cachedExtras.clear();
     await AuthStorage.clearSession();
   }
 
@@ -75,4 +77,10 @@ class AppSession {
       await AuthStorage.saveSession(token, user);
     }
   }
+
+  static void cacheRouteExtra(String routeName, Object extra) {
+    _cachedExtras[routeName] = extra;
+  }
+
+  static Object? getRouteExtra(String routeName) => _cachedExtras[routeName];
 }
