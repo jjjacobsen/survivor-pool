@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/app/routes.dart';
 import 'package:survivor_pool/core/constants/api.dart';
@@ -15,6 +14,7 @@ import 'package:survivor_pool/core/models/pool.dart';
 import 'package:survivor_pool/core/models/pool_advance.dart';
 import 'package:survivor_pool/core/models/season.dart';
 import 'package:survivor_pool/core/models/user.dart';
+import 'package:survivor_pool/core/network/auth_client.dart';
 import 'package:survivor_pool/core/layout/adaptive_page.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/create_pool_dialog.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/pool_dashboard.dart';
@@ -161,7 +161,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     try {
-      final response = await http.get(
+      final response = await AuthHttpClient.get(
         _apiUri(
           '/pools/$poolId/available_contestants?user_id=${widget.user.id}',
         ),
@@ -321,7 +321,7 @@ class _HomePageState extends State<HomePage> {
     List<SeasonOption>? fetched;
 
     try {
-      final response = await http.get(_apiUri('/seasons'));
+      final response = await AuthHttpClient.get(_apiUri('/seasons'));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -371,7 +371,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final response = await http.get(
+      final response = await AuthHttpClient.get(
         _apiUri('/users/${widget.user.id}/pools'),
       );
 
@@ -443,7 +443,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final response = await http.get(
+      final response = await AuthHttpClient.get(
         _apiUri('/users/${widget.user.id}/invites'),
       );
 
@@ -494,7 +494,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final response = await http.post(
+      final response = await AuthHttpClient.post(
         _apiUri('/pools/${invite.poolId}/invites/respond'),
         headers: const {'Content-Type': 'application/json'},
         body: json.encode({'user_id': widget.user.id, 'action': action}),
@@ -600,7 +600,7 @@ class _HomePageState extends State<HomePage> {
     String contestantId,
   ) async {
     try {
-      final response = await http.get(
+      final response = await AuthHttpClient.get(
         _apiUri(
           '/pools/$poolId/contestants/$contestantId?user_id=${widget.user.id}',
         ),
@@ -620,7 +620,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<PickResponse?> _lockPick(String poolId, String contestantId) async {
     try {
-      final response = await http.post(
+      final response = await AuthHttpClient.post(
         _apiUri('/pools/$poolId/picks'),
         headers: const {'Content-Type': 'application/json'},
         body: json.encode({
@@ -857,7 +857,7 @@ class _HomePageState extends State<HomePage> {
     unawaited(_loadInvites());
 
     try {
-      final response = await http.patch(
+      final response = await AuthHttpClient.patch(
         _apiUri('/users/${widget.user.id}/default_pool'),
         headers: const {'Content-Type': 'application/json'},
         body: json.encode({'default_pool': poolId}),
@@ -877,9 +877,14 @@ class _HomePageState extends State<HomePage> {
         unawaited(_loadAvailableContestants(previous));
       } else {
         final decoded = json.decode(response.body);
-        final serverDefault = decoded is Map<String, dynamic>
-            ? decoded['default_pool'] as String?
-            : null;
+        String? serverDefault;
+        if (decoded is Map<String, dynamic>) {
+          final updatedUser = AppUser.fromJson(decoded);
+          serverDefault = updatedUser.defaultPoolId;
+          unawaited(AppSession.updateUser(updatedUser));
+        } else {
+          serverDefault = null;
+        }
         if (mounted) {
           setState(() {
             _defaultPoolId = serverDefault;

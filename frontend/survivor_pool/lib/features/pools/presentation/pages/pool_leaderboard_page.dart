@@ -3,13 +3,13 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/core/constants/api.dart';
 import 'package:survivor_pool/core/constants/layout.dart';
 import 'package:survivor_pool/core/models/pool.dart';
 import 'package:survivor_pool/core/models/pool_leaderboard.dart';
 import 'package:survivor_pool/core/layout/adaptive_page.dart';
+import 'package:survivor_pool/core/network/auth_client.dart';
 
 class PoolLeaderboardPage extends StatefulWidget {
   final PoolOption pool;
@@ -48,7 +48,7 @@ class _PoolLeaderboardPageState extends State<PoolLeaderboardPage> {
     String? error;
 
     try {
-      final response = await http.get(
+      final response = await AuthHttpClient.get(
         Uri.parse(
           '${ApiConfig.baseUrl}/pools/${widget.pool.id}/leaderboard?user_id=${widget.userId}',
         ),

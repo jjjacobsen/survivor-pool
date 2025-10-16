@@ -23,6 +23,7 @@ class SurvivorPoolApp extends StatelessWidget {
   static final GoRouter _router = GoRouter(
     initialLocation: AppRoutes.login,
     routes: [
+      GoRoute(path: '/', redirect: (context, state) => AppRoutes.login),
       GoRoute(
         path: AppRoutes.login,
         name: AppRouteNames.login,

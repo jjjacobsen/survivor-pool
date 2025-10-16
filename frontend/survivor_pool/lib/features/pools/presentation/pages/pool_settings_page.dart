@@ -2,13 +2,13 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/core/constants/api.dart';
 import 'package:survivor_pool/core/constants/layout.dart';
 import 'package:survivor_pool/core/models/pool.dart';
 import 'package:survivor_pool/core/widgets/confirmation_dialog.dart';
 import 'package:survivor_pool/core/layout/adaptive_page.dart';
+import 'package:survivor_pool/core/network/auth_client.dart';
 
 class PoolSettingsPage extends StatefulWidget {
   final PoolOption pool;
@@ -55,7 +55,7 @@ class _PoolSettingsPageState extends State<PoolSettingsPage> {
     });
 
     try {
-      final response = await http.delete(
+      final response = await AuthHttpClient.delete(
         Uri.parse(
           '${ApiConfig.baseUrl}/pools/${widget.pool.id}?owner_id=${widget.ownerId}',
         ),

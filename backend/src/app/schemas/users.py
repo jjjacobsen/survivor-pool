@@ -20,6 +20,7 @@ class UserResponse(BaseModel):
     account_status: str
     created_at: datetime
     default_pool: str | None = None
+    token: str | None = None
 
 
 class UserLoginRequest(BaseModel):

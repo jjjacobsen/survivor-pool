@@ -26,6 +26,16 @@ class AppUser {
       defaultPoolId: json['default_pool'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'username': username,
+      'email': email,
+      'display_name': displayName,
+      'default_pool': defaultPoolId,
+    };
+  }
 }
 
 class UserSearchResult {

@@ -6,7 +6,12 @@ from typing import Any
 from bson import ObjectId
 from fastapi import HTTPException, status
 
-from ..core.security import DUMMY_PASSWORD_HASH, hash_password, verify_password
+from ..core.security import (
+    DUMMY_PASSWORD_HASH,
+    create_access_token,
+    hash_password,
+    verify_password,
+)
 from ..db.mongo import (
     picks_collection,
     pool_memberships_collection,
@@ -23,6 +28,33 @@ from ..schemas.users import (
 )
 from . import pools as pools_service
 from .common import parse_object_id
+
+
+def _build_user_response(
+    user: dict[str, Any], *, token: str | None = None
+) -> UserResponse:
+    default_pool = user.get("default_pool")
+    if isinstance(default_pool, ObjectId):
+        default_pool_id: str | None = str(default_pool)
+    elif isinstance(default_pool, str):
+        default_pool_id = default_pool
+    else:
+        default_pool_id = None
+
+    created_at = user.get("created_at")
+    if not isinstance(created_at, datetime):
+        created_at = datetime.now()
+
+    return UserResponse(
+        id=str(user["_id"]),
+        username=user.get("username", ""),
+        email=user.get("email", ""),
+        display_name=user.get("display_name", ""),
+        account_status=user.get("account_status", ""),
+        created_at=created_at,
+        default_pool=default_pool_id,
+        token=token,
+    )
 
 
 def create_user(user_data: UserCreateRequest) -> UserResponse:
@@ -57,15 +89,9 @@ def create_user(user_data: UserCreateRequest) -> UserResponse:
             detail="Failed to create user",
         )
 
-    return UserResponse(
-        id=str(result.inserted_id),
-        username=user_data.username,
-        email=user_data.email,
-        display_name=user_data.display_name,
-        account_status="active",
-        created_at=user_doc["created_at"],
-        default_pool=None,
-    )
+    user_doc["_id"] = result.inserted_id
+    token = create_access_token(str(result.inserted_id))
+    return _build_user_response(user_doc, token=token)
 
 
 def login_user(user_data: UserLoginRequest) -> UserResponse:
@@ -94,17 +120,8 @@ def login_user(user_data: UserLoginRequest) -> UserResponse:
             detail="Account is not active",
         )
 
-    return UserResponse(
-        id=str(user["_id"]),
-        username=user["username"],
-        email=user["email"],
-        display_name=user["display_name"],
-        account_status=user["account_status"],
-        created_at=user["created_at"],
-        default_pool=(
-            str(user.get("default_pool")) if user.get("default_pool") else None
-        ),
-    )
+    token = create_access_token(str(user["_id"]))
+    return _build_user_response(user, token=token)
 
 
 def update_default_pool(user_id: str, payload: UserDefaultPoolUpdate) -> UserResponse:
@@ -149,19 +166,7 @@ def update_default_pool(user_id: str, payload: UserDefaultPoolUpdate) -> UserRes
             detail="Failed to update user",
         )
 
-    return UserResponse(
-        id=user_id,
-        username=updated_user["username"],
-        email=updated_user["email"],
-        display_name=updated_user["display_name"],
-        account_status=updated_user["account_status"],
-        created_at=updated_user["created_at"],
-        default_pool=(
-            str(updated_user.get("default_pool"))
-            if isinstance(updated_user.get("default_pool"), ObjectId)
-            else None
-        ),
-    )
+    return _build_user_response(updated_user)
 
 
 def list_user_pools(user_id: str) -> list[PoolResponse]:
@@ -228,6 +233,17 @@ def list_user_pools(user_id: str) -> list[PoolResponse]:
         )
 
     return responses
+
+
+def get_user_profile(user_id: str) -> UserResponse:
+    user_oid = parse_object_id(user_id, "user_id")
+    user = users_collection.find_one({"_id": user_oid})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    return _build_user_response(user)
 
 
 def delete_user(user_id: str) -> None:

@@ -1,15 +1,16 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/app/routes.dart';
 import 'package:survivor_pool/core/constants/api.dart';
 import 'package:survivor_pool/core/constants/layout.dart';
 import 'package:survivor_pool/core/layout/adaptive_page.dart';
 import 'package:survivor_pool/core/models/user.dart';
+import 'package:survivor_pool/core/network/auth_client.dart';
 import 'package:survivor_pool/core/widgets/confirmation_dialog.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -26,7 +27,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _error;
 
   void _logout() {
-    AppSession.currentUser.value = null;
+    unawaited(AppSession.clear());
     context.goNamed(AppRouteNames.login);
   }
 
@@ -57,7 +58,7 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     try {
-      final response = await http.delete(
+      final response = await AuthHttpClient.delete(
         Uri.parse('${ApiConfig.baseUrl}/users/${widget.user.id}'),
       );
 

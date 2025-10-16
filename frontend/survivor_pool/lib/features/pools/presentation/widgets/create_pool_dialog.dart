@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/core/constants/api.dart';
 import 'package:survivor_pool/core/models/season.dart';
+import 'package:survivor_pool/core/network/auth_client.dart';
 
 class CreatePoolDialog extends StatefulWidget {
   final List<SeasonOption> seasons;
@@ -53,7 +53,7 @@ class _CreatePoolDialogState extends State<CreatePoolDialog> {
 
     var shouldReset = true;
     try {
-      final response = await http.post(
+      final response = await AuthHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}/pools'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({

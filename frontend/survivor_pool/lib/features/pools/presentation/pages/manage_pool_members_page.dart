@@ -3,13 +3,13 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
 import 'package:survivor_pool/core/constants/api.dart';
 import 'package:survivor_pool/core/constants/layout.dart';
 import 'package:survivor_pool/core/layout/adaptive_page.dart';
 import 'package:survivor_pool/core/models/pool.dart';
 import 'package:survivor_pool/core/models/user.dart';
+import 'package:survivor_pool/core/network/auth_client.dart';
 
 class ManagePoolMembersPage extends StatefulWidget {
   final PoolOption pool;
@@ -110,7 +110,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
       _searchBusy = true;
     });
     try {
-      final response = await http.get(
+      final response = await AuthHttpClient.get(
         _apiUri('/users/search', {
           'q': rawQuery.trim(),
           'pool_id': widget.pool.id,
@@ -189,7 +189,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
       _isLoading = true;
     });
     try {
-      final response = await http.get(
+      final response = await AuthHttpClient.get(
         _apiUri('/pools/${widget.pool.id}/memberships', {
           'owner_id': widget.ownerId,
         }),
@@ -229,7 +229,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
       _invitingUserId = user.id;
     });
     try {
-      final response = await http.post(
+      final response = await AuthHttpClient.post(
         _apiUri('/pools/${widget.pool.id}/invites'),
         headers: const {'Content-Type': 'application/json'},
         body: json.encode({

@@ -1,12 +1,12 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:go_router/go_router.dart';
 
 import 'package:survivor_pool/app/routes.dart';
 import 'package:survivor_pool/core/constants/api.dart';
 import 'package:survivor_pool/core/constants/layout.dart';
+import 'package:survivor_pool/core/network/auth_client.dart';
 import 'package:survivor_pool/core/models/user.dart';
 
 class LoginPage extends StatefulWidget {
@@ -41,6 +41,16 @@ class _LoginPageState extends State<LoginPage>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
+    final existing = AppSession.currentUser.value;
+    final token = AppSession.token;
+    if (existing != null && token != null && token.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        context.goNamed(AppRouteNames.home, extra: existing);
+      });
+    }
   }
 
   @override
@@ -75,7 +85,7 @@ class _LoginPageState extends State<LoginPage>
                   : _usernameController.text,
             };
 
-      final response = await http.post(
+      final response = await AuthHttpClient.post(
         Uri.parse('${ApiConfig.baseUrl}$url'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(body),
@@ -84,8 +94,12 @@ class _LoginPageState extends State<LoginPage>
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         final user = AppUser.fromJson(data);
+        final token = data['token'] as String? ?? '';
+        if (token.isEmpty) {
+          return;
+        }
+        await AppSession.setSession(user, token);
         if (mounted) {
-          AppSession.currentUser.value = user;
           context.goNamed(AppRouteNames.home, extra: user);
         }
       }
