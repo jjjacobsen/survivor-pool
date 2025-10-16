@@ -24,6 +24,9 @@ services:
 
   mongo:
     image: mongo:8.0
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
       - mongo_data:/data/db
     restart: unless-stopped
