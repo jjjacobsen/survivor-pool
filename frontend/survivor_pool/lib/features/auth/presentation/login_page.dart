@@ -20,6 +20,7 @@ class _LoginPageState extends State<LoginPage>
     with SingleTickerProviderStateMixin {
   bool _isLoginMode = true;
   bool _isLoading = false;
+  String? _errorMessage;
   final _formKey = GlobalKey<FormState>();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -67,7 +68,10 @@ class _LoginPageState extends State<LoginPage>
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     try {
       final url = _isLoginMode ? '/users/login' : '/users';
@@ -100,14 +104,40 @@ class _LoginPageState extends State<LoginPage>
         }
         await AppSession.setSession(user, token);
         if (mounted) {
+          setState(() => _errorMessage = null);
           context.goNamed(AppRouteNames.home, extra: user);
         }
+        return;
+      }
+      if (mounted) {
+        setState(() {
+          _errorMessage = _extractErrorMessage(response.body);
+        });
       }
     } catch (_) {
-      // Ignored to keep UI quiet without snackbars.
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Unable to reach the server. Try again shortly.';
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _extractErrorMessage(String body) {
+    try {
+      final decoded = json.decode(body);
+      if (decoded is Map<String, dynamic>) {
+        final detail = decoded['detail'];
+        if (detail is String && detail.isNotEmpty) {
+          return detail;
+        }
+      }
+    } catch (_) {
+      // Ignore parse failures and fall back to generic message.
+    }
+    return 'Unable to sign in with the provided credentials.';
   }
 
   @override
@@ -343,6 +373,15 @@ class _LoginPageState extends State<LoginPage>
                 ),
               ],
               const SizedBox(height: 32),
+              if (_errorMessage != null) ...[
+                Text(
+                  _errorMessage!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               ElevatedButton(
                 onPressed: _isLoading ? null : _handleSubmit,
                 child: _isLoading
@@ -364,6 +403,7 @@ class _LoginPageState extends State<LoginPage>
                     _confirmPasswordController.clear();
                     _usernameController.clear();
                     _displayNameController.clear();
+                    _errorMessage = null;
                   });
                 },
                 child: Text(

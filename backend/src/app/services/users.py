@@ -1,10 +1,11 @@
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 from typing import Any
 
 from bson import ObjectId
 from fastapi import HTTPException, status
+from pymongo import ReturnDocument
 
 from ..core.security import (
     DUMMY_PASSWORD_HASH,
@@ -28,6 +29,9 @@ from ..schemas.users import (
 )
 from . import pools as pools_service
 from .common import parse_object_id
+
+MAX_FAILED_LOGIN_ATTEMPTS = 5
+LOCKOUT_DURATION = timedelta(minutes=15)
 
 
 def _build_user_response(
@@ -80,6 +84,8 @@ def create_user(user_data: UserCreateRequest) -> UserResponse:
         "account_status": "active",
         "created_at": datetime.now(),
         "default_pool": None,
+        "failed_login_attempts": 0,
+        "locked_until": None,
     }
 
     result = users_collection.insert_one(user_doc)
@@ -105,19 +111,73 @@ def login_user(user_data: UserLoginRequest) -> UserResponse:
     user = users_collection.find_one(
         {"$or": [{"email": identifier}, {"username": identifier}]}
     )
-    hashed_password = user["password_hash"] if user else DUMMY_PASSWORD_HASH
+    now = datetime.now()
+
+    if user:
+        locked_until = user.get("locked_until")
+        if isinstance(locked_until, datetime) and locked_until > now:
+            remaining_seconds = int((locked_until - now).total_seconds())
+            minutes_remaining = max((remaining_seconds + 59) // 60, 1)
+            plural = "s" if minutes_remaining != 1 else ""
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=(
+                    f"Account locked. Try again in {minutes_remaining} minute{plural}."
+                ),
+            )
+        if isinstance(locked_until, datetime) and locked_until <= now:
+            users_collection.update_one(
+                {"_id": user["_id"]},
+                {"$set": {"failed_login_attempts": 0, "locked_until": None}},
+            )
+            user["failed_login_attempts"] = 0
+            user["locked_until"] = None
+        if locked_until and not isinstance(locked_until, datetime):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Account locked. Try again soon.",
+            )
+        hashed_password = user["password_hash"]
+    else:
+        hashed_password = DUMMY_PASSWORD_HASH
+
     password_valid = verify_password(user_data.password, hashed_password)
 
     if not user or not password_valid:
+        response_status = status.HTTP_401_UNAUTHORIZED
+        detail_message = "Incorrect username/email or password"
+        if user:
+            updated_user = users_collection.find_one_and_update(
+                {"_id": user["_id"]},
+                {"$inc": {"failed_login_attempts": 1}},
+                return_document=ReturnDocument.AFTER,
+            )
+            failed_attempts = int(
+                (updated_user or {}).get("failed_login_attempts") or 0
+            )
+            if failed_attempts >= MAX_FAILED_LOGIN_ATTEMPTS:
+                lockout_expires_at = now + LOCKOUT_DURATION
+                users_collection.update_one(
+                    {"_id": user["_id"]},
+                    {"$set": {"locked_until": lockout_expires_at}},
+                )
+                detail_message = "Account locked due to too many failed attempts"
+                response_status = status.HTTP_429_TOO_MANY_REQUESTS
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username/email or password",
+            status_code=response_status,
+            detail=detail_message,
         )
 
     if user["account_status"] != "active":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is not active",
+        )
+
+    if user.get("failed_login_attempts") or user.get("locked_until"):
+        users_collection.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"failed_login_attempts": 0, "locked_until": None}},
         )
 
     token = create_access_token(str(user["_id"]))
