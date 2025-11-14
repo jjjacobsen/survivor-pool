@@ -14,6 +14,14 @@ Interactive mongosh
 - Load dev script: `load("/app/mongo-init/init.js")`
 - Load prod script: `load("/init-scripts/init.js")`
 - Verify: `db.getSiblingDB('survivor_pool').seasons.findOne({season_number:48},{season_name:1})`
+- Prod auth inside container:
+
+  ```bash
+  mongosh --username "$MONGO_INITDB_ROOT_USERNAME" \
+    --password "$MONGO_INITDB_ROOT_PASSWORD" \
+    --authenticationDatabase admin \
+    mongodb://127.0.0.1:27017/survivor_pool
+  ```
 
 Indexes
 
