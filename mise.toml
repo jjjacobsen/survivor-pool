@@ -4,56 +4,58 @@ python = "3.13"
 
 [tasks]
 bootstrap = { run = [
-    "cd backend && uv sync",
-    "cd frontend/survivor_pool && flutter pub get",
+  "cd backend && uv sync",
+  "cd frontend/survivor_pool && flutter pub get",
 ], description = "Install all project dependencies" }
 
 backend = { run = [
-    "uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
+  "uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
 ], dir = "backend", env = { _.file = ".env.dev" }, description = "Start backend server" }
 
 frontend = { run = [
-    "flutter run -d \"iPhone 17 Pro Max\" --dart-define=API_BASE_URL=http://localhost:8000",
+  "flutter run -d \"iPhone 17 Pro Max\" --dart-define=API_BASE_URL=http://localhost:8000",
 ], dir = "frontend/survivor_pool", description = "Start frontend server" }
 
 frontend2 = { run = [
-    "flutter run -d \"iPhone 17 Pro\" --dart-define=API_BASE_URL=http://localhost:8000",
+  "flutter run -d \"iPhone 17 Pro\" --dart-define=API_BASE_URL=http://localhost:8000",
 ], dir = "frontend/survivor_pool", description = "Start frontend server" }
 
 web = { run = [
-    "flutter run -d web-server --dart-define=API_BASE_URL=http://localhost:8000",
+  "flutter run -d web-server --dart-define=API_BASE_URL=http://localhost:8000",
 ], dir = "frontend/survivor_pool", description = "Start web server" }
 
 mongo = { run = [
-    "docker run --rm --name dev-mongo -d -p 27017:27017 -v dev-mongo-data:/data/db mongo:8.0",
+  "docker run --rm --name dev-mongo -d -p 27017:27017 -v dev-mongo-data:/data/db mongo:8.0",
 ], description = "Start MongoDB for development" }
 
 start = { run = [
-    "mise run mongo",
-    "if tmux has-session -t survivor-dev 2>/dev/null; then echo \"tmux session survivor-dev already running\"; exit 1; fi",
-    "tmux new-session -d -s survivor-dev -n mongosh -c .",
-    "tmux send-keys -t survivor-dev:mongosh \"./scripts/dev-mongosh.sh\" C-m",
-    "tmux new-window -t survivor-dev -n backend -c .",
-    "tmux send-keys -t survivor-dev:backend \"mise run backend\" C-m",
-    "tmux new-window -t survivor-dev -n frontend -c .",
-    "tmux send-keys -t survivor-dev:frontend \"mise run frontend\" C-m",
-    "tmux new-window -t survivor-dev -n web -c .",
-    "tmux send-keys -t survivor-dev:web \"mise run web\" C-m",
-    "echo 'Services running in tmux session survivor-dev. Attach with: mise attach'",
+  "mise run mongo",
+  "if tmux has-session -t survivor-dev 2>/dev/null; then echo \"tmux session survivor-dev already running\"; exit 1; fi",
+  "tmux new-session -d -s survivor-dev -n mongosh -c .",
+  "tmux send-keys -t survivor-dev:mongosh \"./scripts/dev-mongosh.sh\" C-m",
+  "tmux new-window -t survivor-dev -n backend -c .",
+  "tmux send-keys -t survivor-dev:backend \"mise run backend\" C-m",
+  "tmux new-window -t survivor-dev -n frontend -c .",
+  "tmux send-keys -t survivor-dev:frontend \"mise run frontend\" C-m",
+  "tmux new-window -t survivor-dev -n web -c .",
+  "tmux send-keys -t survivor-dev:web \"mise run web\" C-m",
+  "echo 'Services running in tmux session survivor-dev. Attach with: mise attach'",
 ], description = "Start all development services in background" }
 
 stop = { run = [
-    "docker compose down 2>/dev/null",
-    "tmux send-keys -t survivor-dev:frontend q 2>/dev/null || true; sleep 1",
-    "tmux kill-session -t survivor-dev 2>/dev/null || echo \"tmux session survivor-dev not found\"",
-    "docker stop dev-mongo 2>/dev/null || echo 'MongoDB not running'",
-    "echo 'All development services stopped'",
+  "docker compose down 2>/dev/null",
+  "tmux send-keys -t survivor-dev:frontend q 2>/dev/null || true; sleep 1",
+  "tmux kill-session -t survivor-dev 2>/dev/null || echo \"tmux session survivor-dev not found\"",
+  "docker stop dev-mongo 2>/dev/null || echo 'MongoDB not running'",
+  "echo 'All development services stopped'",
 ], description = "Stop all development services" }
 
-attach = { run = ["tmux attach -t survivor-dev"], description = "Attach to tmux session" }
+attach = { run = [
+  "tmux attach -t survivor-dev",
+], description = "Attach to tmux session" }
 
 prod = { run = [
-    "docker compose build --no-cache",
-    "docker compose up -d",
-    "./scripts/prod-mongosh.sh",
+  "docker compose build --no-cache",
+  "docker compose up -d",
+  "./scripts/prod-mongosh.sh",
 ], description = "Start production services" }
