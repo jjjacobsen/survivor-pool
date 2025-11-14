@@ -238,7 +238,8 @@
   const eliminations49 = [
     { week: 1, eliminated_contestant_id: idOf("Nicole Mazullo") },
     { week: 2, eliminated_contestant_id: idOf("Kimberly \"Annie\" Davis") },
-    { week: 3, eliminated_contestant_id: null }
+    { week: 3, eliminated_contestant_id: idOf("Jake Latimer") },
+    { week: 3, eliminated_contestant_id: idOf("Jeremiah Ing") }
   ];
 
   const tribeTimeline49 = [
@@ -296,6 +297,26 @@
       played_week: null,
       transferred_to: null,
       notes: "Alex completed the beware activation steps on Kele in week 2; idol currently active"
+    },
+    {
+      id: "idol_mc_chukwujekwu_1",
+      advantage_type: "hidden_immunity_idol",
+      contestant_id: idOf("Michelle \"MC\" Chukwujekwu"),
+      obtained_week: 3,
+      status: "active",
+      played_week: null,
+      transferred_to: null,
+      notes: "MC unearthed Hina's beware idol in week 3; activation tasks still underway"
+    },
+    {
+      id: "idol_rizo_velovic_1",
+      advantage_type: "hidden_immunity_idol",
+      contestant_id: idOf("Rizo Velovic"),
+      obtained_week: 3,
+      status: "active",
+      played_week: null,
+      transferred_to: null,
+      notes: "Rizo located Uli's beware idol in week 3; activation tasks still underway"
     }
   ];
 
@@ -390,7 +411,6 @@
           password_hash: spacePasswordHash,
           display_name: account.display_name,
           account_status: "active",
-          token_invalidated_at: now
         },
         $setOnInsert: {
           _id: account.id,
