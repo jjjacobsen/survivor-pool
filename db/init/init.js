@@ -248,7 +248,8 @@
     { week: 3, eliminated_contestant_id: idOf("Jake Latimer") },
     { week: 3, eliminated_contestant_id: idOf("Jeremiah Ing") },
     { week: 4, eliminated_contestant_id: idOf("Matthew \"Matt\" Williams") },
-    { week: 5, eliminated_contestant_id: idOf("Jason Treul") }
+    { week: 5, eliminated_contestant_id: idOf("Jason Treul") },
+    { week: 6, eliminated_contestant_id: idOf("Shannon Fairweather") }
   ];
 
   const tribeTimeline49 = [
@@ -326,6 +327,43 @@
           ]
         }
       ]
+    },
+    {
+      week: 6,
+      event: "swap",
+      notes: "Day 11 expansion reinstated Uli and split into three tribes of four",
+      tribes: [
+        {
+          name: "Hina",
+          color: "#FEDA47",
+          members: [
+            idOf("Michelle \"MC\" Chukwujekwu"),
+            idOf("Rizo Velovic"),
+            idOf("Savannah Louie"),
+            idOf("Sophia \"Sophi\" Balerdi")
+          ]
+        },
+        {
+          name: "Kele",
+          color: "#32AAD6",
+          members: [
+            idOf("Jawan Pitts"),
+            idOf("Sage Ahrens-Nichols"),
+            idOf("Shannon Fairweather"),
+            idOf("Steven Ramm")
+          ]
+        },
+        {
+          name: "Uli",
+          color: "#F26B52",
+          members: [
+            idOf("Alex Moore"),
+            idOf("Kristina Mills"),
+            idOf("Nate Moore"),
+            idOf("Sophia \"Sophie\" Segreti")
+          ]
+        }
+      ]
     }
   ];
 
@@ -362,6 +400,17 @@
       played_week: null,
       transferred_to: null,
       notes: "Savannah, Jawan, and Nate dug up Hina's beware clue/key post-swap and handed it to Rizo, letting him retrieve the idol from the underwater chest"
+    },
+    {
+      id: "kip_sophi_balerdi_1",
+      advantage_type: "knowledge_is_power",
+      advantage_display_name: "Knowledge is Power",
+      contestant_id: idOf("Sophia \"Sophi\" Balerdi"),
+      obtained_week: 6,
+      status: "active",
+      played_week: null,
+      transferred_to: null,
+      notes: "Sophi spotted the Knowledge is Power parchment near Hina's camp the day after the three-tribe expansion"
     }
   ];
 
