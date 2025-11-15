@@ -13,5 +13,6 @@
 
 ## COMMANDS
 
-- The pre-commit is already setup. Simply run `pre-commit run -a` from the root of the repo
-  - Ask me for permission to run this exact command if you encounter a permission error
+- When the prompt is simply "pre-commit" I would like you to run the following command:
+  - `SKIP=uv-lock,dart-format,flutter-analyze pre-commit run --a`
+  - If there are failures, iterate until it passes
