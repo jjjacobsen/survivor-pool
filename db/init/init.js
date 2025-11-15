@@ -240,7 +240,8 @@
     { week: 2, eliminated_contestant_id: idOf("Kimberly \"Annie\" Davis") },
     { week: 3, eliminated_contestant_id: idOf("Jake Latimer") },
     { week: 3, eliminated_contestant_id: idOf("Jeremiah Ing") },
-    { week: 4, eliminated_contestant_id: idOf("Matthew \"Matt\" Williams") }
+    { week: 4, eliminated_contestant_id: idOf("Matthew \"Matt\" Williams") },
+    { week: 5, eliminated_contestant_id: idOf("Jason Treul") }
   ];
 
   const tribeTimeline49 = [
