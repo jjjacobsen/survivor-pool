@@ -21,7 +21,7 @@ An elimination pool application for the TV show Survivor, where players pick con
 ### User Management
 
 - User accounts with username, email, password authentication
-- User profiles with display names and basic information
+- User profiles with usernames and basic information
 - Account status tracking (active/inactive)
 
 ### Pool Management

@@ -257,19 +257,19 @@ def _load_winner_summaries(winner_ids: list[ObjectId]) -> list[PoolWinnerSummary
 
     users_cursor = users_collection.find(
         {"_id": {"$in": winner_ids}},
-        {"display_name": 1, "email": 1},
+        {"username": 1, "email": 1},
     )
     names_by_id: dict[ObjectId, str] = {}
     for user in users_cursor:
-        label = user.get("display_name") or user.get("email") or ""
+        label = user.get("username") or user.get("email") or ""
         names_by_id[user["_id"]] = label
 
     winners: list[PoolWinnerSummary] = []
     for winner_id in winner_ids:
         label = names_by_id.get(winner_id, str(winner_id))
-        winners.append(PoolWinnerSummary(user_id=str(winner_id), display_name=label))
+        winners.append(PoolWinnerSummary(user_id=str(winner_id), username=label))
 
-    winners.sort(key=lambda winner: winner.display_name.lower())
+    winners.sort(key=lambda winner: winner.username.lower())
     return winners
 
 
@@ -432,10 +432,10 @@ def _build_member_summary(
     else:
         user_id = str(raw_user_id)
 
-    display_name = user_doc.get("display_name") or ""
+    username = user_doc.get("username") or ""
     email = user_doc.get("email") or ""
-    if not display_name:
-        display_name = email or user_id
+    if not username:
+        username = email or user_id
 
     final_rank_value = membership.get("final_rank")
     if isinstance(final_rank_value, int):
@@ -455,7 +455,7 @@ def _build_member_summary(
 
     return PoolMemberSummary(
         user_id=user_id,
-        display_name=display_name,
+        username=username,
         email=email,
         role=membership.get("role", "member"),
         status=membership.get("status", "active"),
@@ -1071,26 +1071,26 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
         eliminated_ids = list(elimination_reasons.keys())
         users_cursor = users_collection.find(
             {"_id": {"$in": eliminated_ids}},
-            {"display_name": 1, "email": 1},
+            {"username": 1, "email": 1},
         )
         names_by_id: dict[ObjectId, str] = {}
         for user in users_cursor:
-            label = user.get("display_name") or user.get("email") or ""
+            label = user.get("username") or user.get("email") or ""
             names_by_id[user["_id"]] = label
 
         for member_id in eliminated_ids:
             if member_id in seen_winners:
                 continue
-            display_name = names_by_id.get(member_id, str(member_id))
+            username = names_by_id.get(member_id, str(member_id))
             eliminated_members.append(
                 PoolEliminatedMember(
                     user_id=str(member_id),
-                    display_name=display_name,
+                    username=username,
                     reason=elimination_reasons[member_id],
                 )
             )
 
-        eliminated_members.sort(key=lambda member: member.display_name.lower())
+        eliminated_members.sort(key=lambda member: member.username.lower())
 
     return PoolAdvanceResponse(
         new_current_week=new_week,
@@ -1140,7 +1140,7 @@ def get_pool_leaderboard(pool_id: str, user_id: str) -> PoolLeaderboardResponse:
     if user_ids:
         users_cursor = users_collection.find(
             {"_id": {"$in": user_ids}},
-            {"display_name": 1, "email": 1},
+            {"username": 1, "email": 1},
         )
         users_by_id = {user["_id"]: user for user in users_cursor}
 
@@ -1161,9 +1161,7 @@ def get_pool_leaderboard(pool_id: str, user_id: str) -> PoolLeaderboardResponse:
         if status_value not in allowed_statuses:
             continue
         user_doc = users_by_id.get(member_id, {})
-        display_name = (
-            user_doc.get("display_name") or user_doc.get("email") or str(member_id)
-        )
+        username = user_doc.get("username") or user_doc.get("email") or str(member_id)
         score_value = _coerce_int(membership.get("score")) or 0
         raw_reason = membership.get("elimination_reason")
         elimination_reason = (
@@ -1172,7 +1170,7 @@ def get_pool_leaderboard(pool_id: str, user_id: str) -> PoolLeaderboardResponse:
         entry_payloads.append(
             {
                 "user_id": str(member_id),
-                "display_name": display_name,
+                "username": username,
                 "score": score_value,
                 "status": status_value,
                 "is_winner": status_value == MEMBERSHIP_STATUS_WINNER,
@@ -1187,7 +1185,7 @@ def get_pool_leaderboard(pool_id: str, user_id: str) -> PoolLeaderboardResponse:
     entry_payloads.sort(
         key=lambda entry: (
             -entry["score"],
-            entry["display_name"].lower(),
+            entry["username"].lower(),
         )
     )
 
@@ -1240,7 +1238,7 @@ def list_pool_memberships(pool_id: str, owner_id: str) -> PoolMembershipListResp
 
     users_cursor = users_collection.find(
         {"_id": {"$in": user_ids}},
-        {"display_name": 1, "email": 1},
+        {"username": 1, "email": 1},
     )
     users_by_id: dict[ObjectId, dict[str, Any]] = {
         user["_id"]: user for user in users_cursor
@@ -1260,7 +1258,7 @@ def list_pool_memberships(pool_id: str, owner_id: str) -> PoolMembershipListResp
         key=lambda member: (
             0 if member.role == "owner" else 1,
             0 if member.status in {"active", MEMBERSHIP_STATUS_WINNER} else 1,
-            member.display_name.lower(),
+            member.username.lower(),
         )
     )
 
@@ -1279,7 +1277,7 @@ def invite_user_to_pool(pool_id: str, payload: PoolInviteRequest) -> PoolInviteR
 
     target_user = users_collection.find_one(
         {"_id": invited_oid, "account_status": "active"},
-        {"display_name": 1, "email": 1},
+        {"username": 1, "email": 1},
     )
     if not target_user:
         raise HTTPException(
@@ -1433,7 +1431,7 @@ def respond_to_invite(
 
     user_doc = users_collection.find_one(
         {"_id": user_oid},
-        {"display_name": 1, "email": 1},
+        {"username": 1, "email": 1},
     )
     if not user_doc:
         raise HTTPException(
@@ -1490,7 +1488,7 @@ def get_pending_invites_for_user(user_id: str) -> PendingInvitesResponse:
 
     owners_cursor = users_collection.find(
         {"_id": {"$in": list(owner_ids)}},
-        {"display_name": 1, "email": 1},
+        {"username": 1, "email": 1},
     )
     owners_by_id: dict[ObjectId, dict[str, Any]] = {
         owner["_id"]: owner for owner in owners_cursor
@@ -1518,9 +1516,7 @@ def get_pending_invites_for_user(user_id: str) -> PendingInvitesResponse:
         )
         owner_display = ""
         if owner_doc:
-            owner_display = (
-                owner_doc.get("display_name") or owner_doc.get("email") or ""
-            )
+            owner_display = owner_doc.get("username") or owner_doc.get("email") or ""
 
         season_id = pool.get("seasonId")
         season_number: int | None = None
@@ -1535,7 +1531,7 @@ def get_pending_invites_for_user(user_id: str) -> PendingInvitesResponse:
             PendingInviteSummary(
                 pool_id=str(pool_oid),
                 pool_name=pool.get("name", ""),
-                owner_display_name=owner_display,
+                owner_username=owner_display,
                 season_id=season_id_str,
                 season_number=season_number,
                 invited_at=invited_at,
@@ -1650,22 +1646,22 @@ def _compute_pool_advance_status(
     if missing_user_ids:
         users_cursor = users_collection.find(
             {"_id": {"$in": missing_user_ids}},
-            {"display_name": 1},
+            {"username": 1},
         )
-        display_names: dict[ObjectId, str] = {}
+        usernames: dict[ObjectId, str] = {}
         for user in users_cursor:
-            display_names[user["_id"]] = user.get("display_name", "")
+            usernames[user["_id"]] = user.get("username", "")
 
         for user_id in missing_user_ids:
-            name = display_names.get(user_id, "") or str(user_id)
+            name = usernames.get(user_id, "") or str(user_id)
             missing_members.append(
                 PoolAdvanceMissingMember(
                     user_id=str(user_id),
-                    display_name=name,
+                    username=name,
                 )
             )
 
-    missing_members.sort(key=lambda member: member.display_name.lower())
+    missing_members.sort(key=lambda member: member.username.lower())
 
     status_payload = PoolAdvanceStatusResponse(
         current_week=current_week,

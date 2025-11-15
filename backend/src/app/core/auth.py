@@ -36,7 +36,6 @@ class AuthenticatedUser:
             id=str(doc["_id"]),
             username=doc.get("username", ""),
             email=doc.get("email", ""),
-            display_name=doc.get("display_name", ""),
             account_status=doc.get("account_status", ""),
             created_at=created_value,
             default_pool=default_pool_id,

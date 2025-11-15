@@ -350,7 +350,7 @@ class _PoolAdvancePageState extends State<PoolAdvancePage> {
             ),
             child: ListTile(
               title: Text(
-                member.displayName,
+                member.username,
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.error,
                 ),

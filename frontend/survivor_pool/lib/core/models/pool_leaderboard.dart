@@ -23,7 +23,7 @@ int? _parseInt(dynamic value) {
 class PoolLeaderboardEntry {
   final int rank;
   final String userId;
-  final String displayName;
+  final String username;
   final int score;
   final String status;
   final bool isWinner;
@@ -36,7 +36,7 @@ class PoolLeaderboardEntry {
   const PoolLeaderboardEntry({
     required this.rank,
     required this.userId,
-    required this.displayName,
+    required this.username,
     required this.score,
     required this.status,
     required this.isWinner,
@@ -51,7 +51,7 @@ class PoolLeaderboardEntry {
     return PoolLeaderboardEntry(
       rank: _parseInt(json['rank']) ?? 0,
       userId: json['user_id'] as String? ?? '',
-      displayName: json['display_name'] as String? ?? '',
+      username: json['username'] as String? ?? '',
       score: _parseInt(json['score']) ?? 0,
       status: json['status'] as String? ?? 'active',
       isWinner: json['is_winner'] == true,

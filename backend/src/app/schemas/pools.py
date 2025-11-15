@@ -97,7 +97,7 @@ class ContestantDetailResponse(BaseModel):
 
 class PoolAdvanceMissingMember(BaseModel):
     user_id: str
-    display_name: str
+    username: str
 
 
 class PoolAdvanceStatusResponse(BaseModel):
@@ -115,13 +115,13 @@ class PoolAdvanceRequest(BaseModel):
 
 class PoolEliminatedMember(BaseModel):
     user_id: str
-    display_name: str
+    username: str
     reason: str
 
 
 class PoolWinnerSummary(BaseModel):
     user_id: str
-    display_name: str
+    username: str
 
 
 class PoolAdvanceResponse(BaseModel):
@@ -134,7 +134,7 @@ class PoolAdvanceResponse(BaseModel):
 class PoolLeaderboardEntry(BaseModel):
     rank: int
     user_id: str
-    display_name: str
+    username: str
     score: int
     status: str
     is_winner: bool = False
@@ -158,7 +158,7 @@ class PoolLeaderboardResponse(BaseModel):
 
 class PoolMemberSummary(BaseModel):
     user_id: str
-    display_name: str
+    username: str
     email: str
     role: str
     status: str
@@ -198,7 +198,7 @@ class PoolInviteDecisionResponse(BaseModel):
 class PendingInviteSummary(BaseModel):
     pool_id: str
     pool_name: str
-    owner_display_name: str
+    owner_username: str
     season_id: str
     season_number: int | None = None
     invited_at: datetime | None = None

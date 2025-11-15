@@ -156,23 +156,23 @@ DateTime? _parseIsoDate(dynamic value) {
 
 class PoolWinner {
   final String userId;
-  final String displayName;
+  final String username;
 
-  const PoolWinner({required this.userId, required this.displayName});
+  const PoolWinner({required this.userId, required this.username});
 
   factory PoolWinner.fromJson(Map<String, dynamic> json) {
     final userId = json['user_id'] as String? ?? '';
-    final displayName = json['display_name'] as String? ?? '';
+    final username = json['username'] as String? ?? '';
     return PoolWinner(
       userId: userId,
-      displayName: displayName.isNotEmpty ? displayName : userId,
+      username: username.isNotEmpty ? username : userId,
     );
   }
 }
 
 class PoolMemberSummary {
   final String userId;
-  final String displayName;
+  final String username;
   final String email;
   final String role;
   final String status;
@@ -187,7 +187,7 @@ class PoolMemberSummary {
 
   const PoolMemberSummary({
     required this.userId,
-    required this.displayName,
+    required this.username,
     required this.email,
     required this.role,
     required this.status,
@@ -217,7 +217,7 @@ class PoolMemberSummary {
 
     return PoolMemberSummary(
       userId: json['user_id'] as String? ?? '',
-      displayName: json['display_name'] as String? ?? '',
+      username: json['username'] as String? ?? '',
       email: json['email'] as String? ?? '',
       role: json['role'] as String? ?? 'member',
       status: json['status'] as String? ?? 'active',
@@ -258,7 +258,7 @@ class PoolMembershipList {
 class PendingInvite {
   final String poolId;
   final String poolName;
-  final String ownerDisplayName;
+  final String ownerUsername;
   final String seasonId;
   final int? seasonNumber;
   final DateTime? invitedAt;
@@ -266,7 +266,7 @@ class PendingInvite {
   const PendingInvite({
     required this.poolId,
     required this.poolName,
-    required this.ownerDisplayName,
+    required this.ownerUsername,
     required this.seasonId,
     this.seasonNumber,
     this.invitedAt,
@@ -276,7 +276,7 @@ class PendingInvite {
     return PendingInvite(
       poolId: json['pool_id'] as String? ?? '',
       poolName: json['pool_name'] as String? ?? '',
-      ownerDisplayName: json['owner_display_name'] as String? ?? '',
+      ownerUsername: json['owner_username'] as String? ?? '',
       seasonId: json['season_id'] as String? ?? '',
       seasonNumber: json['season_number'] is int
           ? json['season_number'] as int

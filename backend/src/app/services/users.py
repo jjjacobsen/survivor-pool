@@ -53,7 +53,6 @@ def _build_user_response(
         id=str(user["_id"]),
         username=user.get("username", ""),
         email=user.get("email", ""),
-        display_name=user.get("display_name", ""),
         account_status=user.get("account_status", ""),
         created_at=created_at,
         default_pool=default_pool_id,
@@ -80,7 +79,6 @@ def create_user(user_data: UserCreateRequest) -> UserResponse:
         "username": user_data.username,
         "email": user_data.email,
         "password_hash": hashed_password,
-        "display_name": user_data.display_name,
         "account_status": "active",
         "created_at": datetime.now(),
         "default_pool": None,
@@ -367,13 +365,12 @@ def search_active_users(
     selector = {
         "account_status": "active",
         "$or": [
-            {"display_name": {"$regex": pattern, "$options": "i"}},
             {"email": {"$regex": pattern, "$options": "i"}},
             {"username": {"$regex": pattern, "$options": "i"}},
         ],
     }
 
-    projection = {"display_name": 1, "email": 1, "username": 1}
+    projection = {"email": 1, "username": 1}
     fetch_limit = max(effective_limit * 4, 40)
     cursor = users_collection.find(selector, projection).limit(fetch_limit)
 
@@ -396,23 +393,20 @@ def search_active_users(
     ranked: list[tuple[float, float, str, dict[str, Any]]] = []
 
     for doc in cursor:
-        display_name = doc.get("display_name") or ""
         email = doc.get("email") or ""
         username = doc.get("username") or ""
         fuzzy_score = max(
-            _fuzzy_score(lower_query, display_name.lower()),
             _fuzzy_score(lower_query, email.lower()),
             _fuzzy_score(lower_query, username.lower()),
         )
         boost = max(
-            prefix_boost(display_name),
             prefix_boost(email),
             prefix_boost(username),
         )
         score = max(fuzzy_score, boost)
         if score <= 0.0:
             continue
-        tie_break = display_name.lower() or username.lower() or email.lower()
+        tie_break = username.lower() or email.lower()
         ranked.append((score, boost, tie_break, doc))
 
     ranked.sort(key=lambda item: (-item[0], -item[1], item[2]))
@@ -429,9 +423,6 @@ def search_active_users(
         results.append(
             UserSearchResult(
                 id=str(user_id),
-                display_name=(
-                    doc.get("display_name") or username or doc.get("email", "")
-                ),
                 email=doc.get("email") or "",
                 username=username,
                 membership_status=status if status else None,

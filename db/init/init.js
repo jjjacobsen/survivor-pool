@@ -540,19 +540,16 @@
     {
       username: "test1",
       email: "test1@email.com",
-      display_name: "test1",
       id: ObjectId("68ccc555f763780fad79e575")
     },
     {
       username: "test2",
       email: "test2@email.com",
-      display_name: "test2",
       id: ObjectId("68ccc555f763780fad79e576")
     },
     {
       username: "test3",
       email: "test3@email.com",
-      display_name: "test3",
       id: ObjectId("68ccc555f763780fad79e577")
     }
   ].forEach((account) => {
@@ -562,7 +559,6 @@
         $set: {
           email: account.email,
           password_hash: spacePasswordHash,
-          display_name: account.display_name,
           account_status: "active",
         },
         $setOnInsert: {
@@ -610,7 +606,6 @@
     username: resetUsername,
     email: "test@email.com",
     password_hash: spacePasswordHash,
-    display_name: resetUsername,
     account_status: "active",
     created_at: now,
     default_pool: null,

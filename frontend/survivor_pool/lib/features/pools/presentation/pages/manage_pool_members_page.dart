@@ -168,7 +168,6 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
                 (result) => result.id == userId
                     ? UserSearchResult(
                         id: result.id,
-                        displayName: result.displayName,
                         email: result.email,
                         username: result.username,
                         membershipStatus: status,
@@ -554,9 +553,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                result.displayName.isNotEmpty
-                    ? result.displayName
-                    : result.email,
+                result.username.isNotEmpty ? result.username : result.email,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -616,8 +613,8 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              member.displayName.isNotEmpty
-                                  ? member.displayName
+                              member.username.isNotEmpty
+                                  ? member.username
                                   : member.email,
                               style: theme.textTheme.bodyLarge?.copyWith(
                                 fontWeight: FontWeight.w600,

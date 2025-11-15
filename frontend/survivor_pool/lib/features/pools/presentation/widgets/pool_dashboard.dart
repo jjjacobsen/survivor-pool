@@ -402,7 +402,7 @@ class PoolDashboard extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         for (var i = 0; i < winners.length; i++) ...[
-          Text(winners[i].displayName, style: theme.textTheme.bodyMedium),
+          Text(winners[i].username, style: theme.textTheme.bodyMedium),
           if (i < winners.length - 1) const SizedBox(height: 6),
         ],
       ],
@@ -649,14 +649,11 @@ class PoolDashboard extends StatelessWidget {
     for (final contestant in contestants) {
       final rawName = contestant.tribeName?.trim() ?? '';
       final key = rawName.isEmpty ? '__none__' : rawName.toLowerCase();
-      final displayName = rawName.isEmpty ? 'Unassigned' : rawName;
+      final tribeLabel = rawName.isEmpty ? 'Unassigned' : rawName;
 
       var group = groupsByKey[key];
       if (group == null) {
-        group = _TribeGroup(
-          label: displayName,
-          colorHex: contestant.tribeColor,
-        );
+        group = _TribeGroup(label: tribeLabel, colorHex: contestant.tribeColor);
         groupsByKey[key] = group;
         orderedGroups.add(group);
       } else if (group.colorHex == null && contestant.tribeColor != null) {

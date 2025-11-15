@@ -109,7 +109,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final entries = <({String label, String value})>[
-      (label: 'Display name', value: widget.user.displayName),
       (label: 'Username', value: '@${widget.user.username}'),
       (label: 'Email', value: widget.user.email),
     ];

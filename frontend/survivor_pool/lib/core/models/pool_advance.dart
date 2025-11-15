@@ -1,18 +1,18 @@
 class PoolAdvanceMissingMember {
   final String userId;
-  final String displayName;
+  final String username;
 
   const PoolAdvanceMissingMember({
     required this.userId,
-    required this.displayName,
+    required this.username,
   });
 
   factory PoolAdvanceMissingMember.fromJson(Map<String, dynamic> json) {
     final userId = json['user_id'] as String? ?? '';
-    final displayName = json['display_name'] as String? ?? '';
+    final username = json['username'] as String? ?? '';
     return PoolAdvanceMissingMember(
       userId: userId,
-      displayName: displayName.isNotEmpty ? displayName : userId,
+      username: username.isNotEmpty ? username : userId,
     );
   }
 }
@@ -58,8 +58,7 @@ class PoolAdvanceStatus {
         : <PoolAdvanceMissingMember>[];
 
     parsedMembers.sort(
-      (a, b) =>
-          a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()),
+      (a, b) => a.username.toLowerCase().compareTo(b.username.toLowerCase()),
     );
 
     final week = parseInt(json['current_week']);
@@ -78,22 +77,22 @@ class PoolAdvanceStatus {
 
 class PoolAdvanceElimination {
   final String userId;
-  final String displayName;
+  final String username;
   final String reason;
 
   const PoolAdvanceElimination({
     required this.userId,
-    required this.displayName,
+    required this.username,
     required this.reason,
   });
 
   factory PoolAdvanceElimination.fromJson(Map<String, dynamic> json) {
     final userId = json['user_id'] as String? ?? '';
-    final displayName = json['display_name'] as String? ?? '';
+    final username = json['username'] as String? ?? '';
     final reason = json['reason'] as String? ?? ''; // fall back to empty string
     return PoolAdvanceElimination(
       userId: userId,
-      displayName: displayName.isNotEmpty ? displayName : userId,
+      username: username.isNotEmpty ? username : userId,
       reason: reason,
     );
   }

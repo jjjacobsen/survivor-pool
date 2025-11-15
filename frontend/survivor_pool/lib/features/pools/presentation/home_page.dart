@@ -773,7 +773,7 @@ class _HomePageState extends State<HomePage> {
     final message = eliminations
         .map(
           (entry) =>
-              '${entry.displayName}: '
+              '${entry.username}: '
               '${_describeEliminationReason(entry.reason)}',
         )
         .join('\n');
@@ -1128,15 +1128,10 @@ class _HomePageState extends State<HomePage> {
     required EdgeInsetsGeometry padding,
     BorderSide? side,
   }) {
-    final displayName = widget.user.displayName.trim();
     final username = widget.user.username.trim();
     final email = widget.user.email.trim();
-    final label = displayName.isNotEmpty
-        ? displayName
-        : (username.isNotEmpty ? username : email);
-    final initialSource = displayName.isNotEmpty
-        ? displayName
-        : (username.isNotEmpty ? username : email);
+    final label = username.isNotEmpty ? username : email;
+    final initialSource = label;
     final initial = initialSource.isNotEmpty
         ? initialSource[0].toUpperCase()
         : '?';
@@ -1637,8 +1632,8 @@ class _HomePageState extends State<HomePage> {
     if (invite.seasonNumber != null) {
       parts.add('Season ${invite.seasonNumber}');
     }
-    if (invite.ownerDisplayName.isNotEmpty) {
-      parts.add('Hosted by ${invite.ownerDisplayName}');
+    if (invite.ownerUsername.isNotEmpty) {
+      parts.add('Hosted by ${invite.ownerUsername}');
     }
     return parts.join(' • ');
   }

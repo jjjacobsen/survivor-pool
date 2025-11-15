@@ -306,9 +306,7 @@ class _PoolLeaderboardPageState extends State<PoolLeaderboardPage> {
         lines.add(const SizedBox(height: 8));
         for (var i = 0; i < leaderboard.winners.length; i++) {
           final winner = leaderboard.winners[i];
-          lines.add(
-            Text(winner.displayName, style: theme.textTheme.bodyMedium),
-          );
+          lines.add(Text(winner.username, style: theme.textTheme.bodyMedium));
           if (i < leaderboard.winners.length - 1) {
             lines.add(const SizedBox(height: 6));
           }
@@ -376,7 +374,7 @@ class _PoolLeaderboardPageState extends State<PoolLeaderboardPage> {
           ),
         ),
         title: Text(
-          entry.displayName,
+          entry.username,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: entry.isWinner ? FontWeight.w800 : FontWeight.w600,
           ),

@@ -29,7 +29,6 @@ class _LoginPageState extends State<LoginPage>
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _usernameController = TextEditingController();
-  final _displayNameController = TextEditingController();
 
   @override
   void initState() {
@@ -61,7 +60,6 @@ class _LoginPageState extends State<LoginPage>
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _usernameController.dispose();
-    _displayNameController.dispose();
     super.dispose();
   }
 
@@ -84,9 +82,6 @@ class _LoginPageState extends State<LoginPage>
               'username': _usernameController.text,
               'email': _emailController.text,
               'password': _passwordController.text,
-              'display_name': _displayNameController.text.isNotEmpty
-                  ? _displayNameController.text
-                  : _usernameController.text,
             };
 
       final response = await AuthHttpClient.post(
@@ -304,14 +299,6 @@ class _LoginPageState extends State<LoginPage>
                   },
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: _displayNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Display Name (optional)',
-                    prefixIcon: Icon(Icons.badge),
-                  ),
-                ),
-                const SizedBox(height: 16),
               ],
               TextFormField(
                 controller: _emailController,
@@ -402,7 +389,6 @@ class _LoginPageState extends State<LoginPage>
                     _passwordController.clear();
                     _confirmPasswordController.clear();
                     _usernameController.clear();
-                    _displayNameController.clear();
                     _errorMessage = null;
                   });
                 },
