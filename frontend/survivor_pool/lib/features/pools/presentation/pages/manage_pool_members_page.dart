@@ -543,7 +543,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
     }
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const Icon(Icons.person_outline),
         const SizedBox(width: 12),
@@ -601,7 +601,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
                 (member) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const Icon(Icons.person_outline),
                       const SizedBox(width: 12),
