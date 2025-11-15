@@ -32,6 +32,5 @@ class UserDefaultPoolUpdate(BaseModel):
 
 class UserSearchResult(BaseModel):
     id: str
-    email: str
     username: str
     membership_status: str | None = None

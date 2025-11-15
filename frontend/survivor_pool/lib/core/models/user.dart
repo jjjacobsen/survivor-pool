@@ -32,13 +32,11 @@ class AppUser {
 
 class UserSearchResult {
   final String id;
-  final String email;
   final String username;
   final String? membershipStatus;
 
   const UserSearchResult({
     required this.id,
-    required this.email,
     required this.username,
     this.membershipStatus,
   });
@@ -46,7 +44,6 @@ class UserSearchResult {
   factory UserSearchResult.fromJson(Map<String, dynamic> json) {
     return UserSearchResult(
       id: json['id'] as String? ?? '',
-      email: json['email'] as String? ?? '',
       username: json['username'] as String? ?? '',
       membershipStatus: json['membership_status'] as String?,
     );

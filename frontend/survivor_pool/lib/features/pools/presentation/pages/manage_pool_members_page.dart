@@ -168,7 +168,6 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
                 (result) => result.id == userId
                     ? UserSearchResult(
                         id: result.id,
-                        email: result.email,
                         username: result.username,
                         membershipStatus: status,
                       )
@@ -553,13 +552,11 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                result.username.isNotEmpty ? result.username : result.email,
+                result.username,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              if (result.email.isNotEmpty || result.username.isNotEmpty)
-                _buildSearchSubtitle(result),
             ],
           ),
         ),
@@ -615,18 +612,11 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
                             Text(
                               member.username.isNotEmpty
                                   ? member.username
-                                  : member.email,
+                                  : member.userId,
                               style: theme.textTheme.bodyLarge?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            if (member.email.isNotEmpty)
-                              Text(
-                                member.email,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
                           ],
                         ),
                       ),
@@ -640,20 +630,6 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
         ),
       ),
     );
-  }
-
-  Widget _buildSearchSubtitle(UserSearchResult result) {
-    final lines = <String>[];
-    if (result.email.isNotEmpty) {
-      lines.add(result.email);
-    }
-    if (result.username.isNotEmpty) {
-      lines.add(result.username);
-    }
-    if (lines.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Text(lines.join(' • '));
   }
 
   Widget _buildStatusChip(

@@ -173,7 +173,6 @@ class PoolWinner {
 class PoolMemberSummary {
   final String userId;
   final String username;
-  final String email;
   final String role;
   final String status;
   final DateTime? joinedAt;
@@ -188,7 +187,6 @@ class PoolMemberSummary {
   const PoolMemberSummary({
     required this.userId,
     required this.username,
-    required this.email,
     required this.role,
     required this.status,
     this.joinedAt,
@@ -218,7 +216,6 @@ class PoolMemberSummary {
     return PoolMemberSummary(
       userId: json['user_id'] as String? ?? '',
       username: json['username'] as String? ?? '',
-      email: json['email'] as String? ?? '',
       role: json['role'] as String? ?? 'member',
       status: json['status'] as String? ?? 'active',
       joinedAt: _parseIsoDate(json['joined_at']),

@@ -1,6 +1,5 @@
 import re
 from datetime import datetime, timedelta
-from difflib import SequenceMatcher
 from typing import Any
 
 from bson import ObjectId
@@ -332,12 +331,6 @@ def delete_user(user_id: str) -> None:
         )
 
 
-def _fuzzy_score(query: str, candidate: str) -> float:
-    if not query or not candidate:
-        return 0.0
-    return SequenceMatcher(a=query, b=candidate).ratio()
-
-
 def search_active_users(
     query: str, pool_id: str | None = None, limit: int = 10
 ) -> list[UserSearchResult]:
@@ -346,6 +339,7 @@ def search_active_users(
         return []
 
     effective_limit = max(1, min(limit, 25))
+    normalized = trimmed.lower()
 
     pool_membership_status: dict[ObjectId, str] = {}
     if pool_id:
@@ -356,63 +350,31 @@ def search_active_users(
             if isinstance(member_id, ObjectId):
                 pool_membership_status[member_id] = membership.get("status", "")
 
-    pieces = [part for part in trimmed.lower().split() if part]
-    if not pieces:
-        pieces = [trimmed.lower()]
-    escaped = ".*".join(re.escape(part) for part in pieces)
-    pattern = escaped if escaped else re.escape(trimmed.lower())
-
+    pattern = re.escape(trimmed)
     selector = {
         "account_status": "active",
-        "$or": [
-            {"email": {"$regex": pattern, "$options": "i"}},
-            {"username": {"$regex": pattern, "$options": "i"}},
-        ],
+        "username": {"$regex": pattern, "$options": "i"},
     }
 
-    projection = {"email": 1, "username": 1}
-    fetch_limit = max(effective_limit * 4, 40)
+    projection = {"username": 1}
+    fetch_limit = max(effective_limit * 3, 30)
     cursor = users_collection.find(selector, projection).limit(fetch_limit)
 
-    lower_query = trimmed.lower()
-
-    def prefix_boost(value: str) -> float:
-        if not value:
-            return 0.0
-        lowered = value.lower()
-        if lowered.startswith(lower_query):
-            return 1.0
-        boost = 0.0
-        for token in pieces:
-            if lowered.startswith(token):
-                boost = max(boost, 0.85)
-            elif token and token in lowered:
-                boost = max(boost, 0.6)
-        return boost
-
-    ranked: list[tuple[float, float, str, dict[str, Any]]] = []
-
+    ranked: list[tuple[int, str, dict[str, Any]]] = []
     for doc in cursor:
-        email = doc.get("email") or ""
         username = doc.get("username") or ""
-        fuzzy_score = max(
-            _fuzzy_score(lower_query, email.lower()),
-            _fuzzy_score(lower_query, username.lower()),
-        )
-        boost = max(
-            prefix_boost(email),
-            prefix_boost(username),
-        )
-        score = max(fuzzy_score, boost)
-        if score <= 0.0:
+        if not username:
             continue
-        tie_break = username.lower() or email.lower()
-        ranked.append((score, boost, tie_break, doc))
+        lowered = username.lower()
+        rank = (
+            0 if lowered == normalized else 1 if lowered.startswith(normalized) else 2
+        )
+        ranked.append((rank, lowered, doc))
 
-    ranked.sort(key=lambda item: (-item[0], -item[1], item[2]))
+    ranked.sort(key=lambda item: (item[0], item[1]))
 
     results: list[UserSearchResult] = []
-    for _, _, _, doc in ranked[:effective_limit]:
+    for _, _, doc in ranked:
         user_id = doc.get("_id")
         if not isinstance(user_id, ObjectId):
             continue
@@ -423,10 +385,11 @@ def search_active_users(
         results.append(
             UserSearchResult(
                 id=str(user_id),
-                email=doc.get("email") or "",
                 username=username,
                 membership_status=status if status else None,
             )
         )
+        if len(results) >= effective_limit:
+            break
 
     return results

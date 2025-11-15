@@ -159,7 +159,6 @@ class PoolLeaderboardResponse(BaseModel):
 class PoolMemberSummary(BaseModel):
     user_id: str
     username: str
-    email: str
     role: str
     status: str
     joined_at: datetime | None = None
