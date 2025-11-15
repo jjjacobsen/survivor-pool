@@ -81,6 +81,8 @@ class ContestantAdvantage(BaseModel):
     id: str
     label: str
     value: str
+    status: str | None = None
+    played_week: int | None = None
 
 
 class ContestantDetailResponse(BaseModel):

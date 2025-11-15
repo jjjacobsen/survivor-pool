@@ -107,13 +107,18 @@ def _collect_contestant_advantages(
             or advantage.get("advantage_type")
             or "Advantage"
         )
-        value = advantage.get("notes") or advantage.get("status") or ""
+        notes = advantage.get("notes")
+        status_value = advantage.get("status")
+        value = notes or status_value or label
         advantage_id = advantage.get("id") or f"{contestant_id}_{label}"
+        played_week = advantage.get("played_week")
         advantages.append(
             ContestantAdvantage(
                 id=str(advantage_id),
                 label=str(label),
                 value=str(value),
+                status=status_value,
+                played_week=played_week,
             )
         )
     return advantages

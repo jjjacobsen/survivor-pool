@@ -239,8 +239,10 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
     String value,
     ThemeData theme, {
     String? colorHex,
+    Color? color,
   }) {
-    final accent = _tryParseColor(colorHex) ?? theme.colorScheme.primary;
+    final accent =
+        color ?? _tryParseColor(colorHex) ?? theme.colorScheme.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -266,11 +268,24 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
   }
 
   Widget _buildAdvantageChip(ContestantAdvantage advantage, ThemeData theme) {
+    final status = advantage.status?.toLowerCase();
+    final isPlayed = status == 'played';
+    String description = advantage.value.trim();
+    if (isPlayed) {
+      final weekText = advantage.playedWeek != null
+          ? 'week ${advantage.playedWeek}'
+          : 'an earlier week';
+      final noteSuffix = description.isEmpty ? '' : ' $description';
+      description = '${advantage.label} played in $weekText.$noteSuffix';
+    } else if (description.isEmpty) {
+      description = advantage.value;
+    }
     return _buildInfoChip(
       advantage.label,
-      advantage.value,
+      description,
       theme,
-      colorHex: '#F5B74E',
+      colorHex: isPlayed ? null : '#F5B74E',
+      color: isPlayed ? theme.colorScheme.error : null,
     );
   }
 
