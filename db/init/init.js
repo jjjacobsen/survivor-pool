@@ -250,7 +250,8 @@
     { week: 4, eliminated_contestant_id: idOf("Matthew \"Matt\" Williams") },
     { week: 5, eliminated_contestant_id: idOf("Jason Treul") },
     { week: 6, eliminated_contestant_id: idOf("Shannon Fairweather") },
-    { week: 7, eliminated_contestant_id: idOf("Nate Moore") }
+    { week: 7, eliminated_contestant_id: idOf("Nate Moore") },
+    { week: 8, eliminated_contestant_id: idOf("Michelle \"MC\" Chukwujekwu") }
   ];
 
   const tribeTimeline49 = [
@@ -447,6 +448,28 @@
       played_week: 7,
       transferred_to: null,
       notes: "Sage unlocked the merge chest on Day 13, automatically joining the Rolling Stones reward team and competing for individual immunity"
+    },
+    {
+      id: "idol_kristina_mills_1",
+      advantage_type: "hidden_immunity_idol",
+      advantage_display_name: "Hidden Immunity Idol",
+      contestant_id: idOf("Kristina Mills"),
+      obtained_week: 8,
+      status: "active",
+      played_week: null,
+      transferred_to: null,
+      notes: "Kristina dug up Lewatu's hidden idol on Day 15 ahead of the Chimney Sweeps merge challenge"
+    },
+    {
+      id: "extra_vote_savannah_louie_1",
+      advantage_type: "extra_vote",
+      advantage_display_name: "Extra Vote",
+      contestant_id: idOf("Savannah Louie"),
+      obtained_week: 8,
+      status: "active",
+      played_week: null,
+      transferred_to: null,
+      notes: "Savannah won the Chimney Sweeps endurance reward/immunity challenge advantage and banked the extra vote for a later Tribal"
     }
   ];
 
