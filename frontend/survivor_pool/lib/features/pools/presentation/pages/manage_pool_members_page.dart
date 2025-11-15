@@ -648,7 +648,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
       lines.add(result.email);
     }
     if (result.username.isNotEmpty) {
-      lines.add('@${result.username}');
+      lines.add(result.username);
     }
     if (lines.isEmpty) {
       return const SizedBox.shrink();
