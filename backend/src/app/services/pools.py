@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Any
 
 from bson import ObjectId
 from fastapi import HTTPException, status
@@ -22,14 +21,10 @@ from ..schemas.pools import (
     PendingInvitesResponse,
     PendingInviteSummary,
     PoolAdvanceMissingMember,
-    PoolAdvanceRequest,
     PoolAdvanceResponse,
     PoolAdvanceStatusResponse,
-    PoolCreateRequest,
     PoolEliminatedMember,
-    PoolInviteDecisionRequest,
     PoolInviteDecisionResponse,
-    PoolInviteRequest,
     PoolInviteResponse,
     PoolLeaderboardEntry,
     PoolLeaderboardResponse,
@@ -49,9 +44,7 @@ POOL_STATUS_COMPLETED = "completed"
 MEMBERSHIP_STATUS_WINNER = "winner"
 
 
-def _resolve_contestant_tribe(
-    season: dict[str, Any], contestant_id: str, week: int
-) -> tuple[str | None, str | None]:
+def _resolve_contestant_tribe(season, contestant_id, week):
     if week < 1:
         week = 1
 
@@ -59,7 +52,7 @@ def _resolve_contestant_tribe(
     # Apply tribe changes for the following week to match pick timing.
 
     latest_week = -1
-    latest_entry: dict[str, Any] | None = None
+    latest_entry = None
     for entry in season.get("tribe_timeline", []) or []:
         entry_week = entry.get("week")
         if not isinstance(entry_week, int) or entry_week > effective_week:
@@ -87,9 +80,7 @@ def _resolve_contestant_tribe(
     return None, None
 
 
-def _collect_contestant_advantages(
-    season: dict[str, Any], contestant_id: str, current_week: int
-) -> list[ContestantAdvantage]:
+def _collect_contestant_advantages(season, contestant_id, current_week):
     visible_week = (
         current_week if isinstance(current_week, int) and current_week > 0 else 1
     )
@@ -124,7 +115,7 @@ def _collect_contestant_advantages(
     return advantages
 
 
-def _collect_active_contestant_ids(season: dict[str, Any], week: int) -> set[str]:
+def _collect_active_contestant_ids(season, week):
     if week < 1:
         week = 1
 
@@ -135,7 +126,7 @@ def _collect_active_contestant_ids(season: dict[str, Any], week: int) -> set[str
         and isinstance(elimination.get("eliminated_contestant_id"), str)
     }
 
-    active_ids: set[str] = set()
+    active_ids = set()
     for contestant in season.get("contestants", []) or []:
         contestant_id = contestant.get("id")
         if (
@@ -147,16 +138,14 @@ def _collect_active_contestant_ids(season: dict[str, Any], week: int) -> set[str
     return active_ids
 
 
-def _gather_used_contestants(
-    pool_oid: ObjectId, upto_week: int
-) -> dict[ObjectId, set[str]]:
+def _gather_used_contestants(pool_oid, upto_week):
     if upto_week < 1:
         upto_week = 1
 
-    query: dict[str, Any] = {"poolId": pool_oid, "week": {"$lt": upto_week}}
+    query = {"poolId": pool_oid, "week": {"$lt": upto_week}}
     cursor = picks_collection.find(query, {"userId": 1, "contestant_id": 1})
 
-    used: dict[ObjectId, set[str]] = {}
+    used = {}
     for pick in cursor:
         pick_user = pick.get("userId")
         pick_contestant = pick.get("contestant_id")
@@ -166,9 +155,7 @@ def _gather_used_contestants(
     return used
 
 
-def _recalculate_pool_scores(
-    pool_oid: ObjectId, season: dict[str, Any], target_week: int
-) -> None:
+def _recalculate_pool_scores(pool_oid, season, target_week):
     if target_week < 1:
         target_week = 1
 
@@ -207,7 +194,7 @@ def _recalculate_pool_scores(
     )
 
 
-def _maybe_mark_pool_competitive(pool_oid: ObjectId, pool_doc: dict[str, Any]) -> None:
+def _maybe_mark_pool_competitive(pool_oid, pool_doc):
     if pool_doc.get("is_competitive"):
         return
 
@@ -227,9 +214,7 @@ def _maybe_mark_pool_competitive(pool_oid: ObjectId, pool_doc: dict[str, Any]) -
     )
 
 
-def _mark_members_as_winners(
-    pool_oid: ObjectId, winner_ids: list[ObjectId], finished_week: int, now: datetime
-) -> None:
+def _mark_members_as_winners(pool_oid, winner_ids, finished_week, now):
     if not winner_ids:
         return
 
@@ -251,7 +236,7 @@ def _mark_members_as_winners(
     )
 
 
-def _load_winner_summaries(winner_ids: list[ObjectId]) -> list[PoolWinnerSummary]:
+def _load_winner_summaries(winner_ids):
     if not winner_ids:
         return []
 
@@ -259,12 +244,12 @@ def _load_winner_summaries(winner_ids: list[ObjectId]) -> list[PoolWinnerSummary
         {"_id": {"$in": winner_ids}},
         {"username": 1},
     )
-    names_by_id: dict[ObjectId, str] = {}
+    names_by_id = {}
     for user in users_cursor:
         label = user.get("username") or str(user.get("_id", ""))
         names_by_id[user["_id"]] = label
 
-    winners: list[PoolWinnerSummary] = []
+    winners = []
     for winner_id in winner_ids:
         label = names_by_id.get(winner_id, str(winner_id))
         winners.append(PoolWinnerSummary(user_id=str(winner_id), username=label))
@@ -273,7 +258,7 @@ def _load_winner_summaries(winner_ids: list[ObjectId]) -> list[PoolWinnerSummary
     return winners
 
 
-def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
+def create_pool(pool_data):
     name = pool_data.name.strip()
     if not name:
         raise HTTPException(
@@ -348,7 +333,7 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
         }
     )
 
-    invited_user_ids: list[str] = []
+    invited_user_ids = []
     seen_invites = {pool_data.owner_id}
     for invitee in pool_data.invite_user_ids:
         if invitee in seen_invites:
@@ -406,11 +391,11 @@ def create_pool(pool_data: PoolCreateRequest) -> PoolResponse:
     )
 
 
-def _coerce_datetime(value: Any) -> datetime | None:
+def _coerce_datetime(value):
     return value if isinstance(value, datetime) else None
 
 
-def _coerce_int(value: Any) -> int | None:
+def _coerce_int(value):
     if isinstance(value, int):
         return value
     if isinstance(value, float):
@@ -423,9 +408,7 @@ def _coerce_int(value: Any) -> int | None:
     return None
 
 
-def _build_member_summary(
-    membership: dict[str, Any], user_doc: dict[str, Any]
-) -> PoolMemberSummary:
+def _build_member_summary(membership, user_doc):
     raw_user_id = membership.get("userId") or user_doc.get("_id")
     if isinstance(raw_user_id, ObjectId):
         user_id = str(raw_user_id)
@@ -468,9 +451,7 @@ def _build_member_summary(
     )
 
 
-def get_available_contestants(
-    pool_id: str, user_id: str
-) -> AvailableContestantsResponse:
+def get_available_contestants(pool_id, user_id):
     pool_oid = parse_object_id(pool_id, "pool_id")
     user_oid = parse_object_id(user_id, "user_id")
 
@@ -492,7 +473,7 @@ def get_available_contestants(
 
     pool_completed_at = _coerce_datetime(pool.get("completed_at"))
 
-    winner_ids: list[ObjectId] = [
+    winner_ids = [
         candidate
         for candidate in pool.get("winners", []) or []
         if isinstance(candidate, ObjectId)
@@ -585,13 +566,13 @@ def get_available_contestants(
             detail="Season not found",
         )
 
-    contestant_catalog: dict[str, dict[str, Any]] = {
+    contestant_catalog = {
         contestant.get("id"): contestant
         for contestant in season.get("contestants", [])
         if isinstance(contestant.get("id"), str)
     }
 
-    contestants: list[AvailableContestantResponse] = []
+    contestants = []
     for contestant_id in cache:
         if not isinstance(contestant_id, str):
             continue
@@ -609,7 +590,7 @@ def get_available_contestants(
             )
         )
 
-    current_pick_summary: CurrentPickSummary | None = None
+    current_pick_summary = None
     current_pick_doc = picks_collection.find_one(
         {"userId": user_oid, "poolId": pool_oid, "week": current_week}
     )
@@ -647,9 +628,7 @@ def get_available_contestants(
     )
 
 
-def get_contestant_detail(
-    pool_id: str, contestant_id: str, user_id: str
-) -> ContestantDetailResponse:
+def get_contestant_detail(pool_id, contestant_id, user_id):
     pool_oid = parse_object_id(pool_id, "pool_id")
     user_oid = parse_object_id(user_id, "user_id")
 
@@ -704,7 +683,7 @@ def get_contestant_detail(
 
     current_week = pool["current_week"]
 
-    eliminated_week: int | None = None
+    eliminated_week = None
     for elimination in season.get("eliminations", []):
         if elimination.get("eliminated_contestant_id") == contestant_id:
             eliminated_week = elimination["week"]
@@ -715,14 +694,14 @@ def get_contestant_detail(
     )
     already_picked_week = prior_pick.get("week") if prior_pick else None
 
-    visible_eliminated_week: int | None = None
+    visible_eliminated_week = None
     if eliminated_week is not None and eliminated_week < current_week:
         visible_eliminated_week = eliminated_week
 
     current_pick_doc = picks_collection.find_one(
         {"userId": user_oid, "poolId": pool_oid, "week": current_week}
     )
-    current_pick_summary: CurrentPickSummary | None = None
+    current_pick_summary = None
     if current_pick_doc and current_pick_doc.get("contestant_id"):
         pick_contestant_id = current_pick_doc.get("contestant_id")
         raw_created_at = current_pick_doc.get("created_at")
@@ -776,7 +755,7 @@ def get_contestant_detail(
     )
 
 
-def get_pool_advance_status(pool_id: str, user_id: str) -> PoolAdvanceStatusResponse:
+def get_pool_advance_status(pool_id, user_id):
     pool, pool_oid, _ = _require_pool_owner(pool_id, user_id)
     if pool.get("status") == POOL_STATUS_COMPLETED:
         raise HTTPException(
@@ -805,7 +784,7 @@ def get_pool_advance_status(pool_id: str, user_id: str) -> PoolAdvanceStatusResp
     return status_payload
 
 
-def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceResponse:
+def advance_pool_week(pool_id, payload):
     pool, pool_oid, _ = _require_pool_owner(pool_id, payload.user_id)
 
     if pool.get("status") == POOL_STATUS_COMPLETED:
@@ -815,9 +794,9 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
         )
 
     current_week = pool["current_week"]
-    elimination_reasons: dict[ObjectId, str] = {}
+    elimination_reasons = {}
     pool_completed = False
-    winner_ids: list[ObjectId] = []
+    winner_ids = []
 
     season_id = pool.get("seasonId")
     if not isinstance(season_id, ObjectId):
@@ -887,7 +866,7 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
             },
             {"userId": 1},
         )
-        losing_ids: set[ObjectId] = set()
+        losing_ids = set()
         for pick in losing_cursor:
             user_id = pick.get("userId")
             if isinstance(user_id, ObjectId) and user_id not in elimination_reasons:
@@ -916,7 +895,7 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
 
     next_week = current_week + 1
 
-    eligible_contestants: set[str] = set()
+    eligible_contestants = set()
     eliminated_before_next = {
         elimination.get("eliminated_contestant_id")
         for elimination in season.get("eliminations", [])
@@ -938,14 +917,14 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
         },
         {"userId": 1, "contestant_id": 1},
     )
-    used_contestants: dict[ObjectId, set[str]] = {}
+    used_contestants = {}
     for pick in picks_cursor:
         pick_user = pick.get("userId")
         pick_contestant = pick.get("contestant_id")
         if isinstance(pick_user, ObjectId) and isinstance(pick_contestant, str):
             used_contestants.setdefault(pick_user, set()).add(pick_contestant)
 
-    no_option_ids: set[ObjectId] = set()
+    no_option_ids = set()
     active_cursor = pool_memberships_collection.find(
         {"poolId": pool_oid, "status": "active"},
         {"userId": 1},
@@ -988,7 +967,7 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
             {"poolId": pool_oid, "status": "active"},
             {"userId": 1},
         )
-        remaining_active: list[ObjectId] = []
+        remaining_active = []
         for membership in active_after_cursor:
             member_user = membership.get("userId")
             if isinstance(member_user, ObjectId):
@@ -1007,13 +986,13 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
                 pool_completed = True
                 winner_ids = tie_ids
 
-    update_filter: dict[str, Any] = {
+    update_filter = {
         "_id": pool_oid,
         "current_week": current_week,
     }
 
-    seen_winners: set[ObjectId] = set()
-    winner_list: list[ObjectId] = []
+    seen_winners = set()
+    winner_list = []
     if pool_completed and winner_ids:
         for candidate in winner_ids:
             if candidate not in seen_winners:
@@ -1064,14 +1043,14 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
 
     winner_summaries = _load_winner_summaries(winner_list)
 
-    eliminated_members: list[PoolEliminatedMember] = []
+    eliminated_members = []
     if elimination_reasons:
         eliminated_ids = list(elimination_reasons.keys())
         users_cursor = users_collection.find(
             {"_id": {"$in": eliminated_ids}},
             {"username": 1},
         )
-        names_by_id: dict[ObjectId, str] = {}
+        names_by_id = {}
         for user in users_cursor:
             label = user.get("username") or str(user.get("_id", ""))
             names_by_id[user["_id"]] = label
@@ -1098,7 +1077,7 @@ def advance_pool_week(pool_id: str, payload: PoolAdvanceRequest) -> PoolAdvanceR
     )
 
 
-def get_pool_leaderboard(pool_id: str, user_id: str) -> PoolLeaderboardResponse:
+def get_pool_leaderboard(pool_id, user_id):
     pool_oid = parse_object_id(pool_id, "pool_id")
     user_oid = parse_object_id(user_id, "user_id")
 
@@ -1128,13 +1107,13 @@ def get_pool_leaderboard(pool_id: str, user_id: str) -> PoolLeaderboardResponse:
 
     membership_docs = list(pool_memberships_collection.find({"poolId": pool_oid}))
 
-    user_ids: list[ObjectId] = []
+    user_ids = []
     for membership in membership_docs:
         member_id = membership.get("userId")
         if isinstance(member_id, ObjectId):
             user_ids.append(member_id)
 
-    users_by_id: dict[ObjectId, dict[str, Any]] = {}
+    users_by_id = {}
     if user_ids:
         users_cursor = users_collection.find(
             {"_id": {"$in": user_ids}},
@@ -1142,7 +1121,7 @@ def get_pool_leaderboard(pool_id: str, user_id: str) -> PoolLeaderboardResponse:
         )
         users_by_id = {user["_id"]: user for user in users_cursor}
 
-    winner_ids: list[ObjectId] = [
+    winner_ids = [
         candidate
         for candidate in pool.get("winners", []) or []
         if isinstance(candidate, ObjectId)
@@ -1150,7 +1129,7 @@ def get_pool_leaderboard(pool_id: str, user_id: str) -> PoolLeaderboardResponse:
     winner_summaries = _load_winner_summaries(winner_ids) if winner_ids else []
     did_tie = len(winner_summaries) > 1
 
-    entry_payloads: list[dict[str, Any]] = []
+    entry_payloads = []
     for membership in membership_docs:
         member_id = membership.get("userId")
         if not isinstance(member_id, ObjectId):
@@ -1187,7 +1166,7 @@ def get_pool_leaderboard(pool_id: str, user_id: str) -> PoolLeaderboardResponse:
         )
     )
 
-    last_score: int | None = None
+    last_score = None
     current_rank = 0
     for index, payload in enumerate(entry_payloads):
         score_value = payload["score"]
@@ -1218,14 +1197,14 @@ def get_pool_leaderboard(pool_id: str, user_id: str) -> PoolLeaderboardResponse:
     )
 
 
-def list_pool_memberships(pool_id: str, owner_id: str) -> PoolMembershipListResponse:
+def list_pool_memberships(pool_id, owner_id):
     _, pool_oid, _ = _require_pool_owner(pool_id, owner_id)
 
     membership_docs = list(pool_memberships_collection.find({"poolId": pool_oid}))
     if not membership_docs:
         return PoolMembershipListResponse(pool_id=str(pool_oid), members=[])
 
-    user_ids: list[ObjectId] = []
+    user_ids = []
     for membership in membership_docs:
         member_id = membership.get("userId")
         if isinstance(member_id, ObjectId):
@@ -1238,11 +1217,9 @@ def list_pool_memberships(pool_id: str, owner_id: str) -> PoolMembershipListResp
         {"_id": {"$in": user_ids}},
         {"username": 1},
     )
-    users_by_id: dict[ObjectId, dict[str, Any]] = {
-        user["_id"]: user for user in users_cursor
-    }
+    users_by_id = {user["_id"]: user for user in users_cursor}
 
-    summaries: list[PoolMemberSummary] = []
+    summaries = []
     for membership in membership_docs:
         member_id = membership.get("userId")
         if not isinstance(member_id, ObjectId):
@@ -1263,7 +1240,7 @@ def list_pool_memberships(pool_id: str, owner_id: str) -> PoolMembershipListResp
     return PoolMembershipListResponse(pool_id=str(pool_oid), members=summaries)
 
 
-def invite_user_to_pool(pool_id: str, payload: PoolInviteRequest) -> PoolInviteResponse:
+def invite_user_to_pool(pool_id, payload):
     _, pool_oid, owner_oid = _require_pool_owner(pool_id, payload.owner_id)
 
     invited_oid = parse_object_id(payload.invited_user_id, "invited_user_id")
@@ -1320,7 +1297,7 @@ def invite_user_to_pool(pool_id: str, payload: PoolInviteRequest) -> PoolInviteR
     return PoolInviteResponse(member=member)
 
 
-def delete_pool(pool_id: str, owner_id: str) -> None:
+def delete_pool(pool_id, owner_id):
     _, pool_oid, _ = _require_pool_owner(pool_id, owner_id)
 
     picks_collection.delete_many({"poolId": pool_oid})
@@ -1339,9 +1316,7 @@ def delete_pool(pool_id: str, owner_id: str) -> None:
     )
 
 
-def respond_to_invite(
-    pool_id: str, payload: PoolInviteDecisionRequest
-) -> PoolInviteDecisionResponse:
+def respond_to_invite(pool_id, payload):
     pool_oid = parse_object_id(pool_id, "pool_id")
     user_oid = parse_object_id(payload.user_id, "user_id")
 
@@ -1386,7 +1361,6 @@ def respond_to_invite(
         )
 
     now = datetime.now()
-    update_doc: dict[str, Any]
     if action == "accept":
         update_doc = {
             "$set": {
@@ -1448,7 +1422,7 @@ def respond_to_invite(
     return PoolInviteDecisionResponse(member=member)
 
 
-def get_pending_invites_for_user(user_id: str) -> PendingInvitesResponse:
+def get_pending_invites_for_user(user_id):
     user_oid = parse_object_id(user_id, "user_id")
 
     membership_docs = list(
@@ -1457,7 +1431,7 @@ def get_pending_invites_for_user(user_id: str) -> PendingInvitesResponse:
     if not membership_docs:
         return PendingInvitesResponse(invites=[])
 
-    pool_ids: set[ObjectId] = set()
+    pool_ids = set()
     for membership in membership_docs:
         pool_id = membership.get("poolId")
         if isinstance(pool_id, ObjectId):
@@ -1470,12 +1444,10 @@ def get_pending_invites_for_user(user_id: str) -> PendingInvitesResponse:
         {"_id": {"$in": list(pool_ids)}},
         {"name": 1, "ownerId": 1, "seasonId": 1},
     )
-    pools_by_id: dict[ObjectId, dict[str, Any]] = {
-        pool["_id"]: pool for pool in pools_cursor
-    }
+    pools_by_id = {pool["_id"]: pool for pool in pools_cursor}
 
-    owner_ids: set[ObjectId] = set()
-    season_ids: set[ObjectId] = set()
+    owner_ids = set()
+    season_ids = set()
     for pool in pools_by_id.values():
         owner = pool.get("ownerId")
         if isinstance(owner, ObjectId):
@@ -1488,19 +1460,17 @@ def get_pending_invites_for_user(user_id: str) -> PendingInvitesResponse:
         {"_id": {"$in": list(owner_ids)}},
         {"username": 1},
     )
-    owners_by_id: dict[ObjectId, dict[str, Any]] = {
-        owner["_id"]: owner for owner in owners_cursor
-    }
+    owners_by_id = {owner["_id"]: owner for owner in owners_cursor}
 
     seasons_cursor = seasons_collection.find(
         {"_id": {"$in": list(season_ids)}},
         {"season_number": 1},
     )
-    seasons_by_id: dict[ObjectId, int | None] = {
+    seasons_by_id = {
         season["_id"]: season.get("season_number") for season in seasons_cursor
     }
 
-    invites: list[PendingInviteSummary] = []
+    invites = []
     for membership in membership_docs:
         pool_oid = membership.get("poolId")
         if not isinstance(pool_oid, ObjectId):
@@ -1517,7 +1487,7 @@ def get_pending_invites_for_user(user_id: str) -> PendingInvitesResponse:
             owner_display = owner_doc.get("username") or str(owner_id)
 
         season_id = pool.get("seasonId")
-        season_number: int | None = None
+        season_number = None
         season_id_str = ""
         if isinstance(season_id, ObjectId):
             season_number = seasons_by_id.get(season_id)
@@ -1546,9 +1516,7 @@ def get_pending_invites_for_user(user_id: str) -> PendingInvitesResponse:
     return PendingInvitesResponse(invites=invites)
 
 
-def _require_pool_owner(
-    pool_id: str, user_id: str
-) -> tuple[dict[str, Any], ObjectId, ObjectId]:
+def _require_pool_owner(pool_id, user_id):
     pool_oid = parse_object_id(pool_id, "pool_id")
     owner_oid = parse_object_id(user_id, "user_id")
 
@@ -1568,9 +1536,7 @@ def _require_pool_owner(
     return pool, pool_oid, owner_oid
 
 
-def _compute_pool_advance_status(
-    pool_oid: ObjectId, current_week: int, season: dict[str, Any] | None = None
-) -> tuple[PoolAdvanceStatusResponse, list[ObjectId]]:
+def _compute_pool_advance_status(pool_oid, current_week, season=None):
     can_advance = True
     if season is not None:
         eliminations = season.get("eliminations") or []
@@ -1603,7 +1569,7 @@ def _compute_pool_advance_status(
         {"userId": 1},
     )
 
-    active_user_ids: list[ObjectId] = []
+    active_user_ids = []
     for membership in active_cursor:
         member_user_id = membership.get("userId")
         if isinstance(member_user_id, ObjectId):
@@ -1640,13 +1606,13 @@ def _compute_pool_advance_status(
         user_id for user_id in active_user_ids if user_id not in locked_user_ids
     ]
 
-    missing_members: list[PoolAdvanceMissingMember] = []
+    missing_members = []
     if missing_user_ids:
         users_cursor = users_collection.find(
             {"_id": {"$in": missing_user_ids}},
             {"username": 1},
         )
-        usernames: dict[ObjectId, str] = {}
+        usernames = {}
         for user in users_cursor:
             usernames[user["_id"]] = user.get("username", "")
 

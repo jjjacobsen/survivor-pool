@@ -21,7 +21,6 @@ from ..schemas.pools import (
 from ..services import pools as pools_service
 
 router = APIRouter(tags=["pools"])
-
 CurrentUser = Annotated[AuthenticatedUser, Depends(get_current_active_user)]
 
 
@@ -29,7 +28,7 @@ CurrentUser = Annotated[AuthenticatedUser, Depends(get_current_active_user)]
 def create_pool(
     pool_data: PoolCreateRequest,
     current_user: CurrentUser,
-) -> PoolResponse:
+):
     _ensure_same_user(pool_data.owner_id, current_user)
     return pools_service.create_pool(pool_data)
 
@@ -39,10 +38,10 @@ def create_pool(
     response_model=AvailableContestantsResponse,
 )
 def get_available_contestants(
-    pool_id: str,
-    user_id: str,
+    pool_id,
+    user_id,
     current_user: CurrentUser,
-) -> AvailableContestantsResponse:
+):
     _ensure_same_user(user_id, current_user)
     return pools_service.get_available_contestants(pool_id, user_id)
 
@@ -52,11 +51,11 @@ def get_available_contestants(
     response_model=ContestantDetailResponse,
 )
 def get_contestant_detail(
-    pool_id: str,
-    contestant_id: str,
-    user_id: str,
+    pool_id,
+    contestant_id,
+    user_id,
     current_user: CurrentUser,
-) -> ContestantDetailResponse:
+):
     _ensure_same_user(user_id, current_user)
     return pools_service.get_contestant_detail(pool_id, contestant_id, user_id)
 
@@ -66,10 +65,10 @@ def get_contestant_detail(
     response_model=PoolAdvanceStatusResponse,
 )
 def get_pool_advance_status(
-    pool_id: str,
-    user_id: str,
+    pool_id,
+    user_id,
     current_user: CurrentUser,
-) -> PoolAdvanceStatusResponse:
+):
     _ensure_same_user(user_id, current_user)
     return pools_service.get_pool_advance_status(pool_id, user_id)
 
@@ -79,10 +78,10 @@ def get_pool_advance_status(
     response_model=PoolLeaderboardResponse,
 )
 def get_pool_leaderboard(
-    pool_id: str,
-    user_id: str,
+    pool_id,
+    user_id,
     current_user: CurrentUser,
-) -> PoolLeaderboardResponse:
+):
     _ensure_same_user(user_id, current_user)
     return pools_service.get_pool_leaderboard(pool_id, user_id)
 
@@ -92,10 +91,10 @@ def get_pool_leaderboard(
     response_model=PoolAdvanceResponse,
 )
 def advance_pool_week(
-    pool_id: str,
+    pool_id,
     payload: PoolAdvanceRequest,
     current_user: CurrentUser,
-) -> PoolAdvanceResponse:
+):
     _ensure_same_user(payload.user_id, current_user)
     return pools_service.advance_pool_week(pool_id, payload)
 
@@ -105,10 +104,10 @@ def advance_pool_week(
     response_model=PoolMembershipListResponse,
 )
 def list_pool_memberships(
-    pool_id: str,
-    owner_id: str,
+    pool_id,
+    owner_id,
     current_user: CurrentUser,
-) -> PoolMembershipListResponse:
+):
     _ensure_same_user(owner_id, current_user)
     return pools_service.list_pool_memberships(pool_id, owner_id)
 
@@ -118,10 +117,10 @@ def list_pool_memberships(
     response_model=PoolInviteResponse,
 )
 def invite_user_to_pool(
-    pool_id: str,
+    pool_id,
     payload: PoolInviteRequest,
     current_user: CurrentUser,
-) -> PoolInviteResponse:
+):
     _ensure_same_user(payload.owner_id, current_user)
     return pools_service.invite_user_to_pool(pool_id, payload)
 
@@ -131,25 +130,25 @@ def invite_user_to_pool(
     response_model=PoolInviteDecisionResponse,
 )
 def respond_to_invite(
-    pool_id: str,
+    pool_id,
     payload: PoolInviteDecisionRequest,
     current_user: CurrentUser,
-) -> PoolInviteDecisionResponse:
+):
     _ensure_same_user(payload.user_id, current_user)
     return pools_service.respond_to_invite(pool_id, payload)
 
 
 @router.delete("/pools/{pool_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_pool(
-    pool_id: str,
-    owner_id: str,
+    pool_id,
+    owner_id,
     current_user: CurrentUser,
-) -> None:
+):
     _ensure_same_user(owner_id, current_user)
     pools_service.delete_pool(pool_id, owner_id)
 
 
-def _ensure_same_user(user_id: str, current_user: AuthenticatedUser) -> None:
+def _ensure_same_user(user_id, current_user):
     if user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

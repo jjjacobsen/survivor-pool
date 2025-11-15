@@ -2,7 +2,7 @@ from ..db.mongo import seasons_collection
 from ..schemas.seasons import SeasonResponse
 
 
-def list_seasons() -> list[SeasonResponse]:
+def list_seasons():
     seasons = seasons_collection.find(
         {},
         {

@@ -7,7 +7,6 @@ from ..schemas.picks import PickRequest, PickResponse
 from ..services import picks as picks_service
 
 router = APIRouter(tags=["picks"])
-
 CurrentUser = Annotated[AuthenticatedUser, Depends(get_current_active_user)]
 
 
@@ -17,10 +16,10 @@ CurrentUser = Annotated[AuthenticatedUser, Depends(get_current_active_user)]
     status_code=status.HTTP_201_CREATED,
 )
 def create_pick(
-    pool_id: str,
+    pool_id,
     payload: PickRequest,
     current_user: CurrentUser,
-) -> PickResponse:
+):
     if payload.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

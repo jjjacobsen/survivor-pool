@@ -1,7 +1,7 @@
 from os import environ
 
 
-def _require(name: str) -> str:
+def _require(name):
     value = environ.get(name)
     if value is None:
         raise RuntimeError(f"Missing required environment variable: {name}")
@@ -20,7 +20,7 @@ JWT_SECRET_KEY = _require("JWT_SECRET_KEY")
 JWT_ALGORITHM = "HS256"
 
 
-def _int_from_env(name: str, default: int) -> int:
+def _int_from_env(name, default):
     raw = environ.get(name)
     if raw is None:
         return default

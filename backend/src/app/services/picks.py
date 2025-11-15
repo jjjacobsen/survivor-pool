@@ -8,11 +8,11 @@ from ..db.mongo import (
     pools_collection,
     seasons_collection,
 )
-from ..schemas.picks import PickRequest, PickResponse
+from ..schemas.picks import PickResponse
 from .common import parse_object_id
 
 
-def create_pick(pool_id: str, payload: PickRequest) -> PickResponse:
+def create_pick(pool_id, payload):
     pool_oid = parse_object_id(pool_id, "pool_id")
     user_oid = parse_object_id(payload.user_id, "user_id")
 
@@ -98,7 +98,7 @@ def create_pick(pool_id: str, payload: PickRequest) -> PickResponse:
             ),
         )
 
-    eliminated_week: int | None = None
+    eliminated_week = None
     for elimination in season.get("eliminations", []):
         if elimination.get("eliminated_contestant_id") == payload.contestant_id:
             eliminated_week = elimination["week"]

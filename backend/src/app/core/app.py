@@ -10,7 +10,7 @@ from .config import (
 )
 
 
-def create_app() -> FastAPI:
+def create_app():
     app = FastAPI()
 
     app.add_middleware(

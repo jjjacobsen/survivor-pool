@@ -1,6 +1,5 @@
 import re
 from datetime import datetime, timedelta
-from typing import Any
 
 from bson import ObjectId
 from fastapi import HTTPException, status
@@ -20,9 +19,6 @@ from ..db.mongo import (
 )
 from ..schemas.pools import PoolResponse
 from ..schemas.users import (
-    UserCreateRequest,
-    UserDefaultPoolUpdate,
-    UserLoginRequest,
     UserResponse,
     UserSearchResult,
 )
@@ -33,12 +29,10 @@ MAX_FAILED_LOGIN_ATTEMPTS = 5
 LOCKOUT_DURATION = timedelta(minutes=15)
 
 
-def _build_user_response(
-    user: dict[str, Any], *, token: str | None = None
-) -> UserResponse:
+def _build_user_response(user, *, token=None):
     default_pool = user.get("default_pool")
     if isinstance(default_pool, ObjectId):
-        default_pool_id: str | None = str(default_pool)
+        default_pool_id = str(default_pool)
     elif isinstance(default_pool, str):
         default_pool_id = default_pool
     else:
@@ -59,7 +53,7 @@ def _build_user_response(
     )
 
 
-def create_user(user_data: UserCreateRequest) -> UserResponse:
+def create_user(user_data):
     if users_collection.find_one({"username": user_data.username}):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -97,7 +91,7 @@ def create_user(user_data: UserCreateRequest) -> UserResponse:
     return _build_user_response(user_doc, token=token)
 
 
-def login_user(user_data: UserLoginRequest) -> UserResponse:
+def login_user(user_data):
     identifier = user_data.identifier.strip()
     if not identifier:
         raise HTTPException(
@@ -181,7 +175,7 @@ def login_user(user_data: UserLoginRequest) -> UserResponse:
     return _build_user_response(user, token=token)
 
 
-def update_default_pool(user_id: str, payload: UserDefaultPoolUpdate) -> UserResponse:
+def update_default_pool(user_id, payload):
     user_oid = parse_object_id(user_id, "user_id")
 
     user = users_collection.find_one({"_id": user_oid})
@@ -191,7 +185,6 @@ def update_default_pool(user_id: str, payload: UserDefaultPoolUpdate) -> UserRes
             detail="User not found",
         )
 
-    update_doc: dict[str, Any]
     if payload.default_pool is None:
         update_doc = {"$set": {"default_pool": None}}
     else:
@@ -226,7 +219,7 @@ def update_default_pool(user_id: str, payload: UserDefaultPoolUpdate) -> UserRes
     return _build_user_response(updated_user)
 
 
-def list_user_pools(user_id: str) -> list[PoolResponse]:
+def list_user_pools(user_id):
     user_oid = parse_object_id(user_id, "user_id")
 
     memberships = pool_memberships_collection.find(
@@ -241,14 +234,14 @@ def list_user_pools(user_id: str) -> list[PoolResponse]:
 
     pools = pools_collection.find({"_id": {"$in": list(pool_ids)}})
 
-    def _parse_optional_int(value: Any) -> int | None:
+    def _parse_optional_int(value):
         if isinstance(value, int):
             return value
         if isinstance(value, float):
             return int(value)
         return None
 
-    responses: list[PoolResponse] = []
+    responses = []
     for pool in pools:
         winners_raw = pool.get("winners", []) or []
         winner_user_ids = [
@@ -292,7 +285,7 @@ def list_user_pools(user_id: str) -> list[PoolResponse]:
     return responses
 
 
-def get_user_profile(user_id: str) -> UserResponse:
+def get_user_profile(user_id):
     user_oid = parse_object_id(user_id, "user_id")
     user = users_collection.find_one({"_id": user_oid})
     if not user:
@@ -303,7 +296,7 @@ def get_user_profile(user_id: str) -> UserResponse:
     return _build_user_response(user)
 
 
-def delete_user(user_id: str) -> None:
+def delete_user(user_id):
     user_oid = parse_object_id(user_id, "user_id")
 
     user = users_collection.find_one({"_id": user_oid})
@@ -331,9 +324,7 @@ def delete_user(user_id: str) -> None:
         )
 
 
-def search_active_users(
-    query: str, pool_id: str | None = None, limit: int = 10
-) -> list[UserSearchResult]:
+def search_active_users(query, pool_id=None, limit=10):
     trimmed = query.strip()
     if len(trimmed) < 2:
         return []
@@ -341,7 +332,7 @@ def search_active_users(
     effective_limit = max(1, min(limit, 25))
     normalized = trimmed.lower()
 
-    pool_membership_status: dict[ObjectId, str] = {}
+    pool_membership_status = {}
     if pool_id:
         pool_oid = parse_object_id(pool_id, "pool_id")
         membership_cursor = pool_memberships_collection.find({"poolId": pool_oid})
@@ -360,7 +351,7 @@ def search_active_users(
     fetch_limit = max(effective_limit * 3, 30)
     cursor = users_collection.find(selector, projection).limit(fetch_limit)
 
-    ranked: list[tuple[int, str, dict[str, Any]]] = []
+    ranked = []
     for doc in cursor:
         username = doc.get("username") or ""
         if not username:
@@ -373,7 +364,7 @@ def search_active_users(
 
     ranked.sort(key=lambda item: (item[0], item[1]))
 
-    results: list[UserSearchResult] = []
+    results = []
     for _, _, doc in ranked:
         user_id = doc.get("_id")
         if not isinstance(user_id, ObjectId):

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -13,6 +11,7 @@ from .security import TokenData, create_access_token, decode_access_token
 
 AUTH_HEADER_PREFIX = "Bearer "
 REFRESH_HEADER_NAME = "x-new-token"
+AuthorizationHeader = Header(default="")
 
 
 @dataclass
@@ -23,7 +22,7 @@ class AuthenticatedUser:
     document: dict
 
     @property
-    def response(self) -> UserResponse:
+    def response(self):
         doc = self.document
         default_pool = doc.get("default_pool")
         default_pool_id = str(default_pool) if default_pool else None
@@ -42,9 +41,7 @@ class AuthenticatedUser:
         )
 
 
-def get_current_active_user(
-    response: Response, authorization: str = Header(default="")
-) -> AuthenticatedUser:
+def get_current_active_user(response: Response, authorization=AuthorizationHeader):
     if not authorization or not authorization.startswith(AUTH_HEADER_PREFIX):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing credentials"

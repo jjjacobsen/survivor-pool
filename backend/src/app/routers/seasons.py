@@ -7,5 +7,5 @@ router = APIRouter(tags=["seasons"])
 
 
 @router.get("/seasons", response_model=list[SeasonResponse])
-def list_seasons() -> list[SeasonResponse]:
+def list_seasons():
     return seasons_service.list_seasons()
