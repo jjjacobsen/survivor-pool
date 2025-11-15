@@ -1068,9 +1068,31 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const Spacer(),
+          if (kIsWeb) ...[
+            _buildWebRefreshButton(theme),
+            const SizedBox(width: 12),
+          ],
           _buildDesktopUserChip(theme),
         ],
       ),
+    );
+  }
+
+  Widget _buildWebRefreshButton(ThemeData theme) {
+    final isBusy = _isLoadingInvites || _isLoadingContestants;
+    final icon = isBusy
+        ? SizedBox(
+            width: 20,
+            height: 20,
+            child: const CircularProgressIndicator(strokeWidth: 2),
+          )
+        : Icon(Icons.refresh, color: theme.colorScheme.primary);
+
+    return IconButton(
+      icon: icon,
+      tooltip: 'Refresh data',
+      onPressed: isBusy ? null : () => unawaited(_refreshHome()),
+      splashRadius: 24,
     );
   }
 
