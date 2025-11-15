@@ -15,6 +15,7 @@ from ..db.mongo import (
 from ..schemas.pools import (
     AvailableContestantResponse,
     AvailableContestantsResponse,
+    ContestantAdvantage,
     ContestantDetail,
     ContestantDetailResponse,
     CurrentPickSummary,
@@ -84,6 +85,38 @@ def _resolve_contestant_tribe(
             return name_value, color_value
 
     return None, None
+
+
+def _collect_contestant_advantages(
+    season: dict[str, Any], contestant_id: str, current_week: int
+) -> list[ContestantAdvantage]:
+    visible_week = (
+        current_week if isinstance(current_week, int) and current_week > 0 else 1
+    )
+    advantages = []
+    for advantage in season.get("advantages", []) or []:
+        obtained_week = advantage.get("obtained_week")
+        if isinstance(obtained_week, int) and obtained_week > visible_week:
+            continue
+        is_holder = advantage.get("contestant_id") == contestant_id
+        is_recipient = advantage.get("transferred_to") == contestant_id
+        if not (is_holder or is_recipient):
+            continue
+        label = (
+            advantage.get("advantage_display_name")
+            or advantage.get("advantage_type")
+            or "Advantage"
+        )
+        value = advantage.get("notes") or advantage.get("status") or ""
+        advantage_id = advantage.get("id") or f"{contestant_id}_{label}"
+        advantages.append(
+            ContestantAdvantage(
+                id=str(advantage_id),
+                label=str(label),
+                value=str(value),
+            )
+        )
+    return advantages
 
 
 def _collect_active_contestant_ids(season: dict[str, Any], week: int) -> set[str]:
@@ -642,7 +675,12 @@ def get_contestant_detail(
 
     season = seasons_collection.find_one(
         {"_id": season_id},
-        {"contestants": 1, "eliminations": 1, "tribe_timeline": 1},
+        {
+            "contestants": 1,
+            "eliminations": 1,
+            "tribe_timeline": 1,
+            "advantages": 1,
+        },
     )
     if not season:
         raise HTTPException(
@@ -709,6 +747,9 @@ def get_contestant_detail(
     tribe_name, tribe_color = _resolve_contestant_tribe(
         season, contestant_id, current_week
     )
+    advantage_details = _collect_contestant_advantages(
+        season, contestant_id, current_week
+    )
 
     detail = ContestantDetail(
         id=contestant_id,
@@ -718,6 +759,7 @@ def get_contestant_detail(
         hometown=target_contestant.get("hometown"),
         tribe_name=tribe_name,
         tribe_color=tribe_color,
+        advantages=advantage_details,
     )
 
     return ContestantDetailResponse(

@@ -74,6 +74,13 @@ class ContestantDetail(BaseModel):
     hometown: str | None = None
     tribe_name: str | None = None
     tribe_color: str | None = None
+    advantages: list[ContestantAdvantage] = Field(default_factory=list)
+
+
+class ContestantAdvantage(BaseModel):
+    id: str
+    label: str
+    value: str
 
 
 class ContestantDetailResponse(BaseModel):

@@ -31,6 +31,29 @@ class AvailableContestant {
   }
 }
 
+class ContestantAdvantage {
+  final String id;
+  final String label;
+  final String value;
+
+  const ContestantAdvantage({
+    required this.id,
+    required this.label,
+    required this.value,
+  });
+
+  factory ContestantAdvantage.fromJson(Map<String, dynamic> json) {
+    final id = json['id'] as String? ?? '';
+    final label = json['label'] as String? ?? 'Advantage';
+    final value = json['value'] as String? ?? label;
+    return ContestantAdvantage(
+      id: id.isEmpty ? label : id,
+      label: label.isEmpty ? 'Advantage' : label,
+      value: value.isEmpty ? label : value,
+    );
+  }
+}
+
 class ContestantDetail {
   final String id;
   final String name;
@@ -39,6 +62,7 @@ class ContestantDetail {
   final String? hometown;
   final String? tribeName;
   final String? tribeColor;
+  final List<ContestantAdvantage> advantages;
 
   const ContestantDetail({
     required this.id,
@@ -48,6 +72,7 @@ class ContestantDetail {
     this.hometown,
     this.tribeName,
     this.tribeColor,
+    this.advantages = const [],
   });
 
   factory ContestantDetail.fromJson(Map<String, dynamic> json) {
@@ -61,6 +86,16 @@ class ContestantDetail {
       parsedAge = int.tryParse(rawAge);
     }
 
+    final advantagesData = json['advantages'];
+    final advantages = <ContestantAdvantage>[];
+    if (advantagesData is List) {
+      for (final entry in advantagesData) {
+        if (entry is Map<String, dynamic>) {
+          advantages.add(ContestantAdvantage.fromJson(entry));
+        }
+      }
+    }
+
     return ContestantDetail(
       id: json['id'] as String? ?? '',
       name: (json['name'] is String && (json['name'] as String).isNotEmpty)
@@ -71,6 +106,7 @@ class ContestantDetail {
       hometown: json['hometown'] as String?,
       tribeName: json['tribe_name'] as String?,
       tribeColor: json['tribe_color'] as String?,
+      advantages: advantages,
     );
   }
 }

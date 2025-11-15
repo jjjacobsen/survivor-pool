@@ -88,6 +88,11 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
     if (detail.hometown != null && detail.hometown!.isNotEmpty) {
       chips.add(_buildInfoChip('Hometown', detail.hometown!, theme));
     }
+    if (detail.advantages.isNotEmpty) {
+      for (final advantage in detail.advantages) {
+        chips.add(_buildAdvantageChip(advantage, theme));
+      }
+    }
 
     final statusNotes = <Widget>[];
     if (widget.detail.currentPick != null &&
@@ -257,6 +262,15 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
           Text(value, style: theme.textTheme.bodyMedium),
         ],
       ),
+    );
+  }
+
+  Widget _buildAdvantageChip(ContestantAdvantage advantage, ThemeData theme) {
+    return _buildInfoChip(
+      advantage.label,
+      advantage.value,
+      theme,
+      colorHex: '#F5B74E',
     );
   }
 

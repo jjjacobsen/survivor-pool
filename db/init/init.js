@@ -105,6 +105,7 @@
     {
       id: "idol_saiounia_1",
       advantage_type: "hidden_immunity_idol",
+      advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Saiounia Hughley"),
       obtained_week: 1,
       status: "played",
@@ -115,6 +116,7 @@
     {
       id: "idol_kyle_1",
       advantage_type: "hidden_immunity_idol",
+      advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Kyle Fraser"),
       obtained_week: 2,
       status: "played",
@@ -125,6 +127,7 @@
     {
       id: "idol_star_1",
       advantage_type: "hidden_immunity_idol",
+      advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Star Toomey"),
       obtained_week: 2,
       status: "transferred",
@@ -135,6 +138,7 @@
     {
       id: "block_vote_mitch_1",
       advantage_type: "block_a_vote",
+      advantage_display_name: "Block a Vote",
       contestant_id: idOf("Mitch Guerra"),
       obtained_week: 2,
       status: "played",
@@ -145,6 +149,7 @@
     {
       id: "steal_vote_thomas_1",
       advantage_type: "steal_a_vote",
+      advantage_display_name: "Steal a Vote",
       contestant_id: idOf("Thomas Krottinger"),
       obtained_week: 2,
       status: "expired",
@@ -155,6 +160,7 @@
     {
       id: "extra_vote_kamilla_1",
       advantage_type: "extra_vote",
+      advantage_display_name: "Extra Vote",
       contestant_id: idOf("Kamilla Karthigesu"),
       obtained_week: 3,
       status: "transferred",
@@ -165,6 +171,7 @@
     {
       id: "safety_without_power_eva_1",
       advantage_type: "safety_without_power",
+      advantage_display_name: "Safety Without Power",
       contestant_id: idOf("Eva Erickson"),
       obtained_week: 10,
       status: "expired",
@@ -326,6 +333,7 @@
     {
       id: "idol_alex_moore_1",
       advantage_type: "hidden_immunity_idol",
+      advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Alex Moore"),
       obtained_week: 2,
       status: "active",
@@ -336,6 +344,7 @@
     {
       id: "idol_mc_chukwujekwu_1",
       advantage_type: "hidden_immunity_idol",
+      advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Michelle \"MC\" Chukwujekwu"),
       obtained_week: 3,
       status: "active",
@@ -346,6 +355,7 @@
     {
       id: "idol_rizo_velovic_1",
       advantage_type: "hidden_immunity_idol",
+      advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Rizo Velovic"),
       obtained_week: 4,
       status: "active",

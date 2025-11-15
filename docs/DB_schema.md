@@ -105,6 +105,7 @@ Single source of truth for all Survivor season data. This data represents immuta
     {
       id: "idol_teeny_1",
       advantage_type: "hidden_immunity_idol", // hidden_immunity_idol, vote_steal, extra_vote, etc.
+      advantage_display_name: "Hidden Immunity Idol",
       contestant_id: "teeny_chirichillo", // holder when obtained
       obtained_week: 3,
       status: "active", // active | played | expired | transferred
@@ -116,6 +117,8 @@ Single source of truth for all Survivor season data. This data represents immuta
   ]
 }
 ```
+
+Each advantage document stores an `advantage_display_name` alongside the raw `advantage_type` so clients can render a friendly label without their own mapping layer.
 
 ### 3. `pools` Collection
 
