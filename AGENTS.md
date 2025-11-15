@@ -9,11 +9,6 @@
 - When implementing a new feature or starting a new session it is a good idea to first read docs/PRD.md, docs/DB_schema.md, and db/init/init.js to know the product and the database architecture
 - Don't worry about unit tests or integration tests for now
 - Don't use SnackBar's in flutter
-- When working on core logic don't add unnecessary type checking and default values. Validate at the edges, trust on the inside
-- Do not have code that fails silently. Allow things to fail if something is wrong
-- Never use dynamic imports (unless asked to) like `await import(..)`
-- Never cast to `any`
-- Do not add extra defensive checks or try/catch blocks
 - If you need to run python commands in the backend, use uv
 
 ## COMMANDS
