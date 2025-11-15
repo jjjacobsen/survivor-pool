@@ -239,7 +239,8 @@
     { week: 1, eliminated_contestant_id: idOf("Nicole Mazullo") },
     { week: 2, eliminated_contestant_id: idOf("Kimberly \"Annie\" Davis") },
     { week: 3, eliminated_contestant_id: idOf("Jake Latimer") },
-    { week: 3, eliminated_contestant_id: idOf("Jeremiah Ing") }
+    { week: 3, eliminated_contestant_id: idOf("Jeremiah Ing") },
+    { week: 4, eliminated_contestant_id: idOf("Matthew \"Matt\" Williams") }
   ];
 
   const tribeTimeline49 = [
@@ -284,6 +285,39 @@
           ]
         }
       ]
+    },
+    {
+      week: 4,
+      event: "swap",
+      notes: "Day 7 tribe switch dissolved Uli and reformed two tribes of seven",
+      tribes: [
+        {
+          name: "Hina",
+          color: "#FEDA47",
+          members: [
+            idOf("Jason Treul"),
+            idOf("Jawan Pitts"),
+            idOf("Matthew \"Matt\" Williams"),
+            idOf("Nate Moore"),
+            idOf("Rizo Velovic"),
+            idOf("Savannah Louie"),
+            idOf("Sophia \"Sophi\" Balerdi")
+          ]
+        },
+        {
+          name: "Kele",
+          color: "#32AAD6",
+          members: [
+            idOf("Alex Moore"),
+            idOf("Kristina Mills"),
+            idOf("Michelle \"MC\" Chukwujekwu"),
+            idOf("Sage Ahrens-Nichols"),
+            idOf("Shannon Fairweather"),
+            idOf("Sophia \"Sophie\" Segreti"),
+            idOf("Steven Ramm")
+          ]
+        }
+      ]
     }
   ];
 
@@ -312,11 +346,11 @@
       id: "idol_rizo_velovic_1",
       advantage_type: "hidden_immunity_idol",
       contestant_id: idOf("Rizo Velovic"),
-      obtained_week: 3,
+      obtained_week: 4,
       status: "active",
       played_week: null,
       transferred_to: null,
-      notes: "Rizo located Uli's beware idol in week 3; activation tasks still underway"
+      notes: "Savannah, Jawan, and Nate dug up Hina's beware clue/key post-swap and handed it to Rizo, letting him retrieve the idol from the underwater chest"
     }
   ];
 
