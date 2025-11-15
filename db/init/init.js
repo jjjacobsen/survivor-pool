@@ -249,7 +249,8 @@
     { week: 3, eliminated_contestant_id: idOf("Jeremiah Ing") },
     { week: 4, eliminated_contestant_id: idOf("Matthew \"Matt\" Williams") },
     { week: 5, eliminated_contestant_id: idOf("Jason Treul") },
-    { week: 6, eliminated_contestant_id: idOf("Shannon Fairweather") }
+    { week: 6, eliminated_contestant_id: idOf("Shannon Fairweather") },
+    { week: 7, eliminated_contestant_id: idOf("Nate Moore") }
   ];
 
   const tribeTimeline49 = [
@@ -364,6 +365,30 @@
           ]
         }
       ]
+    },
+    {
+      week: 7,
+      event: "merge",
+      notes: "Traditional merge at final eleven on the former Kele beach, forming Lewatu",
+      tribes: [
+        {
+          name: "Lewatu",
+          color: "#000000",
+          members: [
+            idOf("Alex Moore"),
+            idOf("Jawan Pitts"),
+            idOf("Kristina Mills"),
+            idOf("Michelle \"MC\" Chukwujekwu"),
+            idOf("Nate Moore"),
+            idOf("Rizo Velovic"),
+            idOf("Sage Ahrens-Nichols"),
+            idOf("Savannah Louie"),
+            idOf("Sophia \"Sophi\" Balerdi"),
+            idOf("Sophia \"Sophie\" Segreti"),
+            idOf("Steven Ramm")
+          ]
+        }
+      ]
     }
   ];
 
@@ -385,10 +410,10 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Michelle \"MC\" Chukwujekwu"),
       obtained_week: 3,
-      status: "active",
-      played_week: null,
+      status: "played",
+      played_week: 7,
       transferred_to: null,
-      notes: "MC unearthed Hina's beware idol in week 3; activation tasks still underway"
+      notes: "MC finished the beware tasks after the merge feast chest search and played the idol on herself at the Lewatu debut Tribal despite receiving no votes"
     },
     {
       id: "idol_rizo_velovic_1",
@@ -411,6 +436,17 @@
       played_week: null,
       transferred_to: null,
       notes: "Sophi spotted the Knowledge is Power parchment near Hina's camp the day after the three-tribe expansion"
+    },
+    {
+      id: "challenge_advantage_sage_1",
+      advantage_type: "challenge_advantage",
+      advantage_display_name: "Challenge Advantage",
+      contestant_id: idOf("Sage Ahrens-Nichols"),
+      obtained_week: 7,
+      status: "played",
+      played_week: 7,
+      transferred_to: null,
+      notes: "Sage unlocked the merge chest on Day 13, automatically joining the Rolling Stones reward team and competing for individual immunity"
     }
   ];
 
