@@ -91,6 +91,7 @@ def get_current_user_profile(
     "/users/verify/{token}",
     response_class=HTMLResponse,
     include_in_schema=False,
+    name="verify_user_email",
 )
 def verify_user_email(token: str):
     users_service.verify_user_email(token)

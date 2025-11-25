@@ -98,8 +98,7 @@ def create_user(user_data, request):
         request.url_for("verify_user_email", token=verification_token)
     )
     send_verification_email(user_doc["email"], verification_url)
-    token = create_access_token(str(result.inserted_id))
-    return _build_user_response(user_doc, token=token)
+    return _build_user_response(user_doc, token=None)
 
 
 def login_user(user_data):
