@@ -515,7 +515,11 @@
   users.createIndex({ default_pool: 1 }, { name: "users_default_pool_idx" });
   users.createIndex(
     { verification_token: 1 },
-    { name: "users_verification_token_unique", unique: true, sparse: true }
+    {
+      name: "users_verification_token_unique",
+      unique: true,
+      partialFilterExpression: { verification_token: { $type: "string" } }
+    }
   );
 
   seasons.createIndex({ season_number: 1 }, { name: "seasons_season_number_unique", unique: true });
