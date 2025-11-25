@@ -32,3 +32,4 @@ def _int_from_env(name, default):
 
 TOKEN_TTL_DAYS = _int_from_env("JWT_TOKEN_TTL_DAYS", 30)
 TOKEN_REFRESH_INTERVAL_DAYS = _int_from_env("JWT_REFRESH_INTERVAL_DAYS", 3)
+RESEND_API_KEY = _require("RESEND_API_KEY")

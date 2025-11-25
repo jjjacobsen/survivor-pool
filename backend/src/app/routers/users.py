@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import HTMLResponse
 
 from ..core.auth import get_current_active_user
 from ..schemas.pools import PendingInvitesResponse, PoolResponse
@@ -20,8 +21,8 @@ LimitQuery = Query(10, ge=1, le=25)
 
 
 @router.post("/users", response_model=UserResponse)
-def create_user(user_data: UserCreateRequest):
-    return users_service.create_user(user_data)
+def create_user(user_data: UserCreateRequest, request: Request):
+    return users_service.create_user(user_data, request)
 
 
 @router.post("/users/login", response_model=UserResponse)
@@ -84,6 +85,16 @@ def get_current_user_profile(
     current_user=CurrentUser,
 ):
     return users_service.get_user_profile(current_user.id)
+
+
+@router.get(
+    "/users/verify/{token}",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+def verify_user_email(token: str):
+    users_service.verify_user_email(token)
+    return "<p>Email verified. You can close this window.</p>"
 
 
 def _ensure_same_user(user_id, current_user):

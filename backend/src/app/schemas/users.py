@@ -16,6 +16,7 @@ class UserResponse(BaseModel):
     username: str
     email: str
     account_status: str
+    email_verified: bool
     created_at: datetime
     default_pool: str | None = None
     token: str | None = None

@@ -1,10 +1,12 @@
 import re
+import secrets
 from datetime import datetime, timedelta
 
 from bson import ObjectId
 from fastapi import HTTPException, status
 from pymongo import ReturnDocument
 
+from ..core.email import send_verification_email
 from ..core.security import (
     DUMMY_PASSWORD_HASH,
     create_access_token,
@@ -47,13 +49,14 @@ def _build_user_response(user, *, token=None):
         username=user.get("username", ""),
         email=user.get("email", ""),
         account_status=user.get("account_status", ""),
+        email_verified=user.get("email_verified", True),
         created_at=created_at,
         default_pool=default_pool_id,
         token=token,
     )
 
 
-def create_user(user_data):
+def create_user(user_data, request):
     if users_collection.find_one({"username": user_data.username}):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -67,12 +70,16 @@ def create_user(user_data):
         )
 
     hashed_password = hash_password(user_data.password)
+    verification_token = secrets.token_urlsafe(32)
 
     user_doc = {
         "username": user_data.username,
         "email": user_data.email,
         "password_hash": hashed_password,
         "account_status": "active",
+        "email_verified": False,
+        "verification_token": verification_token,
+        "verification_sent_at": datetime.now(),
         "created_at": datetime.now(),
         "default_pool": None,
         "failed_login_attempts": 0,
@@ -87,6 +94,10 @@ def create_user(user_data):
         )
 
     user_doc["_id"] = result.inserted_id
+    verification_url = str(
+        request.url_for("verify_user_email", token=verification_token)
+    )
+    send_verification_email(user_doc["email"], verification_url)
     token = create_access_token(str(result.inserted_id))
     return _build_user_response(user_doc, token=token)
 
@@ -163,6 +174,12 @@ def login_user(user_data):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is not active",
+        )
+
+    if user.get("email_verified", True) is not True:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified",
         )
 
     if user.get("failed_login_attempts") or user.get("locked_until"):
@@ -322,6 +339,48 @@ def delete_user(user_id):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete user",
         )
+
+
+def verify_user_email(token):
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification token is required",
+        )
+
+    user = users_collection.find_one({"verification_token": token})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Verification token is invalid or expired",
+        )
+
+    if user.get("email_verified"):
+        users_collection.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"verification_token": None}},
+        )
+        return _build_user_response(user)
+
+    updated_user = users_collection.find_one_and_update(
+        {"_id": user["_id"]},
+        {
+            "$set": {
+                "email_verified": True,
+                "verification_token": None,
+                "verification_verified_at": datetime.now(),
+            }
+        },
+        return_document=ReturnDocument.AFTER,
+    )
+
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to verify email",
+        )
+
+    return _build_user_response(updated_user)
 
 
 def search_active_users(query, pool_id=None, limit=10):

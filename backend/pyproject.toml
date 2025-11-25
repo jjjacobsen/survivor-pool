@@ -12,6 +12,7 @@ dependencies = [
     "pydantic[email]>=2.10.3",
     "sendgrid>=6.11.0",
     "pyjwt>=2.10.0",
+    "resend>=2.19.0",
 ]
 
 [dependency-groups]

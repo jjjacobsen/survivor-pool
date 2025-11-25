@@ -513,6 +513,10 @@
   users.createIndex({ email: 1 }, { name: "users_email_unique", unique: true });
   users.createIndex({ username: 1 }, { name: "users_username_unique", unique: true });
   users.createIndex({ default_pool: 1 }, { name: "users_default_pool_idx" });
+  users.createIndex(
+    { verification_token: 1 },
+    { name: "users_verification_token_unique", unique: true, sparse: true }
+  );
 
   seasons.createIndex({ season_number: 1 }, { name: "seasons_season_number_unique", unique: true });
 
@@ -560,11 +564,15 @@
           email: account.email,
           password_hash: spacePasswordHash,
           account_status: "active",
+          email_verified: true,
+          verification_token: null,
+          verification_verified_at: now,
         },
         $setOnInsert: {
           _id: account.id,
           created_at: now,
-          default_pool: null
+          default_pool: null,
+          verification_sent_at: now
         }
       },
       { upsert: true }
@@ -609,6 +617,10 @@
     account_status: "active",
     created_at: now,
     default_pool: null,
-    token_invalidated_at: now
+    token_invalidated_at: now,
+    email_verified: true,
+    verification_token: null,
+    verification_verified_at: now,
+    verification_sent_at: now
   });
 })();
