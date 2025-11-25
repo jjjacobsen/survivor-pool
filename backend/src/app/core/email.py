@@ -12,7 +12,7 @@ def send_verification_email(recipient, verification_url):
     )
     resend.Emails.send(
         {
-            "from": "onboarding@resend.dev",
+            "from": "no-reply@auth.survivorpoolapp.com",
             "to": recipient,
             "subject": "Hello World",
             "html": html,
