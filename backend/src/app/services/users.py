@@ -49,7 +49,7 @@ def _build_user_response(user, *, token=None):
         username=user.get("username", ""),
         email=user.get("email", ""),
         account_status=user.get("account_status", ""),
-        email_verified=user.get("email_verified", True),
+        email_verified=user.get("email_verified", False),
         created_at=created_at,
         default_pool=default_pool_id,
         token=token,
@@ -176,7 +176,7 @@ def login_user(user_data):
             detail="Account is not active",
         )
 
-    if user.get("email_verified", True) is not True:
+    if user.get("email_verified", False) is not True:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email not verified",

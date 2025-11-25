@@ -36,7 +36,7 @@ class AuthenticatedUser:
             username=doc.get("username", ""),
             email=doc.get("email", ""),
             account_status=doc.get("account_status", ""),
-            email_verified=doc.get("email_verified", True),
+            email_verified=doc.get("email_verified", False),
             created_at=created_value,
             default_pool=default_pool_id,
         )
@@ -69,7 +69,7 @@ def get_current_active_user(response: Response, authorization=AuthorizationHeade
             status_code=status.HTTP_403_FORBIDDEN, detail="Account inactive"
         )
 
-    if user_doc.get("email_verified", True) is not True:
+    if user_doc.get("email_verified", False) is not True:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Email not verified"
         )
