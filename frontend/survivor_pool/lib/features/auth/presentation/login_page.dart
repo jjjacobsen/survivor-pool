@@ -21,6 +21,8 @@ class _LoginPageState extends State<LoginPage>
   bool _isLoginMode = true;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _showVerificationNotice = false;
+  String _verificationEmail = '';
   final _formKey = GlobalKey<FormState>();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -92,15 +94,27 @@ class _LoginPageState extends State<LoginPage>
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body) as Map<String, dynamic>;
-        final user = AppUser.fromJson(data);
-        final token = data['token'] as String? ?? '';
-        if (token.isEmpty) {
+        if (_isLoginMode) {
+          final user = AppUser.fromJson(data);
+          final token = data['token'] as String? ?? '';
+          if (token.isEmpty) {
+            return;
+          }
+          await AppSession.setSession(user, token);
+          if (mounted) {
+            setState(() => _errorMessage = null);
+            context.goNamed(AppRouteNames.home, extra: user);
+          }
           return;
         }
-        await AppSession.setSession(user, token);
+        final email = (data['email'] as String?) ?? _emailController.text;
         if (mounted) {
-          setState(() => _errorMessage = null);
-          context.goNamed(AppRouteNames.home, extra: user);
+          setState(() {
+            _showVerificationNotice = true;
+            _verificationEmail = email;
+            _isLoading = false;
+            _errorMessage = null;
+          });
         }
         return;
       }
@@ -143,7 +157,9 @@ class _LoginPageState extends State<LoginPage>
         final isWide = constraints.maxWidth >= AppBreakpoints.medium;
         final gradient = _buildGradientLayer();
         final overlay = _buildOverlayLayer();
-        final authCard = _buildAuthCard(theme, isWide: isWide);
+        final card = _showVerificationNotice
+            ? _buildVerificationNotice(theme, isWide: isWide)
+            : _buildAuthCard(theme, isWide: isWide);
 
         if (isWide) {
           return Scaffold(
@@ -158,7 +174,7 @@ class _LoginPageState extends State<LoginPage>
                 Expanded(
                   child: DecoratedBox(
                     decoration: BoxDecoration(color: theme.colorScheme.surface),
-                    child: authCard,
+                    child: card,
                   ),
                 ),
               ],
@@ -169,7 +185,7 @@ class _LoginPageState extends State<LoginPage>
         return Scaffold(
           body: Stack(
             fit: StackFit.expand,
-            children: [gradient, overlay, authCard],
+            children: [gradient, overlay, card],
           ),
         );
       },
@@ -400,6 +416,98 @@ class _LoginPageState extends State<LoginPage>
               ),
             ],
           ),
+        ),
+      ),
+    );
+
+    final horizontalPadding = isWide ? 80.0 : 24.0;
+    final verticalPadding = isWide ? 72.0 : 24.0;
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            var minHeight = constraints.maxHeight - (verticalPadding * 2);
+            if (minHeight < 0) minHeight = 0;
+
+            final constrainedCard = ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: card,
+            );
+
+            final content = isWide
+                ? Align(alignment: Alignment.topCenter, child: constrainedCard)
+                : ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: minHeight),
+                    child: Center(child: constrainedCard),
+                  );
+
+            return SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
+              ),
+              child: content,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVerificationNotice(ThemeData theme, {required bool isWide}) {
+    final card = Card(
+      elevation: isWide ? 6 : 20,
+      child: Padding(
+        padding: EdgeInsets.all(isWide ? 40 : 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Icon(
+              Icons.mark_email_read,
+              size: 64,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Check your email',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _verificationEmail.isNotEmpty
+                  ? 'We sent a verification link to $_verificationEmail.'
+                  : 'We sent a verification link to your inbox.',
+              style: theme.textTheme.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Click the link to verify your account, then log in.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _showVerificationNotice = false;
+                  _isLoginMode = true;
+                  _errorMessage = null;
+                  _isLoading = false;
+                });
+                context.goNamed(AppRouteNames.login);
+              },
+              child: const Text('Back to login'),
+            ),
+          ],
         ),
       ),
     );
