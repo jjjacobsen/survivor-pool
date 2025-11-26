@@ -64,7 +64,39 @@ def create_user(user_data, request):
             detail="Username already exists",
         )
 
-    if users_collection.find_one({"email": user_data.email}):
+    existing_email_user = users_collection.find_one({"email": user_data.email})
+    if existing_email_user:
+        if existing_email_user.get("email_verified") is not True:
+            verification_token = secrets.token_urlsafe(32)
+            updated_user = users_collection.find_one_and_update(
+                {"_id": existing_email_user["_id"]},
+                {
+                    "$set": {
+                        "verification_token": verification_token,
+                        "verification_sent_at": datetime.now(),
+                    }
+                },
+                return_document=ReturnDocument.AFTER,
+            )
+
+            if not updated_user:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to refresh verification token",
+                )
+
+            verification_url = str(
+                request.url_for("verify_user_email", token=verification_token)
+            )
+            send_verification_email(updated_user["email"], verification_url)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Email already exists, but account is unverified. "
+                    "Sent new verification email"
+                ),
+            )
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already exists",
