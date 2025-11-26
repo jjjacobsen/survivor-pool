@@ -95,7 +95,70 @@ def get_current_user_profile(
 )
 def verify_user_email(token: str):
     users_service.verify_user_email(token)
-    return "<p>Email verified. You can close this window.</p>"
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <title>Survivor Pool</title>
+      </head>
+      <body style="margin:0;background:#0f172a;font-family:Arial,sans-serif;">
+        <div
+          style="
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:32px;
+          "
+        >
+          <div
+            style="
+              background:#ffffff;
+              border-radius:16px;
+              padding:32px;
+              max-width:420px;
+              width:100%;
+              box-shadow:0 12px 30px rgba(15,23,42,0.2);
+              color:#0f172a;
+            "
+          >
+            <div
+              style="
+                display:flex;
+                align-items:center;
+                gap:12px;
+                margin-bottom:12px;
+              "
+            >
+              <div
+                style="
+                  height:36px;
+                  width:36px;
+                  border-radius:12px;
+                  background:#0ea5e9;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                  color:#ffffff;
+                  font-weight:700;
+                "
+              >
+                ✓
+              </div>
+              <div style="font-size:22px;font-weight:700;">Email verified</div>
+            </div>
+            <p style="margin:0 0 12px 0;line-height:1.6;color:#334155;">
+              Your email is confirmed. You can return to Survivor Pool and sign in.
+            </p>
+            <p style="margin:0;line-height:1.5;color:#64748b;">
+              You can close this window.
+            </p>
+          </div>
+        </div>
+      </body>
+    </html>
+    """
 
 
 def _ensure_same_user(user_id, current_user):
