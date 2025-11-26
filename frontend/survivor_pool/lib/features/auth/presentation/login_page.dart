@@ -494,6 +494,14 @@ class _LoginPageState extends State<LoginPage>
               ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 12),
+            Text(
+              'If you do not see it, check your spam or junk folder.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+              ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
