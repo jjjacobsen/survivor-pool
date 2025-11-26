@@ -27,6 +27,10 @@ class UserLoginRequest(BaseModel):
     password: str
 
 
+class VerificationResendRequest(BaseModel):
+    email: EmailStr
+
+
 class PasswordUpdateRequest(BaseModel):
     current_password: str
     new_password: str

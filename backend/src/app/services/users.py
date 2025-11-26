@@ -102,6 +102,44 @@ def create_user(user_data, request):
     return _build_user_response(user_doc, token=None)
 
 
+def resend_verification_email(payload, request):
+    user = users_collection.find_one({"email": payload.email})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    if user.get("email_verified"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already verified",
+        )
+
+    verification_token = secrets.token_urlsafe(32)
+    updated_user = users_collection.find_one_and_update(
+        {"_id": user["_id"]},
+        {
+            "$set": {
+                "verification_token": verification_token,
+                "verification_sent_at": datetime.now(),
+            }
+        },
+        return_document=ReturnDocument.AFTER,
+    )
+
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update verification token",
+        )
+
+    verification_url = str(
+        request.url_for("verify_user_email", token=verification_token)
+    )
+    send_verification_email(updated_user["email"], verification_url)
+
+
 def login_user(user_data):
     identifier = user_data.identifier.strip()
     if not identifier:

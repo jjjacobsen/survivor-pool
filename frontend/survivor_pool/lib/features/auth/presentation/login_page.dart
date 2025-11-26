@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -23,6 +24,9 @@ class _LoginPageState extends State<LoginPage>
   String? _errorMessage;
   bool _showVerificationNotice = false;
   String _verificationEmail = '';
+  Timer? _resendTimer;
+  int _resendSeconds = 60;
+  bool _isResendSending = false;
   final _formKey = GlobalKey<FormState>();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -62,6 +66,7 @@ class _LoginPageState extends State<LoginPage>
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _usernameController.dispose();
+    _resendTimer?.cancel();
     super.dispose();
   }
 
@@ -115,6 +120,7 @@ class _LoginPageState extends State<LoginPage>
             _isLoading = false;
             _errorMessage = null;
           });
+          _startResendCountdown();
         }
         return;
       }
@@ -147,6 +153,68 @@ class _LoginPageState extends State<LoginPage>
       // Ignore parse failures and fall back to generic message.
     }
     return 'Unable to sign in with the provided credentials.';
+  }
+
+  void _startResendCountdown() {
+    _resendTimer?.cancel();
+    setState(() {
+      _resendSeconds = 60;
+    });
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_resendSeconds <= 1) {
+        timer.cancel();
+        setState(() => _resendSeconds = 0);
+        return;
+      }
+      setState(() => _resendSeconds -= 1);
+    });
+  }
+
+  Future<void> _handleResendVerification() async {
+    if (_verificationEmail.isEmpty) {
+      setState(() {
+        _errorMessage = 'Missing email for verification.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isResendSending = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await AuthHttpClient.post(
+        Uri.parse('${ApiConfig.baseUrl}/users/resend_verification'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'email': _verificationEmail}),
+      );
+
+      if (response.statusCode == 204) {
+        if (mounted) {
+          _startResendCountdown();
+        }
+        return;
+      }
+
+      if (mounted) {
+        setState(() {
+          _errorMessage = _extractErrorMessage(response.body);
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Unable to reach the server. Try again shortly.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isResendSending = false);
+    }
   }
 
   @override
@@ -466,6 +534,11 @@ class _LoginPageState extends State<LoginPage>
   }
 
   Widget _buildVerificationNotice(ThemeData theme, {required bool isWide}) {
+    final canResend = _resendSeconds == 0 && !_isResendSending;
+    final resendLabel = _resendSeconds > 0
+        ? 'Resend verification email ($_resendSeconds)'
+        : 'Resend verification email';
+
     final card = Card(
       elevation: isWide ? 6 : 20,
       child: Padding(
@@ -513,12 +586,36 @@ class _LoginPageState extends State<LoginPage>
             ),
             const SizedBox(height: 24),
             ElevatedButton(
+              onPressed: canResend ? _handleResendVerification : null,
+              child: _isResendSending
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(resendLabel),
+            ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            const SizedBox(height: 12),
+            ElevatedButton(
               onPressed: () {
+                _resendTimer?.cancel();
                 setState(() {
                   _showVerificationNotice = false;
                   _isLoginMode = true;
                   _errorMessage = null;
                   _isLoading = false;
+                  _resendSeconds = 60;
+                  _isResendSending = false;
                 });
                 context.goNamed(AppRouteNames.login);
               },

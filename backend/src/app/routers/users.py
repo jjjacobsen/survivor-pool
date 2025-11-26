@@ -12,6 +12,7 @@ from ..schemas.users import (
     UserLoginRequest,
     UserResponse,
     UserSearchResult,
+    VerificationResendRequest,
 )
 from ..services import pools as pools_service
 from ..services import users as users_service
@@ -26,6 +27,11 @@ LimitQuery = Query(10, ge=1, le=25)
 @router.post("/users", response_model=UserResponse)
 def create_user(user_data: UserCreateRequest, request: Request):
     return users_service.create_user(user_data, request)
+
+
+@router.post("/users/resend_verification", status_code=status.HTTP_204_NO_CONTENT)
+def resend_verification(payload: VerificationResendRequest, request: Request):
+    users_service.resend_verification_email(payload, request)
 
 
 @router.post("/users/login", response_model=UserResponse)
