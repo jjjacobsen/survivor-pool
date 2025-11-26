@@ -74,7 +74,7 @@ def send_verification_email(recipient, verification_url):
     )
     resend.Emails.send(
         {
-            "from": "no-reply@auth.survivorpoolapp.com",
+            "from": "verification@auth.survivorpoolapp.com",
             "to": recipient,
             "subject": subject,
             "html": html,
