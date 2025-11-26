@@ -7,6 +7,7 @@ class AppRoutes {
   static const String login = '/login';
   static const String home = '/home';
   static const String profile = '/profile';
+  static const String resetPassword = '/reset-password';
   static const String poolSettings = '/settings';
   static const String poolAdvance = '/advance';
   static const String poolLeaderboard = '/leaderboard';
@@ -18,6 +19,7 @@ class AppRouteNames {
   static const String login = 'login';
   static const String home = 'home';
   static const String profile = 'profile';
+  static const String resetPassword = 'reset-password';
   static const String poolSettings = 'pool-settings';
   static const String poolAdvance = 'pool-advance';
   static const String poolLeaderboard = 'pool-leaderboard';

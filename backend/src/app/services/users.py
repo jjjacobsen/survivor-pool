@@ -191,6 +191,58 @@ def login_user(user_data):
     return _build_user_response(user, token=token)
 
 
+def update_password(user_id, payload):
+    user_oid = parse_object_id(user_id, "user_id")
+    user = users_collection.find_one({"_id": user_oid})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    hashed_password = user.get("password_hash")
+    if not isinstance(hashed_password, str) or not hashed_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password not set for this account",
+        )
+
+    if payload.new_password != payload.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passwords do not match",
+        )
+
+    if len(payload.new_password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 6 characters",
+        )
+
+    if not verify_password(payload.current_password, hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect",
+        )
+
+    updated_user = users_collection.find_one_and_update(
+        {"_id": user_oid},
+        {
+            "$set": {
+                "password_hash": hash_password(payload.new_password),
+                "token_invalidated_at": datetime.now(),
+            }
+        },
+        return_document=ReturnDocument.AFTER,
+    )
+
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update password",
+        )
+
+
 def update_default_pool(user_id, payload):
     user_oid = parse_object_id(user_id, "user_id")
 

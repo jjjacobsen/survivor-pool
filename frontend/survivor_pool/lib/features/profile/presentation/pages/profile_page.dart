@@ -31,6 +31,10 @@ class _ProfilePageState extends State<ProfilePage> {
     context.goNamed(AppRouteNames.login);
   }
 
+  void _openResetPassword() {
+    context.pushNamed(AppRouteNames.resetPassword, extra: widget.user);
+  }
+
   Future<void> _confirmDelete() async {
     if (_isDeleting) {
       return;
@@ -178,6 +182,16 @@ class _ProfilePageState extends State<ProfilePage> {
                           spacing: 16,
                           runSpacing: 12,
                           children: [
+                            SizedBox(
+                              width: isWide ? 220 : double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: _isDeleting
+                                    ? null
+                                    : _openResetPassword,
+                                icon: const Icon(Icons.lock_reset),
+                                label: const Text('Reset password'),
+                              ),
+                            ),
                             SizedBox(
                               width: isWide ? 220 : double.infinity,
                               child: FilledButton.icon(

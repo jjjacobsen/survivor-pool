@@ -16,6 +16,7 @@ import 'package:survivor_pool/features/pools/presentation/pages/pool_advance_pag
 import 'package:survivor_pool/features/pools/presentation/pages/pool_leaderboard_page.dart';
 import 'package:survivor_pool/features/pools/presentation/pages/pool_settings_page.dart';
 import 'package:survivor_pool/features/profile/presentation/pages/profile_page.dart';
+import 'package:survivor_pool/features/profile/presentation/pages/reset_password_page.dart';
 
 class SurvivorPoolApp extends StatelessWidget {
   const SurvivorPoolApp({super.key});
@@ -57,6 +58,22 @@ class SurvivorPoolApp extends StatelessWidget {
           final stored = AppSession.currentUser.value;
           if (stored != null) {
             return ProfilePage(user: stored);
+          }
+          return const LoginPage();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.resetPassword,
+        name: AppRouteNames.resetPassword,
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is AppUser) {
+            AppSession.currentUser.value = extra;
+            return ResetPasswordPage(user: extra);
+          }
+          final stored = AppSession.currentUser.value;
+          if (stored != null) {
+            return ResetPasswordPage(user: stored);
           }
           return const LoginPage();
         },

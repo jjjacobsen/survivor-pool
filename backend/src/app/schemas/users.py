@@ -27,6 +27,12 @@ class UserLoginRequest(BaseModel):
     password: str
 
 
+class PasswordUpdateRequest(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str
+
+
 class UserDefaultPoolUpdate(BaseModel):
     default_pool: str | None = None
 
