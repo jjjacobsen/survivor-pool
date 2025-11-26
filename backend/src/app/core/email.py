@@ -81,3 +81,72 @@ def send_verification_email(recipient, verification_url):
             "text": text,
         }
     )
+
+
+def send_password_reset_email(recipient, reset_token):
+    subject = "Reset your Survivor Pool password"
+    html = f"""
+    <div style="background:#f3f4f6;padding:32px;">
+      <div
+        style="
+          max-width:560px;
+          margin:0 auto;
+          background:#ffffff;
+          border:1px solid #e5e7eb;
+          border-radius:12px;
+          padding:28px;
+          font-family:Arial,sans-serif;
+          color:#0f172a;
+        "
+      >
+        <div style="font-size:20px;font-weight:700;margin-bottom:12px;">
+          Password reset
+        </div>
+        <p style="margin:0 0 12px 0;line-height:1.5;">
+          Use the code below to reset your Survivor Pool password. Enter it in
+          the app along with your new password.
+        </p>
+        <div
+          style="
+            display:inline-block;
+            padding:12px 16px;
+            background:#0ea5e9;
+            color:#ffffff;
+            border-radius:10px;
+            font-weight:700;
+            letter-spacing:0.5px;
+            margin:12px 0;
+          "
+        >
+          {reset_token}
+        </div>
+        <p style="margin:12px 0 0 0;font-size:12px;color:#6b7280;">
+          If you did not request this, you can safely ignore this email.
+        </p>
+      </div>
+      <p
+        style="
+          text-align:center;
+          margin:12px 0 0 0;
+          font-size:12px;
+          color:#94a3b8;
+          font-family:Arial,sans-serif;
+        "
+      >
+        Sent by Survivor Pool
+      </p>
+    </div>
+    """
+    text = (
+        "Use this code to reset your Survivor Pool password: "
+        f"{reset_token}. If you did not request this, ignore this email."
+    )
+    resend.Emails.send(
+        {
+            "from": "recovery@auth.survivorpoolapp.com",
+            "to": recipient,
+            "subject": subject,
+            "html": html,
+            "text": text,
+        }
+    )

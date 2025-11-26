@@ -33,6 +33,16 @@ class PasswordUpdateRequest(BaseModel):
     confirm_password: str
 
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+    confirm_password: str
+
+
 class UserDefaultPoolUpdate(BaseModel):
     default_pool: str | None = None
 

@@ -6,7 +6,7 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 from pymongo import ReturnDocument
 
-from ..core.email import send_verification_email
+from ..core.email import send_password_reset_email, send_verification_email
 from ..core.security import (
     DUMMY_PASSWORD_HASH,
     create_access_token,
@@ -29,6 +29,7 @@ from .common import parse_object_id
 
 MAX_FAILED_LOGIN_ATTEMPTS = 5
 LOCKOUT_DURATION = timedelta(minutes=15)
+RESET_TOKEN_TTL = timedelta(hours=1)
 
 
 def _build_user_response(user, *, token=None):
@@ -240,6 +241,86 @@ def update_password(user_id, payload):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update password",
+        )
+
+
+def request_password_reset(payload):
+    email = payload.email.strip()
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is required",
+        )
+
+    user = users_collection.find_one({"email": email})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now() + RESET_TOKEN_TTL
+    users_collection.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"reset_token": token, "reset_token_expires_at": expires_at}},
+    )
+    send_password_reset_email(email, token)
+
+
+def complete_password_reset(payload):
+    token = payload.token.strip()
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset token is required",
+        )
+
+    if payload.new_password != payload.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passwords do not match",
+        )
+
+    if len(payload.new_password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 6 characters",
+        )
+
+    user = users_collection.find_one({"reset_token": token})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Reset token is invalid",
+        )
+
+    expires_at = user.get("reset_token_expires_at")
+    if not isinstance(expires_at, datetime) or expires_at < datetime.now():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset token has expired",
+        )
+
+    updated_user = users_collection.find_one_and_update(
+        {"_id": user["_id"]},
+        {
+            "$set": {
+                "password_hash": hash_password(payload.new_password),
+                "token_invalidated_at": datetime.now(),
+            },
+            "$unset": {
+                "reset_token": "",
+                "reset_token_expires_at": "",
+            },
+        },
+        return_document=ReturnDocument.AFTER,
+    )
+
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset password",
         )
 
 

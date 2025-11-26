@@ -395,6 +395,15 @@ class _LoginPageState extends State<LoginPage>
                       )
                     : Text(_isLoginMode ? 'Login' : 'Sign Up'),
               ),
+              if (_isLoginMode) ...[
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () {
+                    context.pushNamed(AppRouteNames.forgotPassword);
+                  },
+                  child: const Text('Forgot password?'),
+                ),
+              ],
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {

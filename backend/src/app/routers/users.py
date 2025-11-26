@@ -4,6 +4,8 @@ from fastapi.responses import HTMLResponse
 from ..core.auth import get_current_active_user
 from ..schemas.pools import PendingInvitesResponse, PoolResponse
 from ..schemas.users import (
+    PasswordResetConfirm,
+    PasswordResetRequest,
     PasswordUpdateRequest,
     UserCreateRequest,
     UserDefaultPoolUpdate,
@@ -29,6 +31,16 @@ def create_user(user_data: UserCreateRequest, request: Request):
 @router.post("/users/login", response_model=UserResponse)
 def login_user(user_data: UserLoginRequest):
     return users_service.login_user(user_data)
+
+
+@router.post("/users/forgot_password", status_code=status.HTTP_204_NO_CONTENT)
+def forgot_password(payload: PasswordResetRequest):
+    users_service.request_password_reset(payload)
+
+
+@router.post("/users/reset_password", status_code=status.HTTP_204_NO_CONTENT)
+def reset_password(payload: PasswordResetConfirm):
+    users_service.complete_password_reset(payload)
 
 
 @router.patch("/users/{user_id}/password", status_code=status.HTTP_204_NO_CONTENT)
