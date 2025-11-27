@@ -37,7 +37,8 @@
     { week: 5, eliminated_contestant_id: idOf("Jason Treul") },
     { week: 6, eliminated_contestant_id: idOf("Shannon Fairweather") },
     { week: 7, eliminated_contestant_id: idOf("Nate Moore") },
-    { week: 8, eliminated_contestant_id: idOf("Michelle \"MC\" Chukwujekwu") }
+    { week: 8, eliminated_contestant_id: idOf("Michelle \"MC\" Chukwujekwu") },
+    { week: 9, eliminated_contestant_id: idOf("Alex Moore") }
   ];
 
   const tribeTimeline = [
@@ -186,10 +187,10 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Alex Moore"),
       obtained_week: 2,
-      status: "active",
+      status: "expired",
       played_week: null,
       transferred_to: null,
-      notes: "Alex completed the beware activation steps on Kele in week 2; idol currently active"
+      notes: "Alex completed the beware activation steps on Kele in week 2 and left the game at the week 9 Lewatu Tribal without playing the idol"
     },
     {
       id: "idol_mc_chukwujekwu_1",
