@@ -8,6 +8,23 @@ host_seed=${4:-db/init/init.js}
 seasons_host_dir=${5:-db/seasons}
 seasons_container_dir=${6:-/app/mongo-init/seasons}
 
+env_file=${ENV_FILE:-.env.dev}
+
+if [ ! -f "$env_file" ]; then
+  echo "Missing $env_file for Mongo env vars" >&2
+  exit 1
+fi
+
+# shellcheck disable=SC1090
+source "$env_file"
+
+space_password_hash=${SPACE_PASSWORD_HASH:-}
+
+if [ -z "$space_password_hash" ]; then
+  echo "Missing SPACE_PASSWORD_HASH in $env_file" >&2
+  exit 1
+fi
+
 ping_eval=$(cat <<'JS'
 const ok = db.runCommand({ ping: 1 }).ok === 1;
 if (!ok) {
@@ -47,7 +64,7 @@ docker exec "$container" mkdir -p "$seasons_container_dir"
 docker cp "$seasons_host_dir"/. "$container":"$seasons_container_dir"
 
 echo "Running Mongo init script: $seed_file"
-docker exec "$container" mongosh --file "$seed_file"
+docker exec -e SPACE_PASSWORD_HASH="$space_password_hash" "$container" mongosh --file "$seed_file"
 
 until docker exec "$container" \
   mongosh --quiet --eval "$db_exists_eval" >/dev/null 2>&1; do

@@ -284,7 +284,10 @@
   picks.createIndex({ poolId: 1, contestant_id: 1 }, { name: "picks_pool_contestant_idx" });
   picks.createIndex({ result: 1 }, { name: "picks_result_idx" });
 
-  const spacePasswordHash = "$2b$12$dCJv2DzGaDpGDNkat1ohn.21VPhwo0H/pXvuXOGhKbmHpSmHhQ.DK";
+  const spacePasswordHash = process.env.SPACE_PASSWORD_HASH;
+  if (!spacePasswordHash) {
+    throw new Error("SPACE_PASSWORD_HASH is required");
+  }
 
   [
     {

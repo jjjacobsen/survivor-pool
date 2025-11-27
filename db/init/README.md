@@ -4,9 +4,10 @@ Season canon lives in `../seasons` and must sit next to `init.js` inside the con
 
 Manual load
 
-- Dev one-liner: `docker exec -it dev-mongo mongosh --eval 'load("/app/mongo-init/init.js")'` (with `/app/mongo-init/seasons` copied)
-- Dev alt: `docker exec -it dev-mongo mongosh --file /app/mongo-init/init.js`
-- Prod: `docker compose exec mongo mongosh --file /app/mongo-init/init.js`
+- Export `SPACE_PASSWORD_HASH` (see env files) and pass it to mongosh runs.
+- Dev one-liner: `docker exec -e SPACE_PASSWORD_HASH="$SPACE_PASSWORD_HASH" -it dev-mongo mongosh --eval 'load("/app/mongo-init/init.js")'` (with `/app/mongo-init/seasons` copied)
+- Dev alt: `docker exec -e SPACE_PASSWORD_HASH="$SPACE_PASSWORD_HASH" -it dev-mongo mongosh --file /app/mongo-init/init.js`
+- Prod: `docker compose exec -e SPACE_PASSWORD_HASH="$SPACE_PASSWORD_HASH" mongo mongosh --file /app/mongo-init/init.js`
 
 Interactive mongosh
 

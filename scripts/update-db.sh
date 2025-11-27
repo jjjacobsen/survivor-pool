@@ -44,6 +44,23 @@ EOF
 run_dev_update() {
   echo "Detected dev Mongo container '$DEV_CONTAINER'"
 
+  local env_file=${ENV_FILE:-"$ROOT_DIR/.env.dev"}
+
+  if [ ! -f "$env_file" ]; then
+    echo "Missing $env_file for Mongo env vars" >&2
+    exit 1
+  fi
+
+  # shellcheck disable=SC1090
+  source "$env_file"
+
+  local space_password_hash=${SPACE_PASSWORD_HASH:-}
+
+  if [ -z "$space_password_hash" ]; then
+    echo "Missing SPACE_PASSWORD_HASH in $env_file" >&2
+    exit 1
+  fi
+
   until docker exec "$DEV_CONTAINER" \
     mongosh --quiet --eval "$ping_eval" >/dev/null 2>&1; do
     sleep 1
@@ -55,7 +72,7 @@ run_dev_update() {
   docker cp "$SEASONS_HOST_DIR"/. "$DEV_CONTAINER":"$CONTAINER_SEASONS_DIR"
 
   echo "Running Mongo init script in '$DEV_CONTAINER'"
-  docker exec "$DEV_CONTAINER" mongosh --file "$CONTAINER_SEED"
+  docker exec -e SPACE_PASSWORD_HASH="$space_password_hash" "$DEV_CONTAINER" mongosh --file "$CONTAINER_SEED"
 
   until docker exec "$DEV_CONTAINER" \
     mongosh --quiet --eval "$db_exists_eval" >/dev/null 2>&1; do
@@ -79,9 +96,15 @@ run_prod_update() {
 
   local mongo_user=${MONGO_INITDB_ROOT_USERNAME:-}
   local mongo_pass=${MONGO_INITDB_ROOT_PASSWORD:-}
+  local space_password_hash=${SPACE_PASSWORD_HASH:-}
 
   if [ -z "$mongo_user" ] || [ -z "$mongo_pass" ]; then
     echo "Missing MONGO_INITDB_ROOT_USERNAME or MONGO_INITDB_ROOT_PASSWORD in $env_file" >&2
+    exit 1
+  fi
+
+  if [ -z "$space_password_hash" ]; then
+    echo "Missing SPACE_PASSWORD_HASH in $env_file" >&2
     exit 1
   fi
 
@@ -97,7 +120,7 @@ run_prod_update() {
   "${COMPOSE_CMD[@]}" cp "$SEASONS_HOST_DIR"/. "$PROD_SERVICE":"$CONTAINER_SEASONS_DIR"
 
   echo "Running Mongo init script in compose service '$PROD_SERVICE'"
-  "${COMPOSE_CMD[@]}" exec -T "$PROD_SERVICE" \
+  "${COMPOSE_CMD[@]}" exec -T -e SPACE_PASSWORD_HASH="$space_password_hash" "$PROD_SERVICE" \
     mongosh --username "$mongo_user" --password "$mongo_pass" --authenticationDatabase admin \
       --file "$CONTAINER_SEED"
 

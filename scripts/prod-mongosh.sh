@@ -11,9 +11,15 @@ seasons_container_dir=${6:-/app/mongo-init/seasons}
 
 mongo_user=${MONGO_INITDB_ROOT_USERNAME:-}
 mongo_pass=${MONGO_INITDB_ROOT_PASSWORD:-}
+space_password_hash=${SPACE_PASSWORD_HASH:-}
 
 if [ -z "$mongo_user" ] || [ -z "$mongo_pass" ]; then
   echo "Missing MONGO_INITDB_ROOT_USERNAME or MONGO_INITDB_ROOT_PASSWORD" >&2
+  exit 1
+fi
+
+if [ -z "$space_password_hash" ]; then
+  echo "Missing SPACE_PASSWORD_HASH in .env.prod" >&2
   exit 1
 fi
 
@@ -57,7 +63,7 @@ docker compose exec -T "$service" mkdir -p "$seasons_container_dir"
 docker compose cp "$seasons_host_dir"/. "$service":"$seasons_container_dir"
 
 echo "Running Mongo init script: $seed_file"
-docker compose exec -T "$service" \
+docker compose exec -T -e SPACE_PASSWORD_HASH="$space_password_hash" "$service" \
   mongosh --username "$mongo_user" --password "$mongo_pass" --authenticationDatabase admin \
     --file "$seed_file"
 
