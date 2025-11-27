@@ -61,7 +61,7 @@ mise install
 mise run bootstrap
 
 # run everything (MongoDB + backend + frontend) inside tmux
-mise run start
+mise run dev
 
 # or drive services individually
 mise run mongo
@@ -76,7 +76,7 @@ mise run frontend
 ### Environment config
 
 - `.env.dev` and `.env.prod` live in the repo root and only carry backend settings (Mongo URL, DB name, CORS rule).
-- The `backend` task in `mise.toml` loads `.env.dev`, so `mise run backend` (and `mise run start`, which shells into that task) get their env from that file; other tasks run clean.
+- The `backend` task in `mise.toml` loads `.env.dev`, so `mise run backend` (and `mise run dev`, which shells into that task) get their env from that file; other tasks run clean.
 - `mise run prod` delegates to Docker Compose, whose backend service references `.env.prod` through `env_file`, so production containers read the same values.
 - don't put secrets in frontend
 

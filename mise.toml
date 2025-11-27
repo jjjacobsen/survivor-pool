@@ -28,7 +28,7 @@ mongo = { run = [
   "docker run --rm --name dev-mongo -d -p 27017:27017 -v dev-mongo-data:/data/db -v dev-mongo-config:/data/configdb mongo:8.0",
 ], description = "Start MongoDB for development" }
 
-start = { run = [
+dev = { run = [
   "mise run mongo",
   "if tmux has-session -t survivor-dev 2>/dev/null; then echo \"tmux session survivor-dev already running\"; exit 1; fi",
   "tmux new-session -d -s survivor-dev -n mongosh -c .",
