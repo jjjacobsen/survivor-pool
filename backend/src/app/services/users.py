@@ -2,7 +2,6 @@ import re
 import secrets
 from datetime import datetime, timedelta
 
-from bson import ObjectId
 from fastapi import HTTPException, status
 from pymongo import ReturnDocument
 
@@ -34,16 +33,7 @@ RESET_TOKEN_TTL = timedelta(hours=1)
 
 def _build_user_response(user, *, token=None):
     default_pool = user.get("default_pool")
-    if isinstance(default_pool, ObjectId):
-        default_pool_id = str(default_pool)
-    elif isinstance(default_pool, str):
-        default_pool_id = default_pool
-    else:
-        default_pool_id = None
-
-    created_at = user.get("created_at")
-    if not isinstance(created_at, datetime):
-        created_at = datetime.now()
+    default_pool_id = str(default_pool) if default_pool else None
 
     return UserResponse(
         id=str(user["_id"]),
@@ -51,7 +41,7 @@ def _build_user_response(user, *, token=None):
         email=user.get("email", ""),
         account_status=user.get("account_status", ""),
         email_verified=user.get("email_verified", False),
-        created_at=created_at,
+        created_at=user["created_at"],
         default_pool=default_pool_id,
         token=token,
     )
@@ -187,7 +177,7 @@ def login_user(user_data):
 
     if user:
         locked_until = user.get("locked_until")
-        if isinstance(locked_until, datetime) and locked_until > now:
+        if locked_until and locked_until > now:
             remaining_seconds = int((locked_until - now).total_seconds())
             minutes_remaining = max((remaining_seconds + 59) // 60, 1)
             plural = "s" if minutes_remaining != 1 else ""
@@ -197,18 +187,13 @@ def login_user(user_data):
                     f"Account locked. Try again in {minutes_remaining} minute{plural}."
                 ),
             )
-        if isinstance(locked_until, datetime) and locked_until <= now:
+        if locked_until and locked_until <= now:
             users_collection.update_one(
                 {"_id": user["_id"]},
                 {"$set": {"failed_login_attempts": 0, "locked_until": None}},
             )
             user["failed_login_attempts"] = 0
             user["locked_until"] = None
-        if locked_until and not isinstance(locked_until, datetime):
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Account locked. Try again soon.",
-            )
         hashed_password = user["password_hash"]
     else:
         hashed_password = DUMMY_PASSWORD_HASH
@@ -271,12 +256,7 @@ def update_password(user_id, payload):
             detail="User not found",
         )
 
-    hashed_password = user.get("password_hash")
-    if not isinstance(hashed_password, str) or not hashed_password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password not set for this account",
-        )
+    hashed_password = user["password_hash"]
 
     if payload.new_password != payload.confirm_password:
         raise HTTPException(
@@ -365,8 +345,8 @@ def complete_password_reset(payload):
             detail="Reset token is invalid",
         )
 
-    expires_at = user.get("reset_token_expires_at")
-    if not isinstance(expires_at, datetime) or expires_at < datetime.now():
+    expires_at = user["reset_token_expires_at"]
+    if expires_at < datetime.now():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Reset token has expired",
@@ -453,31 +433,17 @@ def list_user_pools(user_id):
 
     pools = pools_collection.find({"_id": {"$in": list(pool_ids)}})
 
-    def _parse_optional_int(value):
-        if isinstance(value, int):
-            return value
-        if isinstance(value, float):
-            return int(value)
-        return None
-
     responses = []
     for pool in pools:
         winners_raw = pool.get("winners", []) or []
-        winner_user_ids = [
-            str(candidate)
-            for candidate in winners_raw
-            if isinstance(candidate, ObjectId)
-        ]
+        winner_user_ids = [str(candidate) for candidate in winners_raw]
 
-        status_value = pool.get("status")
-        status_text = status_value if isinstance(status_value, str) else "open"
-        competitive_since_week = _parse_optional_int(pool.get("competitive_since_week"))
-        completed_week = _parse_optional_int(pool.get("completed_week"))
+        status_text = pool.get("status", "open")
+        competitive_since_week = pool.get("competitive_since_week")
+        completed_week = pool.get("completed_week")
         completed_at = pool.get("completed_at")
-        if not isinstance(completed_at, datetime):
-            completed_at = None
 
-        start_week = _parse_optional_int(pool.get("start_week")) or 1
+        start_week = pool.get("start_week", 1)
         if start_week < 1:
             start_week = 1
 
@@ -487,8 +453,8 @@ def list_user_pools(user_id):
                 name=pool.get("name", ""),
                 owner_id=(str(pool.get("ownerId")) if pool.get("ownerId") else ""),
                 season_id=(str(pool.get("seasonId")) if pool.get("seasonId") else ""),
-                created_at=pool.get("created_at", datetime.now()),
-                current_week=pool.get("current_week", 1),
+                created_at=pool["created_at"],
+                current_week=pool["current_week"],
                 start_week=start_week,
                 settings=pool.get("settings", {}),
                 invited_user_ids=[],
@@ -527,9 +493,7 @@ def delete_user(user_id):
 
     owned_pools = list(pools_collection.find({"ownerId": user_oid}, {"_id": 1}))
     for pool in owned_pools:
-        pool_id = pool.get("_id")
-        if pool_id is None:
-            continue
+        pool_id = pool["_id"]
         pools_service.delete_pool(str(pool_id), user_id)
 
     pool_memberships_collection.delete_many({"userId": user_oid})
@@ -599,8 +563,7 @@ def search_active_users(query, pool_id=None, limit=10):
         membership_cursor = pool_memberships_collection.find({"poolId": pool_oid})
         for membership in membership_cursor:
             member_id = membership.get("userId")
-            if isinstance(member_id, ObjectId):
-                pool_membership_status[member_id] = membership.get("status", "")
+            pool_membership_status[member_id] = membership.get("status", "")
 
     pattern = re.escape(trimmed)
     selector = {
@@ -627,9 +590,7 @@ def search_active_users(query, pool_id=None, limit=10):
 
     results = []
     for _, _, doc in ranked:
-        user_id = doc.get("_id")
-        if not isinstance(user_id, ObjectId):
-            continue
+        user_id = doc["_id"]
         status = pool_membership_status.get(user_id)
         if status in {"active", "invited", "eliminated"}:
             continue
