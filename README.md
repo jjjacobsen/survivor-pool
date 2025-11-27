@@ -84,7 +84,7 @@ mise run frontend
 
 - 🎨 **Frontend**: Flutter app lives in `frontend/survivor_pool`, designed mobile-first with web support.
 - ⚙️ **Backend**: FastAPI service (`backend/src`) coordinates game rules, picks, and pool logic.
-- 🗃️ **Database**: MongoDB holds normalized pool data while seasons stay immutable in per-season files under `db/seasons` loaded by `db/init/init.js`.
+- 🗃️ **Database**: MongoDB holds normalized pool data while seasons stay immutable in per-season files under `db/seasons` loaded by `db/init.js`.
 - 🔌 **APIs**: REST endpoints grouped by domain (`pools`, `picks`, `seasons`, `users`) with strict CORS configuration.
 
 ## Security
@@ -105,8 +105,7 @@ I have the information of survivor events in db/seasons/season__.js up through w
 .
 ├── frontend/          # Flutter application
 ├── backend/           # FastAPI service and routers
-├── db/init/           # Mongo seed scripts
-├── db/seasons/        # Season canon data
+├── db/                # Mongo seed scripts + season canon
 ├── docs/              # PRD + database design notes
 └── scripts/           # Dev utilities (tmux, Mongo shell helpers)
 ```

@@ -3,10 +3,11 @@ set -euo pipefail
 
 container=${1:-dev-mongo}
 target_db=${2:-survivor_pool}
-seed_file=${3:-/app/mongo-init/init.js}
-host_seed=${4:-db/init/init.js}
-seasons_host_dir=${5:-db/seasons}
-seasons_container_dir=${6:-/app/mongo-init/seasons}
+container_db_dir=${5:-/app/mongo-init}
+seed_file=${3:-"$container_db_dir/init.js"}
+host_db_dir=${4:-db}
+host_init="$host_db_dir/init.js"
+host_seasons_dir="$host_db_dir/seasons"
 
 env_file=${ENV_FILE:-.env.dev}
 
@@ -48,20 +49,23 @@ until docker exec "$container" \
   sleep 1
 done
 
-if [ ! -f "$host_seed" ]; then
-  echo "Seed file not found on host at $host_seed" >&2
+if [ ! -d "$host_db_dir" ]; then
+  echo "DB directory not found on host at $host_db_dir" >&2
   exit 1
 fi
 
-if [ ! -d "$seasons_host_dir" ]; then
-  echo "Seasons directory not found on host at $seasons_host_dir" >&2
+if [ ! -f "$host_init" ]; then
+  echo "Seed file not found on host at $host_init" >&2
   exit 1
 fi
 
-docker exec "$container" mkdir -p "$(dirname "$seed_file")"
-docker cp "$host_seed" "$container":"$seed_file"
-docker exec "$container" mkdir -p "$seasons_container_dir"
-docker cp "$seasons_host_dir"/. "$container":"$seasons_container_dir"
+if [ ! -d "$host_seasons_dir" ]; then
+  echo "Seasons directory not found on host at $host_seasons_dir" >&2
+  exit 1
+fi
+
+docker exec "$container" mkdir -p "$container_db_dir"
+docker cp "$host_db_dir"/. "$container":"$container_db_dir"
 
 echo "Running Mongo init script: $seed_file"
 docker exec -e SPACE_PASSWORD_HASH="$space_password_hash" "$container" mongosh --file "$seed_file"

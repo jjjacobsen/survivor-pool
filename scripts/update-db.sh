@@ -6,20 +6,26 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEV_CONTAINER=${DEV_CONTAINER:-dev-mongo}
 PROD_SERVICE=${PROD_SERVICE:-mongo}
 TARGET_DB=${TARGET_DB:-survivor_pool}
-CONTAINER_SEED=${CONTAINER_SEED:-/app/mongo-init/init.js}
-HOST_SEED=${1:-"$ROOT_DIR/db/init/init.js"}
-CONTAINER_SEASONS_DIR=${CONTAINER_SEASONS_DIR:-/app/mongo-init/seasons}
-SEASONS_HOST_DIR=${SEASONS_HOST_DIR:-"$ROOT_DIR/db/seasons"}
+CONTAINER_DB_DIR=${CONTAINER_DB_DIR:-/app/mongo-init}
+CONTAINER_SEED=${CONTAINER_SEED:-"$CONTAINER_DB_DIR/init.js"}
+HOST_DB_DIR=${1:-${HOST_DB_DIR:-"$ROOT_DIR/db"}}
+HOST_SEED=${HOST_SEED:-"$HOST_DB_DIR/init.js"}
+HOST_SEASONS_DIR=${HOST_SEASONS_DIR:-"$HOST_DB_DIR/seasons"}
 
 COMPOSE_CMD=(docker compose -f "$ROOT_DIR/compose.yml" --project-directory "$ROOT_DIR")
+
+if [ ! -d "$HOST_DB_DIR" ]; then
+  echo "DB directory not found at $HOST_DB_DIR" >&2
+  exit 1
+fi
 
 if [ ! -f "$HOST_SEED" ]; then
   echo "Seed file not found at $HOST_SEED" >&2
   exit 1
 fi
 
-if [ ! -d "$SEASONS_HOST_DIR" ]; then
-  echo "Seasons directory not found at $SEASONS_HOST_DIR" >&2
+if [ ! -d "$HOST_SEASONS_DIR" ]; then
+  echo "Seasons directory not found at $HOST_SEASONS_DIR" >&2
   exit 1
 fi
 
@@ -66,10 +72,8 @@ run_dev_update() {
     sleep 1
   done
 
-  docker exec "$DEV_CONTAINER" mkdir -p "$(dirname "$CONTAINER_SEED")"
-  docker cp "$HOST_SEED" "$DEV_CONTAINER":"$CONTAINER_SEED"
-  docker exec "$DEV_CONTAINER" mkdir -p "$CONTAINER_SEASONS_DIR"
-  docker cp "$SEASONS_HOST_DIR"/. "$DEV_CONTAINER":"$CONTAINER_SEASONS_DIR"
+  docker exec "$DEV_CONTAINER" mkdir -p "$CONTAINER_DB_DIR"
+  docker cp "$HOST_DB_DIR"/. "$DEV_CONTAINER":"$CONTAINER_DB_DIR"
 
   echo "Running Mongo init script in '$DEV_CONTAINER'"
   docker exec -e SPACE_PASSWORD_HASH="$space_password_hash" "$DEV_CONTAINER" mongosh --file "$CONTAINER_SEED"
@@ -114,10 +118,8 @@ run_prod_update() {
     sleep 1
   done
 
-  "${COMPOSE_CMD[@]}" exec -T "$PROD_SERVICE" mkdir -p "$(dirname "$CONTAINER_SEED")"
-  "${COMPOSE_CMD[@]}" cp "$HOST_SEED" "$PROD_SERVICE":"$CONTAINER_SEED"
-  "${COMPOSE_CMD[@]}" exec -T "$PROD_SERVICE" mkdir -p "$CONTAINER_SEASONS_DIR"
-  "${COMPOSE_CMD[@]}" cp "$SEASONS_HOST_DIR"/. "$PROD_SERVICE":"$CONTAINER_SEASONS_DIR"
+  "${COMPOSE_CMD[@]}" exec -T "$PROD_SERVICE" mkdir -p "$CONTAINER_DB_DIR"
+  "${COMPOSE_CMD[@]}" cp "$HOST_DB_DIR"/. "$PROD_SERVICE":"$CONTAINER_DB_DIR"
 
   echo "Running Mongo init script in compose service '$PROD_SERVICE'"
   "${COMPOSE_CMD[@]}" exec -T -e SPACE_PASSWORD_HASH="$space_password_hash" "$PROD_SERVICE" \

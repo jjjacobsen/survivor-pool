@@ -1,11 +1,11 @@
 Place MongoDB initialization scripts in this directory.
 Use idempotent operations (e.g., `updateOne` with `upsert: true`).
-Season canon lives in `../seasons` and must sit next to `init.js` inside the container (default: `/app/mongo-init/seasons`).
+Season canon lives in `./seasons` and should be copied alongside `init.js` inside the container (default root: `/app/mongo-init`).
 
 Manual load
 
 - Export `SPACE_PASSWORD_HASH` (see env files) and pass it to mongosh runs.
-- Dev one-liner: `docker exec -e SPACE_PASSWORD_HASH="$SPACE_PASSWORD_HASH" -it dev-mongo mongosh --eval 'load("/app/mongo-init/init.js")'` (with `/app/mongo-init/seasons` copied)
+- Dev one-liner: `docker exec -e SPACE_PASSWORD_HASH="$SPACE_PASSWORD_HASH" -it dev-mongo mongosh --eval 'load("/app/mongo-init/init.js")'` (with `db/` copied to `/app/mongo-init`)
 - Dev alt: `docker exec -e SPACE_PASSWORD_HASH="$SPACE_PASSWORD_HASH" -it dev-mongo mongosh --file /app/mongo-init/init.js`
 - Prod: `docker compose exec -e SPACE_PASSWORD_HASH="$SPACE_PASSWORD_HASH" mongo mongosh --file /app/mongo-init/init.js`
 
