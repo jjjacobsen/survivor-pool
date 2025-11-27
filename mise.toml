@@ -25,7 +25,7 @@ web = { run = [
 ], dir = "frontend/survivor_pool", description = "Start web server" }
 
 mongo = { run = [
-  "docker run --rm --name dev-mongo -d -p 27017:27017 -v dev-mongo-data:/data/db mongo:8.0",
+  "docker run --rm --name dev-mongo -d -p 27017:27017 -v dev-mongo-data:/data/db -v dev-mongo-config:/data/configdb mongo:8.0",
 ], description = "Start MongoDB for development" }
 
 start = { run = [

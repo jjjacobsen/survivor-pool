@@ -29,12 +29,14 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
       - mongo_data:/data/db
+      - mongo_config:/data/configdb
     restart: unless-stopped
     networks:
       - survivor-pool-network
 
 volumes:
   mongo_data:
+  mongo_config:
 
 networks:
   survivor-pool-network:
