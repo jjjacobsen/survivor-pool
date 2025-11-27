@@ -27,6 +27,7 @@
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
 - [Architecture Snapshot](#architecture-snapshot)
+- [Security](#security)
 - [Project Layout](#project-layout)
 - [Shoutouts](#shoutouts)
 
@@ -85,6 +86,10 @@ mise run frontend
 - ⚙️ **Backend**: FastAPI service (`backend/src`) coordinates game rules, picks, and pool logic.
 - 🗃️ **Database**: MongoDB holds normalized pool data while seasons stay immutable in per-season files under `db/seasons` loaded by `db/init/init.js`.
 - 🔌 **APIs**: REST endpoints grouped by domain (`pools`, `picks`, `seasons`, `users`) with strict CORS configuration.
+
+## Security
+
+- ✅ `semgrep scan` was run to find and fix security vulnerabilities; rerun it after meaningful backend changes.
 
 ## AI Prompt for Week Updates
 
