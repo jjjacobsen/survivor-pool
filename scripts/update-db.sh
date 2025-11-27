@@ -8,11 +8,18 @@ PROD_SERVICE=${PROD_SERVICE:-mongo}
 TARGET_DB=${TARGET_DB:-survivor_pool}
 CONTAINER_SEED=${CONTAINER_SEED:-/app/mongo-init/init.js}
 HOST_SEED=${1:-"$ROOT_DIR/db/init/init.js"}
+CONTAINER_SEASONS_DIR=${CONTAINER_SEASONS_DIR:-/app/mongo-init/seasons}
+SEASONS_HOST_DIR=${SEASONS_HOST_DIR:-"$ROOT_DIR/db/seasons"}
 
 COMPOSE_CMD=(docker compose -f "$ROOT_DIR/compose.yml" --project-directory "$ROOT_DIR")
 
 if [ ! -f "$HOST_SEED" ]; then
   echo "Seed file not found at $HOST_SEED" >&2
+  exit 1
+fi
+
+if [ ! -d "$SEASONS_HOST_DIR" ]; then
+  echo "Seasons directory not found at $SEASONS_HOST_DIR" >&2
   exit 1
 fi
 
@@ -44,6 +51,8 @@ run_dev_update() {
 
   docker exec "$DEV_CONTAINER" mkdir -p "$(dirname "$CONTAINER_SEED")"
   docker cp "$HOST_SEED" "$DEV_CONTAINER":"$CONTAINER_SEED"
+  docker exec "$DEV_CONTAINER" mkdir -p "$CONTAINER_SEASONS_DIR"
+  docker cp "$SEASONS_HOST_DIR"/. "$DEV_CONTAINER":"$CONTAINER_SEASONS_DIR"
 
   echo "Running Mongo init script in '$DEV_CONTAINER'"
   docker exec "$DEV_CONTAINER" mongosh --file "$CONTAINER_SEED"
@@ -84,6 +93,8 @@ run_prod_update() {
 
   "${COMPOSE_CMD[@]}" exec -T "$PROD_SERVICE" mkdir -p "$(dirname "$CONTAINER_SEED")"
   "${COMPOSE_CMD[@]}" cp "$HOST_SEED" "$PROD_SERVICE":"$CONTAINER_SEED"
+  "${COMPOSE_CMD[@]}" exec -T "$PROD_SERVICE" mkdir -p "$CONTAINER_SEASONS_DIR"
+  "${COMPOSE_CMD[@]}" cp "$SEASONS_HOST_DIR"/. "$PROD_SERVICE":"$CONTAINER_SEASONS_DIR"
 
   echo "Running Mongo init script in compose service '$PROD_SERVICE'"
   "${COMPOSE_CMD[@]}" exec -T "$PROD_SERVICE" \

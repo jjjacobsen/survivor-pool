@@ -6,6 +6,8 @@ service=${1:-mongo}
 target_db=${2:-survivor_pool}
 seed_file=${3:-/app/mongo-init/init.js}
 host_seed=${4:-db/init/init.js}
+seasons_host_dir=${5:-db/seasons}
+seasons_container_dir=${6:-/app/mongo-init/seasons}
 
 mongo_user=${MONGO_INITDB_ROOT_USERNAME:-}
 mongo_pass=${MONGO_INITDB_ROOT_PASSWORD:-}
@@ -44,8 +46,15 @@ if [ ! -f "$host_seed" ]; then
   exit 1
 fi
 
+if [ ! -d "$seasons_host_dir" ]; then
+  echo "Seasons directory not found on host at $seasons_host_dir" >&2
+  exit 1
+fi
+
 docker compose exec -T "$service" mkdir -p "$(dirname "$seed_file")"
 docker compose cp "$host_seed" "$service":"$seed_file"
+docker compose exec -T "$service" mkdir -p "$seasons_container_dir"
+docker compose cp "$seasons_host_dir"/. "$service":"$seasons_container_dir"
 
 echo "Running Mongo init script: $seed_file"
 docker compose exec -T "$service" \

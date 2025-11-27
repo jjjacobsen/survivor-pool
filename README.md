@@ -13,7 +13,7 @@
     ·
     <a href="docs/DB_schema.md">Database schema</a>
     ·
-    <a href="db/init/init.js">Seed data</a>
+    <a href="db/seasons">Seed data</a>
   </p>
 </div>
 <!-- markdownlint-enable MD033 -->
@@ -83,7 +83,7 @@ mise run frontend
 
 - 🎨 **Frontend**: Flutter app lives in `frontend/survivor_pool`, designed mobile-first with web support.
 - ⚙️ **Backend**: FastAPI service (`backend/src`) coordinates game rules, picks, and pool logic.
-- 🗃️ **Database**: MongoDB holds normalized pool data while seasons stay immutable inside a single document (`db/init/init.js`).
+- 🗃️ **Database**: MongoDB holds normalized pool data while seasons stay immutable in per-season files under `db/seasons` loaded by `db/init/init.js`.
 - 🔌 **APIs**: REST endpoints grouped by domain (`pools`, `picks`, `seasons`, `users`) with strict CORS configuration.
 
 ## AI Prompt for Week Updates
@@ -91,7 +91,7 @@ mise run frontend
 Whenever I want AI to extend the static Survivor data, this prompt nails the next week's events:
 
 ```text
-I have the information of survivor events in db/init/init.js up through week x of season __. I'd like you to add the events for week y. Make sure to get all eliminations, tribe changes, and advantages. Use fetch mcp. Double check yourself to make sure the data is accurate. Use sources like [Survivor Wiki](https://survivor.fandom.com/) or [Survivor recaps, reviews, data, and records](https://www.truedorktimes.com/)
+I have the information of survivor events in db/seasons/season__.js up through week x. I'd like you to add the events for week y. Make sure to get all eliminations, tribe changes, and advantages. Use fetch mcp. Double check yourself to make sure the data is accurate. Use sources like [Survivor Wiki](https://survivor.fandom.com/) or [Survivor recaps, reviews, data, and records](https://www.truedorktimes.com/)
 ```
 
 ## Project Layout
@@ -100,7 +100,8 @@ I have the information of survivor events in db/init/init.js up through week x o
 .
 ├── frontend/          # Flutter application
 ├── backend/           # FastAPI service and routers
-├── db/init/           # Mongo seed scripts and season canon data
+├── db/init/           # Mongo seed scripts
+├── db/seasons/        # Season canon data
 ├── docs/              # PRD + database design notes
 └── scripts/           # Dev utilities (tmux, Mongo shell helpers)
 ```
