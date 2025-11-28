@@ -60,3 +60,8 @@ prod = { run = [
   "docker compose up -d --build",
   "mise run db-update -- --prod",
 ], description = "Start production services" }
+
+prod-build = { run = [
+  "docker build --pull -f frontend/survivor_pool/web/Dockerfile -t survivor-pool-frontend --build-arg API_BASE_URL=https://api.survivorpoolapp.com frontend/survivor_pool",
+  "docker build --pull -t survivor-pool-backend backend",
+], description = "Build production Docker images for frontend and backend" }
