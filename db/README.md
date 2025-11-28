@@ -2,16 +2,19 @@ Place MongoDB initialization scripts in this directory.
 Use idempotent operations (e.g., `updateOne` with `upsert: true`).
 Season canon lives in `./seasons` and should be copied alongside `init.js` inside the container (default root: `/app/mongo-init`).
 
+Update (container `survivor-mongo` must already be running)
+
+- Dev/local: `mise run db-update -- --dev` (uses `.env.dev`)
+- Prod compose: `mise run db-update -- --prod` (uses `.env.prod`; same container name)
+
 Manual load
 
-- Export `SPACE_PASSWORD_HASH` (see env files) and pass it to mongosh runs.
-- Dev one-liner: `docker exec -e SPACE_PASSWORD_HASH="$SPACE_PASSWORD_HASH" -it dev-mongo mongosh --eval 'load("/app/mongo-init/init.js")'` (with `db/` copied to `/app/mongo-init`)
-- Dev alt: `docker exec -e SPACE_PASSWORD_HASH="$SPACE_PASSWORD_HASH" -it dev-mongo mongosh --file /app/mongo-init/init.js`
-- Prod: `docker compose exec -e SPACE_PASSWORD_HASH="$SPACE_PASSWORD_HASH" mongo mongosh --file /app/mongo-init/init.js`
+- Dev: `docker exec -e SPACE_PASSWORD_HASH="$SPACE_PASSWORD_HASH" -it survivor-mongo mongosh --file /app/mongo-init/init.js`
+- Prod: `docker exec -e SPACE_PASSWORD_HASH="$SPACE_PASSWORD_HASH" survivor-mongo sh -c 'mongosh --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --file /app/mongo-init/init.js"'`
 
 Interactive mongosh
 
-- Dev: `docker exec -it dev-mongo mongosh`
+- Dev: `docker exec -it survivor-mongo mongosh`
 - Prod: `docker compose exec -it mongo mongosh`
 - Load dev script: `load("/app/mongo-init/init.js")`
 - Load prod script: `load("/app/mongo-init/init.js")`

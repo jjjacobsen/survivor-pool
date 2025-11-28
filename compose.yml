@@ -24,6 +24,7 @@ services:
 
   mongo:
     image: mongo:8.0
+    container_name: survivor-mongo
     env_file:
       - .env.prod
     volumes:

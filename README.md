@@ -78,6 +78,7 @@ mise run frontend
 - `.env.dev` and `.env.prod` live in the repo root and only carry backend settings (Mongo URL, DB name, CORS rule).
 - The `backend` task in `mise.toml` loads `.env.dev`, so `mise run backend` (and `mise run dev`, which shells into that task) get their env from that file; other tasks run clean.
 - `mise run prod` delegates to Docker Compose, whose backend service references `.env.prod` through `env_file`, so production containers read the same values.
+- `mise run db-update -- --dev|--prod` seeds Mongo using the matching env file.
 - don't put secrets in frontend
 
 ## Architecture Snapshot
@@ -106,8 +107,7 @@ I have the information of survivor events in db/seasons/season__.js up through w
 ├── frontend/          # Flutter application
 ├── backend/           # FastAPI service and routers
 ├── db/                # Mongo seed scripts + season canon
-├── docs/              # PRD + database design notes
-└── scripts/           # Dev utilities (tmux, Mongo shell helpers)
+└── docs/              # PRD + database design notes
 ```
 
 ## Shoutouts
