@@ -306,26 +306,24 @@
       id: ObjectId("68ccc555f763780fad79e577")
     }
   ].forEach((account) => {
-    users.updateOne(
-      { username: account.username },
-      {
-        $set: {
-          email: account.email,
-          password_hash: spacePasswordHash,
-          account_status: "active",
-          email_verified: true,
-          verification_token: null,
-          verification_verified_at: now,
-        },
-        $setOnInsert: {
-          _id: account.id,
-          created_at: now,
-          default_pool: null,
-          verification_sent_at: now
-        }
-      },
-      { upsert: true }
-    );
+    const existing = users.findOne({ username: account.username });
+    if (existing) {
+      return;
+    }
+
+    users.insertOne({
+      _id: account.id,
+      username: account.username,
+      email: account.email,
+      password_hash: spacePasswordHash,
+      account_status: "active",
+      email_verified: true,
+      created_at: now,
+      default_pool: null,
+      verification_token: null,
+      verification_verified_at: now,
+      verification_sent_at: now
+    });
   });
 
   const resetUsername = "test";
