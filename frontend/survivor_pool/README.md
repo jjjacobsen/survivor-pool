@@ -14,3 +14,9 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Releasing
+
+Web is as simple as buying a domain and setting up routing properly. Mobile requires registering with the App Store or Play Store
+
+- [ios](https://docs.flutter.dev/deployment/ios)
