@@ -1,0 +1,80 @@
+{
+  "fill": "automatic",
+  "groups": [
+    {
+      "blur-material": null,
+      "hidden": false,
+      "layers": [
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "display-p3:1.00000,0.38442,0.08177,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": {
+                "solid": "display-p3:1.00000,0.38442,0.08177,1.00000"
+              }
+            }
+          ],
+          "image-name": "flame.svg",
+          "name": "flame",
+          "position": {
+            "scale": 1,
+            "translation-in-points": [
+              -7.086614004947478e-06,
+              -250.56066274606292
+            ]
+          }
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "extended-gray:0.00000,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "display-p3:0.87364,0.53856,0.18123,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": {
+                "solid": "display-p3:1.00000,1.00000,1.00000,1.00000"
+              }
+            }
+          ],
+          "image-name": "handle.svg",
+          "name": "handle",
+          "position": {
+            "scale": 1,
+            "translation-in-points": [
+              0,
+              119.16589975393708
+            ]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.5
+      },
+      "specular": false,
+      "translucency": {
+        "enabled": false,
+        "value": 0.5
+      }
+    }
+  ],
+  "supported-platforms": {
+    "circles": [
+      "watchOS"
+    ],
+    "squares": "shared"
+  }
+}
