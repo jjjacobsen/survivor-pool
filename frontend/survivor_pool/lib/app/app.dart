@@ -243,6 +243,7 @@ class SurvivorPoolApp extends StatelessWidget {
     _ensureSessionHandler();
     return MaterialApp.router(
       title: 'Survivor Pool',
+      debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
       scrollBehavior: const AppScrollBehavior(),
       routerConfig: _router,
