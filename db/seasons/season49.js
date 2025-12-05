@@ -39,7 +39,8 @@
     { week: 7, eliminated_contestant_id: idOf("Nate Moore") },
     { week: 8, eliminated_contestant_id: idOf("Michelle \"MC\" Chukwujekwu") },
     { week: 9, eliminated_contestant_id: idOf("Alex Moore") },
-    { week: 10, eliminated_contestant_id: idOf("Jawan Pitts") }
+    { week: 10, eliminated_contestant_id: idOf("Jawan Pitts") },
+    { week: 11, eliminated_contestant_id: idOf("Sophia \"Sophie\" Segreti") }
   ];
 
   const tribeTimeline = [
@@ -258,6 +259,17 @@
       played_week: 10,
       transferred_to: null,
       notes: "Savannah won the Chimney Sweeps endurance reward/immunity challenge advantage and banked the extra vote for a later Tribal"
+    },
+    {
+      id: "vote_blocker_steven_ramm_1",
+      advantage_type: "vote_blocker",
+      advantage_display_name: "Vote Blocker",
+      contestant_id: idOf("Steven Ramm"),
+      obtained_week: 11,
+      status: "active",
+      played_week: null,
+      transferred_to: null,
+      notes: "Steven won the vote blocker during the Day 20 journey sprint"
     }
   ];
 
