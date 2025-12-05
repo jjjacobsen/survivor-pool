@@ -99,7 +99,7 @@
       status: "played",
       played_week: 2,
       transferred_to: null,
-      notes: "Found via Beware Advantage on Vula; played to negate Kevin's vote"
+      notes: "Found via Beware Advantage on Vula"
     },
     {
       id: "idol_kyle_1",
@@ -110,7 +110,7 @@
       status: "played",
       played_week: 4,
       transferred_to: null,
-      notes: "Found on Civa with Kamilla's help; played after swap to blindside Thomas"
+      notes: "Found on Civa with Kamilla's help"
     },
     {
       id: "idol_star_1",
@@ -132,7 +132,7 @@
       status: "played",
       played_week: 7,
       transferred_to: null,
-      notes: "Won on journey; played against Saiounia at merge (she couldn't vote)"
+      notes: "Won on journey"
     },
     {
       id: "steal_vote_thomas_1",
@@ -143,7 +143,7 @@
       status: "expired",
       played_week: null,
       transferred_to: null,
-      notes: "Won on journey; left the game with it unused"
+      notes: "Won on journey"
     },
     {
       id: "extra_vote_kamilla_1",
@@ -165,7 +165,7 @@
       status: "expired",
       played_week: null,
       transferred_to: null,
-      notes: "Cascading risk game at night; kept SWOP, not used"
+      notes: "Cascading risk game at night; obtained Safety Without Power"
     }
   ];
 

@@ -190,7 +190,7 @@
       status: "expired",
       played_week: null,
       transferred_to: null,
-      notes: "Alex completed the beware activation steps on Kele in week 2 and left the game at the week 9 Lewatu Tribal without playing the idol"
+      notes: "Alex completed the beware activation steps on Kele in week 2"
     },
     {
       id: "idol_mc_chukwujekwu_1",
@@ -201,7 +201,7 @@
       status: "played",
       played_week: 7,
       transferred_to: null,
-      notes: "MC finished the beware tasks after the merge feast chest search and played the idol on herself at the Lewatu debut Tribal despite receiving no votes"
+      notes: "MC finished the beware tasks after the merge feast chest search"
     },
     {
       id: "idol_rizo_velovic_1",
@@ -234,7 +234,7 @@
       status: "played",
       played_week: 7,
       transferred_to: null,
-      notes: "Sage unlocked the merge chest on Day 13, automatically joining the Rolling Stones reward team and competing for individual immunity"
+      notes: "Sage unlocked the merge chest on Day 13 to claim the challenge advantage"
     },
     {
       id: "idol_kristina_mills_1",
