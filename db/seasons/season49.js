@@ -38,7 +38,8 @@
     { week: 6, eliminated_contestant_id: idOf("Shannon Fairweather") },
     { week: 7, eliminated_contestant_id: idOf("Nate Moore") },
     { week: 8, eliminated_contestant_id: idOf("Michelle \"MC\" Chukwujekwu") },
-    { week: 9, eliminated_contestant_id: idOf("Alex Moore") }
+    { week: 9, eliminated_contestant_id: idOf("Alex Moore") },
+    { week: 10, eliminated_contestant_id: idOf("Jawan Pitts") }
   ];
 
   const tribeTimeline = [
@@ -242,8 +243,8 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Kristina Mills"),
       obtained_week: 8,
-      status: "active",
-      played_week: null,
+      status: "played",
+      played_week: 10,
       transferred_to: null,
       notes: "Kristina dug up Lewatu's hidden idol on Day 15 ahead of the Chimney Sweeps merge challenge"
     },
@@ -253,8 +254,8 @@
       advantage_display_name: "Extra Vote",
       contestant_id: idOf("Savannah Louie"),
       obtained_week: 8,
-      status: "active",
-      played_week: null,
+      status: "played",
+      played_week: 10,
       transferred_to: null,
       notes: "Savannah won the Chimney Sweeps endurance reward/immunity challenge advantage and banked the extra vote for a later Tribal"
     }
