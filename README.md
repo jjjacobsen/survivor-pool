@@ -97,7 +97,17 @@ mise run frontend
 Whenever I want AI to extend the static Survivor data, this prompt nails the next week's events:
 
 ```text
-I have the information of survivor events in db/seasons/season__.js up through week x. I'd like you to add the events for week y. Make sure to get all eliminations, tribe changes, and advantages. Advantage notes must only explain how they were found or earned—never when they were played or when someone was voted out. Use fetch mcp. Double check yourself to make sure the data is accurate. Use sources like [Survivor Wiki](https://survivor.fandom.com/) or [Survivor recaps, reviews, data, and records](https://www.truedorktimes.com/)
+I have the information of survivor events in db/seasons/season__.js up through week x. I'd like you to add the events for week y. Make sure to get all eliminations, tribe changes, and advantages.
+
+Advantage rules:
+- Use an acquisition_notes field to describe only how the advantage was obtained; never mention when it was played, transferred, or a vote outcome.
+- Transferred status only applies when someone holds an advantage for more than one week before giving it away; if it changes hands in the same week, only record the final holder.
+    - Example: Bob acquires idol and immediately gives it to Jim. Only record one advantage for Jim
+    - Example 2: Jane acquires idol and 2 weeks later gives it to Sally. Create two records for the acquisition and then the transfer
+        - When a delayed hand-off happens, mark the giver as transferred and add a new entry for the recipient reflecting when they received it.
+- Playing an advantage for another contestant is still status "played", not "transferred".
+
+Use fetch mcp. Double check yourself to make sure the data is accurate. Use sources like [Survivor Wiki](https://survivor.fandom.com/) or [Survivor recaps, reviews, data, and records](https://www.truedorktimes.com/)
 ```
 
 ## Project Layout

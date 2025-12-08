@@ -108,10 +108,9 @@ Single source of truth for all Survivor season data. This data represents immuta
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: "teeny_chirichillo", // holder when obtained
       obtained_week: 3,
-      status: "active", // active | played | expired | transferred
+      status: "active", // active | played | expired | transferred (mark transferred when given away)
       played_week: null,
-      transferred_to: null, // contestant_id if transferred
-      notes: "Found at reward challenge"
+      acquisition_notes: "Found at reward challenge" // acquisition notes only, never include when it was played or given away
     }
     // ... additional advantages as they occur
   ]
@@ -119,6 +118,13 @@ Single source of truth for all Survivor season data. This data represents immuta
 ```
 
 Each advantage document stores an `advantage_display_name` alongside the raw `advantage_type` so clients can render a friendly label without their own mapping layer.
+
+Advantage rules:
+
+- `acquisition_notes` only describe how the advantage was obtained (clues, journeys, swaps); never record when it was played or given away.
+- Use `status: transferred` only when a contestant holds the advantage for more than one week before handing it to someone else; if it changes hands within the same week, record only the final holder.
+- When someone plays an advantage on behalf of another contestant, mark it as `played`, not `transferred`.
+- When an advantage is given away after a delay, mark the giver as `transferred` and add a new advantage entry for the recipient.
 
 ### 3. `pools` Collection
 
@@ -295,6 +301,9 @@ db.seasons.updateOne(
   { _id: seasonId, "advantages.id": advantageId },
   { $set: { "advantages.$.status": "played", "advantages.$.played_week": currentWeek } }
 )
+
+// When an advantage is given to another contestant, set the original entry to status "transferred"
+// and add a new advantage entry for the recipient capturing when they received it.
 ```
 
 ### Submit a new pick

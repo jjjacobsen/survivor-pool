@@ -98,8 +98,7 @@
       obtained_week: 1,
       status: "played",
       played_week: 2,
-      transferred_to: null,
-      notes: "Found via Beware Advantage on Vula"
+      acquisition_notes: "Found via Beware Advantage on Vula"
     },
     {
       id: "idol_kyle_1",
@@ -109,19 +108,37 @@
       obtained_week: 2,
       status: "played",
       played_week: 4,
-      transferred_to: null,
-      notes: "Found on Civa with Kamilla's help"
+      acquisition_notes: "Found on Civa after working with Kamilla on the clue"
     },
     {
-      id: "idol_star_1",
-      advantage_type: "hidden_immunity_idol",
-      advantage_display_name: "Hidden Immunity Idol",
+      id: "beware_star_1",
+      advantage_type: "beware_advantage",
+      advantage_display_name: "Beware Advantage",
       contestant_id: idOf("Star Toomey"),
       obtained_week: 2,
       status: "transferred",
       played_week: null,
-      transferred_to: idOf("Eva Erickson"),
-      notes: "Star found Beware Advantage on Lagi; gave idol to Eva around week 5"
+      acquisition_notes: "Found the Beware Advantage cryptex at the Lagi camp"
+    },
+    {
+      id: "idol_eva_erickson_1",
+      advantage_type: "hidden_immunity_idol",
+      advantage_display_name: "Hidden Immunity Idol",
+      contestant_id: idOf("Eva Erickson"),
+      obtained_week: 5,
+      status: "expired",
+      played_week: null,
+      acquisition_notes: "Unlocked the idol after solving the Beware Advantage cryptex Star found"
+    },
+    {
+      id: "challenge_advantage_saiounia_1",
+      advantage_type: "challenge_advantage",
+      advantage_display_name: "Challenge Advantage",
+      contestant_id: idOf("Saiounia Hughley"),
+      obtained_week: 6,
+      status: "played",
+      played_week: 6,
+      acquisition_notes: "Found the Earn-the-Merge sit-out advantage before the team challenge"
     },
     {
       id: "block_vote_mitch_1",
@@ -131,8 +148,7 @@
       obtained_week: 2,
       status: "played",
       played_week: 7,
-      transferred_to: null,
-      notes: "Won on journey"
+      acquisition_notes: "Won the vote block on a day 4 journey challenge"
     },
     {
       id: "steal_vote_thomas_1",
@@ -142,8 +158,7 @@
       obtained_week: 2,
       status: "expired",
       played_week: null,
-      transferred_to: null,
-      notes: "Won on journey"
+      acquisition_notes: "Won the vote steal on the day 4 journey challenge"
     },
     {
       id: "extra_vote_kamilla_1",
@@ -151,21 +166,29 @@
       advantage_display_name: "Extra Vote",
       contestant_id: idOf("Kamilla Karthigesu"),
       obtained_week: 3,
-      status: "transferred",
+      status: "expired",
       played_week: null,
-      transferred_to: idOf("Kyle Fraser"),
-      notes: "Secretly gave Kyle an extra vote pre-merge"
+      acquisition_notes: "Won an extra vote on the day 7 dice-roll journey"
     },
     {
       id: "safety_without_power_eva_1",
       advantage_type: "safety_without_power",
       advantage_display_name: "Safety Without Power",
       contestant_id: idOf("Eva Erickson"),
-      obtained_week: 10,
+      obtained_week: 9,
       status: "expired",
       played_week: null,
-      transferred_to: null,
-      notes: "Cascading risk game at night; obtained Safety Without Power"
+      acquisition_notes: "Won Safety Without Power during the late-game night journey"
+    },
+    {
+      id: "challenge_advantage_eva_1",
+      advantage_type: "challenge_advantage",
+      advantage_display_name: "Challenge Advantage",
+      contestant_id: idOf("Eva Erickson"),
+      obtained_week: 13,
+      status: "played",
+      played_week: 13,
+      acquisition_notes: "Solved the final-five puzzle lock for a challenge advantage"
     }
   ];
 

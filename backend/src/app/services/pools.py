@@ -76,16 +76,14 @@ def _collect_contestant_advantages(season, contestant_id, current_week):
         obtained_week = advantage.get("obtained_week")
         if obtained_week > visible_week:
             continue
-        is_holder = advantage.get("contestant_id") == contestant_id
-        is_recipient = advantage.get("transferred_to") == contestant_id
-        if not (is_holder or is_recipient):
+        if advantage.get("contestant_id") != contestant_id:
             continue
         label = (
             advantage.get("advantage_display_name")
             or advantage.get("advantage_type")
             or "Advantage"
         )
-        notes = advantage.get("notes")
+        notes = advantage.get("acquisition_notes")
         status_value = advantage.get("status")
         value = notes or status_value or label
         advantage_id = advantage.get("id") or f"{contestant_id}_{label}"

@@ -270,6 +270,7 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
   Widget _buildAdvantageChip(ContestantAdvantage advantage, ThemeData theme) {
     final status = advantage.status?.toLowerCase();
     final isPlayed = status == 'played';
+    final isTransferred = status == 'transferred';
     String description = advantage.value.trim();
     if (isPlayed) {
       final weekText = advantage.playedWeek != null
@@ -277,6 +278,8 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
           : 'an earlier week';
       final noteSuffix = description.isEmpty ? '' : ' $description';
       description = '${advantage.label} played in $weekText.$noteSuffix';
+    } else if (isTransferred) {
+      description = description.isEmpty ? 'Transferred' : description;
     } else if (description.isEmpty) {
       description = advantage.value;
     }
@@ -284,8 +287,8 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
       advantage.label,
       description,
       theme,
-      colorHex: isPlayed ? null : '#F5B74E',
-      color: isPlayed ? theme.colorScheme.error : null,
+      colorHex: isPlayed || isTransferred ? null : '#F5B74E',
+      color: (isPlayed || isTransferred) ? theme.colorScheme.error : null,
     );
   }
 

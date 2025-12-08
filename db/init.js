@@ -223,8 +223,7 @@
               obtained_week: { bsonType: ["int", "long", "double"] },
               status: { bsonType: "string" },
               played_week: { bsonType: ["int", "long", "double", "null"] },
-              transferred_to: { bsonType: ["string", "null"] },
-              notes: { bsonType: ["string", "null"] }
+              acquisition_notes: { bsonType: ["string", "null"] }
             }
           }
         }
