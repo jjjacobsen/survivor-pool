@@ -70,11 +70,11 @@ def _resolve_contestant_tribe(season, contestant_id, week):
 
 
 def _collect_contestant_advantages(season, contestant_id, current_week):
-    visible_week = current_week if current_week > 0 else 1
+    visible_week = current_week - 1 if current_week > 1 else 0
     advantages = []
     for advantage in season.get("advantages", []):
         obtained_week = advantage.get("obtained_week")
-        if obtained_week > visible_week:
+        if obtained_week is not None and obtained_week > visible_week:
             continue
         if advantage.get("contestant_id") != contestant_id:
             continue
@@ -85,9 +85,11 @@ def _collect_contestant_advantages(season, contestant_id, current_week):
         )
         notes = advantage.get("acquisition_notes")
         status_value = advantage.get("status")
+        played_week = advantage.get("played_week")
+        if played_week is not None and played_week > visible_week:
+            continue
         value = notes or status_value or label
         advantage_id = advantage.get("id") or f"{contestant_id}_{label}"
-        played_week = advantage.get("played_week")
         advantages.append(
             ContestantAdvantage(
                 id=str(advantage_id),
