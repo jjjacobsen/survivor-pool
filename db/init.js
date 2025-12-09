@@ -201,7 +201,9 @@
               advantage_display_name: { bsonType: ["string", "null"] },
               contestant_id: { bsonType: "string" },
               obtained_week: { bsonType: ["int", "long", "double"] },
-              acquisition_notes: { bsonType: ["string", "null"] }
+              acquisition_notes: { bsonType: ["string", "null"] },
+              end_week: { bsonType: ["int", "long", "double", "null"] },
+              end_notes: { bsonType: ["string", "null"] }
             }
           }
         }

@@ -96,7 +96,9 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Saiounia Hughley"),
       obtained_week: 1,
-      acquisition_notes: "Found via Beware Advantage on Vula"
+      acquisition_notes: "Found via Beware Advantage on Vula",
+      end_week: 3,
+      end_notes: "Played on herself at Vula's week 3 Tribal; Justin was idoled out"
     },
     {
       id: "idol_kyle_1",
@@ -104,7 +106,9 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Kyle Fraser"),
       obtained_week: 2,
-      acquisition_notes: "Found on Civa after working with Kamilla on the clue"
+      acquisition_notes: "Found on Civa after working with Kamilla on the clue",
+      end_week: 4,
+      end_notes: "Played after the swap to cancel votes, sending Thomas home"
     },
     {
       id: "beware_star_1",
@@ -112,7 +116,9 @@
       advantage_display_name: "Beware Advantage",
       contestant_id: idOf("Star Toomey"),
       obtained_week: 2,
-      acquisition_notes: "Found the Beware Advantage cryptex at the Lagi camp"
+      acquisition_notes: "Found the Beware Advantage cryptex at the Lagi camp",
+      end_week: 5,
+      end_notes: "Cryptex solved at the swapped Lagi camp and the idol moved to Eva"
     },
     {
       id: "idol_eva_erickson_1",
@@ -120,7 +126,9 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Eva Erickson"),
       obtained_week: 5,
-      acquisition_notes: "Unlocked the idol after solving the Beware Advantage cryptex Star found"
+      acquisition_notes: "Unlocked the idol after solving the Beware Advantage cryptex Star found",
+      end_week: 13,
+      end_notes: "Played at the final five; no votes landed on Eva and Mitch still left 4-1"
     },
     {
       id: "challenge_advantage_saiounia_1",
@@ -128,7 +136,9 @@
       advantage_display_name: "Challenge Advantage",
       contestant_id: idOf("Saiounia Hughley"),
       obtained_week: 6,
-      acquisition_notes: "Found the Earn-the-Merge sit-out advantage before the team challenge"
+      acquisition_notes: "Found the Earn-the-Merge sit-out advantage before the team challenge",
+      end_week: 6,
+      end_notes: "Used to skip the team stage of the Earn-the-Merge and advance to the individual IC"
     },
     {
       id: "block_vote_mitch_1",
@@ -136,7 +146,9 @@
       advantage_display_name: "Block a Vote",
       contestant_id: idOf("Mitch Guerra"),
       obtained_week: 2,
-      acquisition_notes: "Won the vote block on a day 4 journey challenge"
+      acquisition_notes: "Won the vote block on a day 4 journey challenge",
+      end_week: 10,
+      end_notes: "Played to cancel a vote during the Star boot, per the week 10 voting notes"
     },
     {
       id: "steal_vote_thomas_1",
@@ -144,7 +156,9 @@
       advantage_display_name: "Steal a Vote",
       contestant_id: idOf("Thomas Krottinger"),
       obtained_week: 2,
-      acquisition_notes: "Won the vote steal on the day 4 journey challenge"
+      acquisition_notes: "Won the vote steal on the day 4 journey challenge",
+      end_week: 4,
+      end_notes: "Voted out at the first post-swap Tribal with the steal-a-vote unused"
     },
     {
       id: "extra_vote_kamilla_1",
@@ -152,7 +166,9 @@
       advantage_display_name: "Extra Vote",
       contestant_id: idOf("Kamilla Karthigesu"),
       obtained_week: 3,
-      acquisition_notes: "Won an extra vote on the day 7 dice-roll journey"
+      acquisition_notes: "Won an extra vote on the day 7 dice-roll journey",
+      end_week: 6,
+      end_notes: "Spent the extra vote at the earn-the-merge Tribal where Charity was voted out"
     },
     {
       id: "safety_without_power_eva_1",
@@ -160,7 +176,9 @@
       advantage_display_name: "Safety Without Power",
       contestant_id: idOf("Eva Erickson"),
       obtained_week: 9,
-      acquisition_notes: "Won Safety Without Power during the late-game night journey"
+      acquisition_notes: "Won Safety Without Power during the late-game night journey",
+      end_week: 10,
+      end_notes: "Expired unused at the final eight Star vote when the advantage window closed"
     },
     {
       id: "challenge_advantage_eva_1",
@@ -168,7 +186,9 @@
       advantage_display_name: "Challenge Advantage",
       contestant_id: idOf("Eva Erickson"),
       obtained_week: 13,
-      acquisition_notes: "Solved the final-five puzzle lock for a challenge advantage"
+      acquisition_notes: "Solved the final-five puzzle lock for a challenge advantage",
+      end_week: 13,
+      end_notes: "Used for the final-five immunity challenge shortcut"
     }
   ];
 

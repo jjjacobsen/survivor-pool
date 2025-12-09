@@ -100,7 +100,7 @@ Single source of truth for all Survivor season data. This data represents immuta
     }
   ],
 
-  // Advantages timeline for the season (possession/use status)
+  // Advantages timeline for the season
   advantages: [
     {
       id: "idol_teeny_1",
@@ -108,9 +108,9 @@ Single source of truth for all Survivor season data. This data represents immuta
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: "teeny_chirichillo", // holder when obtained
       obtained_week: 3,
-      status: "active", // active | played | expired | transferred (mark transferred when given away)
-      played_week: null,
-      acquisition_notes: "Found at reward challenge" // acquisition notes only, never include when it was played or given away
+      acquisition_notes: "Found at reward challenge", // acquisition notes only, never include when it was played or given away
+      end_week: 9, // week when it was played/expired/transferred
+      end_notes: "Played at the split Tribal; votes bounced to Ayesha"
     }
     // ... additional advantages as they occur
   ]
@@ -122,9 +122,9 @@ Each advantage document stores an `advantage_display_name` alongside the raw `ad
 Advantage rules:
 
 - `acquisition_notes` only describe how the advantage was obtained (clues, journeys, swaps); never record when it was played or given away.
-- Use `status: transferred` only when a contestant holds the advantage for more than one week before handing it to someone else; if it changes hands within the same week, record only the final holder.
-- When someone plays an advantage on behalf of another contestant, mark it as `played`, not `transferred`.
-- When an advantage is given away after a delay, mark the giver as `transferred` and add a new advantage entry for the recipient.
+- `end_week` tracks when an advantage left the game for any reason (played, expired, transferred, or voted out with it).
+- `end_notes` is a short explanation of what happened to end the advantage (who it was played on, if it expired unused, etc.). Leave `end_notes` as `null` whenever `end_week` is `null`.
+- When an advantage moves to a new holder in a later week, set `end_week`/`end_notes` on the original holder and add a new advantage entry for the recipient with the week they received it. If it changes hands within the same week, only record the final holder.
 
 ### 3. `pools` Collection
 
@@ -266,7 +266,7 @@ const season = db.seasons.findOne({_id: seasonId}, {contestants: 1, eliminations
 const priorPicks = db.picks.find({ userId, poolId }, { contestant_id: 1 }).toArray().map(p => p.contestant_id)
 
 // Compute available contestants client-side or with aggregation
-// Optionally project active advantages only using $filter
+// Optionally project active advantages (no end recorded yet) using $filter
 db.seasons.aggregate([
   { $match: { _id: seasonId } },
   {
@@ -277,7 +277,7 @@ db.seasons.aggregate([
         $filter: {
           input: "$advantages",
           as: "a",
-          cond: { $eq: ["$$a.status", "active"] }
+          cond: { $eq: ["$$a.end_week", null] }
         }
       }
     }
@@ -296,13 +296,13 @@ db.seasons.updateOne(
   { $push: { eliminations: { week: currentWeek, eliminated_contestant_id: eliminatedContestantId } } }
 )
 
-// Mark an advantage as played/transferred/expired on the season document
+// Mark an advantage as used/expired on the season document
 db.seasons.updateOne(
   { _id: seasonId, "advantages.id": advantageId },
-  { $set: { "advantages.$.status": "played", "advantages.$.played_week": currentWeek } }
+  { $set: { "advantages.$.end_week": currentWeek, "advantages.$.end_notes": "Played on Alice" } }
 )
 
-// When an advantage is given to another contestant, set the original entry to status "transferred"
+// When an advantage is given to another contestant after holding it, set end_week/end_notes on the original entry
 // and add a new advantage entry for the recipient capturing when they received it.
 ```
 
@@ -438,7 +438,6 @@ db.seasons.createIndex({ "contestants.id": 1 })
 
 // On seasons collection (additional nested indexes)
 db.seasons.createIndex({ "advantages.contestant_id": 1 })
-db.seasons.createIndex({ "advantages.status": 1 })
 // Note: Avoid compound indexes across multiple fields of the same array (multikey restriction)
 ```
 
