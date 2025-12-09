@@ -189,8 +189,6 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Alex Moore"),
       obtained_week: 2,
-      status: "expired",
-      played_week: null,
       acquisition_notes: "Completed the beware activation steps on Kele"
     },
     {
@@ -199,8 +197,6 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Michelle \"MC\" Chukwujekwu"),
       obtained_week: 7,
-      status: "played",
-      played_week: 7,
       acquisition_notes: "Dug up the rehidden idol at merge after her tribe lost the merge-quest"
     },
     {
@@ -209,8 +205,6 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Rizo Velovic"),
       obtained_week: 4,
-      status: "active",
-      played_week: null,
       acquisition_notes: "Retrieved the idol from Hina's underwater chest after allies dug up the beware clue and key"
     },
     {
@@ -219,8 +213,6 @@
       advantage_display_name: "Knowledge is Power",
       contestant_id: idOf("Sophia \"Sophi\" Balerdi"),
       obtained_week: 6,
-      status: "active",
-      played_week: null,
       acquisition_notes: "Spotted the Knowledge is Power parchment near Hina's camp after the three-tribe expansion"
     },
     {
@@ -229,8 +221,6 @@
       advantage_display_name: "Challenge Advantage",
       contestant_id: idOf("Sage Ahrens-Nichols"),
       obtained_week: 7,
-      status: "played",
-      played_week: 7,
       acquisition_notes: "Unlocked the merge chest on Day 13 to claim the challenge advantage"
     },
     {
@@ -239,8 +229,6 @@
       advantage_display_name: "Challenge Disadvantage",
       contestant_id: idOf("Jawan Pitts"),
       obtained_week: 2,
-      status: "played",
-      played_week: 2,
       acquisition_notes: "Won the Nut Bucket journey and imposed a disadvantage on a rival tribe for the next challenge"
     },
     {
@@ -249,8 +237,6 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Kristina Mills"),
       obtained_week: 8,
-      status: "active",
-      played_week: null,
       acquisition_notes: "Dug up the rehidden idol on Lewatu beach after MC's idol play"
     },
     {
@@ -259,8 +245,6 @@
       advantage_display_name: "Extra Vote",
       contestant_id: idOf("Savannah Louie"),
       obtained_week: 8,
-      status: "expired",
-      played_week: null,
       acquisition_notes: "Earned the extra vote by lasting longest in the Chimney Sweeps challenge"
     },
     {
@@ -269,8 +253,6 @@
       advantage_display_name: "Vote Blocker",
       contestant_id: idOf("Steven Ramm"),
       obtained_week: 11,
-      status: "expired",
-      played_week: null,
       acquisition_notes: "Won the vote blocker during the Day 20 island run journey"
     }
   ];

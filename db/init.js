@@ -40,26 +40,6 @@
   delete globalThis.idOf;
   delete globalThis.registerSeason;
 
-  seasonDocs.forEach((seasonDoc) => {
-    dbApp.seasons.updateOne(
-      { season_number: seasonDoc.season_number },
-      {
-        $set: {
-          season_name: seasonDoc.season_name,
-          air_date: seasonDoc.air_date,
-          location: seasonDoc.location,
-          format: seasonDoc.format,
-          contestants: seasonDoc.contestants,
-          eliminations: seasonDoc.eliminations,
-          tribe_timeline: seasonDoc.tribe_timeline,
-          advantages: seasonDoc.advantages
-        },
-        $setOnInsert: { created_at: now }
-      },
-      { upsert: true }
-    );
-  });
-
   const users = dbApp.users;
   const pools = dbApp.pools;
   const poolMemberships = dbApp.pool_memberships;
@@ -214,15 +194,13 @@
           bsonType: "array",
           items: {
             bsonType: "object",
-            required: ["id", "advantage_type", "contestant_id", "obtained_week", "status"],
+            required: ["id", "advantage_type", "contestant_id", "obtained_week"],
             properties: {
               id: { bsonType: "string" },
               advantage_type: { bsonType: "string" },
               advantage_display_name: { bsonType: ["string", "null"] },
               contestant_id: { bsonType: "string" },
               obtained_week: { bsonType: ["int", "long", "double"] },
-              status: { bsonType: "string" },
-              played_week: { bsonType: ["int", "long", "double", "null"] },
               acquisition_notes: { bsonType: ["string", "null"] }
             }
           }
@@ -236,6 +214,26 @@
   ensureValidator("pool_memberships", poolMembershipValidator);
   ensureValidator("picks", picksValidator);
   ensureValidator("seasons", seasonsValidator);
+
+  seasonDocs.forEach((seasonDoc) => {
+    dbApp.seasons.updateOne(
+      { season_number: seasonDoc.season_number },
+      {
+        $set: {
+          season_name: seasonDoc.season_name,
+          air_date: seasonDoc.air_date,
+          location: seasonDoc.location,
+          format: seasonDoc.format,
+          contestants: seasonDoc.contestants,
+          eliminations: seasonDoc.eliminations,
+          tribe_timeline: seasonDoc.tribe_timeline,
+          advantages: seasonDoc.advantages
+        },
+        $setOnInsert: { created_at: now }
+      },
+      { upsert: true }
+    );
+  });
 
   users.createIndex({ email: 1 }, { name: "users_email_unique", unique: true });
   users.createIndex({ username: 1 }, { name: "users_username_unique", unique: true });

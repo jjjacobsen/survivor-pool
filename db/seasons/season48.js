@@ -96,8 +96,6 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Saiounia Hughley"),
       obtained_week: 1,
-      status: "played",
-      played_week: 2,
       acquisition_notes: "Found via Beware Advantage on Vula"
     },
     {
@@ -106,8 +104,6 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Kyle Fraser"),
       obtained_week: 2,
-      status: "played",
-      played_week: 4,
       acquisition_notes: "Found on Civa after working with Kamilla on the clue"
     },
     {
@@ -116,8 +112,6 @@
       advantage_display_name: "Beware Advantage",
       contestant_id: idOf("Star Toomey"),
       obtained_week: 2,
-      status: "transferred",
-      played_week: null,
       acquisition_notes: "Found the Beware Advantage cryptex at the Lagi camp"
     },
     {
@@ -126,8 +120,6 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Eva Erickson"),
       obtained_week: 5,
-      status: "expired",
-      played_week: null,
       acquisition_notes: "Unlocked the idol after solving the Beware Advantage cryptex Star found"
     },
     {
@@ -136,8 +128,6 @@
       advantage_display_name: "Challenge Advantage",
       contestant_id: idOf("Saiounia Hughley"),
       obtained_week: 6,
-      status: "played",
-      played_week: 6,
       acquisition_notes: "Found the Earn-the-Merge sit-out advantage before the team challenge"
     },
     {
@@ -146,8 +136,6 @@
       advantage_display_name: "Block a Vote",
       contestant_id: idOf("Mitch Guerra"),
       obtained_week: 2,
-      status: "played",
-      played_week: 7,
       acquisition_notes: "Won the vote block on a day 4 journey challenge"
     },
     {
@@ -156,8 +144,6 @@
       advantage_display_name: "Steal a Vote",
       contestant_id: idOf("Thomas Krottinger"),
       obtained_week: 2,
-      status: "expired",
-      played_week: null,
       acquisition_notes: "Won the vote steal on the day 4 journey challenge"
     },
     {
@@ -166,8 +152,6 @@
       advantage_display_name: "Extra Vote",
       contestant_id: idOf("Kamilla Karthigesu"),
       obtained_week: 3,
-      status: "expired",
-      played_week: null,
       acquisition_notes: "Won an extra vote on the day 7 dice-roll journey"
     },
     {
@@ -176,8 +160,6 @@
       advantage_display_name: "Safety Without Power",
       contestant_id: idOf("Eva Erickson"),
       obtained_week: 9,
-      status: "expired",
-      played_week: null,
       acquisition_notes: "Won Safety Without Power during the late-game night journey"
     },
     {
@@ -186,8 +168,6 @@
       advantage_display_name: "Challenge Advantage",
       contestant_id: idOf("Eva Erickson"),
       obtained_week: 13,
-      status: "played",
-      played_week: 13,
       acquisition_notes: "Solved the final-five puzzle lock for a challenge advantage"
     }
   ];
