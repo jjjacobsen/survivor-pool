@@ -98,7 +98,7 @@
       obtained_week: 1,
       acquisition_notes: "Found via Beware Advantage on Vula",
       end_week: 3,
-      end_notes: "Played on herself at Vula's week 3 Tribal; Justin was idoled out"
+      end_notes: "Played at Vula's week 3 Tribal during the null-vote chaos; Justin was idoled out"
     },
     {
       id: "idol_kyle_1",
@@ -106,7 +106,7 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Kyle Fraser"),
       obtained_week: 2,
-      acquisition_notes: "Found on Civa after working with Kamilla on the clue",
+      acquisition_notes: "Found the Civa idol back at camp after the day 4 journey",
       end_week: 4,
       end_notes: "Played after the swap to cancel votes, sending Thomas home"
     },
@@ -147,8 +147,8 @@
       contestant_id: idOf("Mitch Guerra"),
       obtained_week: 2,
       acquisition_notes: "Won the vote block on a day 4 journey challenge",
-      end_week: 10,
-      end_notes: "Played to cancel a vote during the Star boot, per the week 10 voting notes"
+      end_week: 7,
+      end_notes: "Used at the first split Tribal to block Saiounia's vote in the 5-0 boot"
     },
     {
       id: "steal_vote_thomas_1",
@@ -167,8 +167,8 @@
       contestant_id: idOf("Kamilla Karthigesu"),
       obtained_week: 3,
       acquisition_notes: "Won an extra vote on the day 7 dice-roll journey",
-      end_week: 6,
-      end_notes: "Spent the extra vote at the earn-the-merge Tribal where Charity was voted out"
+      end_week: 4,
+      end_notes: "Burned the extra vote against Thomas at the first post-swap Tribal"
     },
     {
       id: "safety_without_power_eva_1",
@@ -176,9 +176,9 @@
       advantage_display_name: "Safety Without Power",
       contestant_id: idOf("Eva Erickson"),
       obtained_week: 9,
-      acquisition_notes: "Won Safety Without Power during the late-game night journey",
-      end_week: 10,
-      end_notes: "Expired unused at the final eight Star vote when the advantage window closed"
+      acquisition_notes: "Took Safety Without Power from the Night 16 advantage stash after risking for it",
+      end_week: 11,
+      end_notes: "Expired unused after the final-seven Mary vote when its window closed"
     },
     {
       id: "challenge_advantage_eva_1",
