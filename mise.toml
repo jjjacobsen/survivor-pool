@@ -73,3 +73,7 @@ prod-build = { run = [
   "docker build --pull -f frontend/survivor_pool/web/Dockerfile -t survivor-pool-frontend --build-arg API_BASE_URL=https://api.survivorpoolapp.com frontend/survivor_pool",
   "docker build --pull -t survivor-pool-backend backend",
 ], description = "Build production Docker images for frontend and backend" }
+
+prod-mongo = { run = [
+  "docker compose exec -it mongo mongosh --username \"$MONGO_INITDB_ROOT_USERNAME\" --password \"$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin mongodb://127.0.0.1:27017/survivor_pool",
+], env = { _.file = ".env.prod" }, description = "Open prod mongosh with auth" }
