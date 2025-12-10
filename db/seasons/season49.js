@@ -189,7 +189,7 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Alex Moore"),
       obtained_week: 2,
-      acquisition_notes: "Completed the beware activation steps on Kele",
+      acquisition_notes: "Opened the Kele beware idol on Day 4, lost his vote, then dug by the well after the Ep2 loss to unearth the idol",
       end_week: 9,
       end_notes: "Blindsided with the idol unplayed at the week 9 Tribal (6-2-1 vote on Alex)"
     },
@@ -199,7 +199,7 @@
       advantage_display_name: "Hidden Immunity Idol",
       contestant_id: idOf("Michelle \"MC\" Chukwujekwu"),
       obtained_week: 7,
-      acquisition_notes: "Dug up the rehidden idol at merge after her tribe lost the merge-quest",
+      acquisition_notes: "Unlocked the merge rehidden idol with the massive key ring after her RC-losing group couldn't compete for immunity",
       end_week: 7,
       end_notes: "Played on herself at the first merge Tribal where Nate became the first juror"
     },
@@ -239,9 +239,9 @@
       advantage_display_name: "Challenge Disadvantage",
       contestant_id: idOf("Jawan Pitts"),
       obtained_week: 2,
-      acquisition_notes: "Won the Nut Bucket journey and imposed a disadvantage on a rival tribe for the next challenge",
+      acquisition_notes: "Won the Nut Bucket journey and chose the tribe-disadvantage option for the next challenge",
       end_week: 2,
-      end_notes: "Played at the Day 5 Mona Lisas and Mad Ladders challenge to slow Kele down"
+      end_notes: "Used at the Day 5 Mona Lisas and Mad Ladders challenge to saddle another tribe with extra weight and keys"
     },
     {
       id: "idol_kristina_mills_1",
@@ -250,8 +250,8 @@
       contestant_id: idOf("Kristina Mills"),
       obtained_week: 8,
       acquisition_notes: "Dug up the rehidden idol on Lewatu beach after MC's idol play",
-      end_week: null,
-      end_notes: null
+      end_week: 10,
+      end_notes: "Played on Steven at Jawan's boot; no votes were cast for him"
     },
     {
       id: "extra_vote_savannah_louie_1",
@@ -259,9 +259,9 @@
       advantage_display_name: "Extra Vote",
       contestant_id: idOf("Savannah Louie"),
       obtained_week: 8,
-      acquisition_notes: "Earned the extra vote by lasting longest in the Chimney Sweeps challenge",
-      end_week: null,
-      end_notes: null
+      acquisition_notes: "Banked her vote at the week 8 Tribal to earn an extra vote",
+      end_week: 10,
+      end_notes: "Used to cast two votes at the week 10 Tribal where Jawan left (5-3-1)"
     },
     {
       id: "vote_blocker_steven_ramm_1",
