@@ -42,3 +42,9 @@ This is how Apple wants you to build icons for their apps now. The following is 
   - [this](https://www.youtube.com/watch?v=B9Q3JSDyNIo) video shows how to do it at the end
   - Then under general settings change the App Icon name
   - Delete app in simulator completely before opening to remove cache
+
+### Screenshots
+
+- Can take a screenshot using the button on the simulator
+- Use the largest display simulator available, then upload to that specific display size
+  - Then it scales down the image to the smaller sizes
