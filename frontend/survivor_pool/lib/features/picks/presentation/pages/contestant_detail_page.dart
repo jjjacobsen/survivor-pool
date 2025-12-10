@@ -90,7 +90,9 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
     }
     if (detail.advantages.isNotEmpty) {
       for (final advantage in detail.advantages) {
-        chips.add(_buildAdvantageChip(advantage, theme));
+        chips.add(
+          _buildAdvantageChip(advantage, theme, widget.pool.currentWeek),
+        );
       }
     }
 
@@ -267,28 +269,27 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
     );
   }
 
-  Widget _buildAdvantageChip(ContestantAdvantage advantage, ThemeData theme) {
-    final status = advantage.status?.toLowerCase();
-    final isPlayed = status == 'played';
-    final isTransferred = status == 'transferred';
-    String description = advantage.value.trim();
-    if (isPlayed) {
-      final weekText = advantage.playedWeek != null
-          ? 'week ${advantage.playedWeek}'
-          : 'an earlier week';
-      final noteSuffix = description.isEmpty ? '' : ' $description';
-      description = '${advantage.label} played in $weekText.$noteSuffix';
-    } else if (isTransferred) {
-      description = description.isEmpty ? 'Transferred' : description;
-    } else if (description.isEmpty) {
-      description = advantage.value;
-    }
+  Widget _buildAdvantageChip(
+    ContestantAdvantage advantage,
+    ThemeData theme,
+    int currentWeek,
+  ) {
+    final endWeek = advantage.endWeek;
+    final hasAdvantage = endWeek == null || endWeek > currentWeek;
+    final acquisition = advantage.acquisitionNotes?.trim() ?? '';
+    final endNotes = advantage.endNotes?.trim() ?? '';
+    final activeText = acquisition.isNotEmpty
+        ? acquisition
+        : (advantage.value.isNotEmpty ? advantage.value : advantage.label);
+    final usedText = endNotes.isNotEmpty
+        ? endNotes
+        : (advantage.value.isNotEmpty ? advantage.value : advantage.label);
     return _buildInfoChip(
       advantage.label,
-      description,
+      hasAdvantage ? activeText : usedText,
       theme,
-      colorHex: isPlayed || isTransferred ? null : '#F5B74E',
-      color: (isPlayed || isTransferred) ? theme.colorScheme.error : null,
+      colorHex: hasAdvantage ? '#F5B74E' : null,
+      color: hasAdvantage ? null : theme.colorScheme.error,
     );
   }
 

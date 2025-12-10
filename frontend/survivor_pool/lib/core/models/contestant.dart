@@ -35,29 +35,33 @@ class ContestantAdvantage {
   final String id;
   final String label;
   final String value;
-  final String? status;
-  final int? playedWeek;
+  final String? acquisitionNotes;
+  final String? endNotes;
+  final int? endWeek;
 
   const ContestantAdvantage({
     required this.id,
     required this.label,
     required this.value,
-    this.status,
-    this.playedWeek,
+    this.acquisitionNotes,
+    this.endNotes,
+    this.endWeek,
   });
 
   factory ContestantAdvantage.fromJson(Map<String, dynamic> json) {
     final id = json['id'] as String? ?? '';
     final label = json['label'] as String? ?? 'Advantage';
     final value = json['value'] as String? ?? label;
-    final status = json['status'] as String?;
-    final playedWeek = json['played_week'] as int?;
+    final acquisitionNotes = json['acquisition_notes'] as String?;
+    final endNotes = json['end_notes'] as String?;
+    final endWeek = json['end_week'] as int?;
     return ContestantAdvantage(
       id: id.isEmpty ? label : id,
       label: label.isEmpty ? 'Advantage' : label,
       value: value.isEmpty ? label : value,
-      status: status,
-      playedWeek: playedWeek,
+      acquisitionNotes: acquisitionNotes,
+      endNotes: endNotes,
+      endWeek: endWeek,
     );
   }
 }

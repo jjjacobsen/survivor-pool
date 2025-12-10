@@ -83,20 +83,21 @@ def _collect_contestant_advantages(season, contestant_id, current_week):
             or advantage.get("advantage_type")
             or "Advantage"
         )
-        notes = advantage.get("acquisition_notes")
-        status_value = advantage.get("status")
-        played_week = advantage.get("played_week")
-        if played_week is not None and played_week > visible_week:
-            continue
-        value = notes or status_value or label
+        acquisition_notes = advantage.get("acquisition_notes")
+        end_notes = advantage.get("end_notes")
+        end_week = advantage.get("end_week")
+        value = acquisition_notes or end_notes or label
         advantage_id = advantage.get("id") or f"{contestant_id}_{label}"
         advantages.append(
             ContestantAdvantage(
                 id=str(advantage_id),
                 label=str(label),
                 value=str(value),
-                status=status_value,
-                played_week=played_week,
+                acquisition_notes=(
+                    str(acquisition_notes) if acquisition_notes else None
+                ),
+                end_notes=str(end_notes) if end_notes else None,
+                end_week=end_week if isinstance(end_week, int) else None,
             )
         )
     return advantages
