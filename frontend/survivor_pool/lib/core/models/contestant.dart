@@ -38,6 +38,7 @@ class ContestantAdvantage {
   final String? acquisitionNotes;
   final String? endNotes;
   final int? endWeek;
+  final int? obtainedWeek;
 
   const ContestantAdvantage({
     required this.id,
@@ -46,6 +47,7 @@ class ContestantAdvantage {
     this.acquisitionNotes,
     this.endNotes,
     this.endWeek,
+    this.obtainedWeek,
   });
 
   factory ContestantAdvantage.fromJson(Map<String, dynamic> json) {
@@ -55,6 +57,7 @@ class ContestantAdvantage {
     final acquisitionNotes = json['acquisition_notes'] as String?;
     final endNotes = json['end_notes'] as String?;
     final endWeek = json['end_week'] as int?;
+    final obtainedWeek = json['obtained_week'] as int?;
     return ContestantAdvantage(
       id: id.isEmpty ? label : id,
       label: label.isEmpty ? 'Advantage' : label,
@@ -62,6 +65,7 @@ class ContestantAdvantage {
       acquisitionNotes: acquisitionNotes,
       endNotes: endNotes,
       endWeek: endWeek,
+      obtainedWeek: obtainedWeek,
     );
   }
 }

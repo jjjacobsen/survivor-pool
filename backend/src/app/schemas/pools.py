@@ -84,6 +84,7 @@ class ContestantAdvantage(BaseModel):
     acquisition_notes: str | None = None
     end_notes: str | None = None
     end_week: int | None = None
+    obtained_week: int | None = None
 
 
 class ContestantDetailResponse(BaseModel):

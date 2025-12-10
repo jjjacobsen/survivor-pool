@@ -86,6 +86,7 @@ def _collect_contestant_advantages(season, contestant_id, current_week):
         acquisition_notes = advantage.get("acquisition_notes")
         end_notes = advantage.get("end_notes")
         end_week = advantage.get("end_week")
+        obtained_week = advantage.get("obtained_week")
         value = acquisition_notes or end_notes or label
         advantage_id = advantage.get("id") or f"{contestant_id}_{label}"
         advantages.append(
@@ -98,6 +99,7 @@ def _collect_contestant_advantages(season, contestant_id, current_week):
                 ),
                 end_notes=str(end_notes) if end_notes else None,
                 end_week=end_week if isinstance(end_week, int) else None,
+                obtained_week=obtained_week if isinstance(obtained_week, int) else None,
             )
         )
     return advantages

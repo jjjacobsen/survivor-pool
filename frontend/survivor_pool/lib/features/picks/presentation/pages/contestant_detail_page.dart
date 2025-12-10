@@ -278,12 +278,16 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
     final hasAdvantage = endWeek == null || endWeek > currentWeek;
     final acquisition = advantage.acquisitionNotes?.trim() ?? '';
     final endNotes = advantage.endNotes?.trim() ?? '';
-    final activeText = acquisition.isNotEmpty
+    final baseActive = acquisition.isNotEmpty
         ? acquisition
         : (advantage.value.isNotEmpty ? advantage.value : advantage.label);
-    final usedText = endNotes.isNotEmpty
+    final baseUsed = endNotes.isNotEmpty
         ? endNotes
         : (advantage.value.isNotEmpty ? advantage.value : advantage.label);
+    final activeText = advantage.obtainedWeek != null
+        ? 'Week ${advantage.obtainedWeek} · $baseActive'
+        : baseActive;
+    final usedText = endWeek != null ? 'Week $endWeek · $baseUsed' : baseUsed;
     return _buildInfoChip(
       advantage.label,
       hasAdvantage ? activeText : usedText,
