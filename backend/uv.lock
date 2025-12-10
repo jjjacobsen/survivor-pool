@@ -506,7 +506,7 @@ wheels = [
 
 [[package]]
 name = "survivor-pool-api"
-version = "0.1.0"
+version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
     { name = "bcrypt" },
