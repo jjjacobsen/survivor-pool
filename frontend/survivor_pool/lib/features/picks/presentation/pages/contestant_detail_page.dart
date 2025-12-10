@@ -275,7 +275,7 @@ class _ContestantDetailPageState extends State<ContestantDetailPage> {
     int currentWeek,
   ) {
     final endWeek = advantage.endWeek;
-    final hasAdvantage = endWeek == null || endWeek > currentWeek;
+    final hasAdvantage = endWeek == null || currentWeek <= endWeek;
     final acquisition = advantage.acquisitionNotes?.trim() ?? '';
     final endNotes = advantage.endNotes?.trim() ?? '';
     final baseActive = acquisition.isNotEmpty
