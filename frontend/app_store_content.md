@@ -17,8 +17,16 @@ What you can do:
 - Review your pick history and see how far each contestant made it
 - Run multiple pools at once using the same season data
 
-Built for mobile with a clean, fast Flutter experience plus a FastAPI backend that keeps results in sync. Season data is pulled from TV canon so every elimination matches what aired. Survivor Pool is a fan-made companion and is not affiliated with CBS or Survivor
+Built for mobile with a clean, fast experience that keeps results in sync. Season data is pulled from TV canon so every elimination matches what aired. Survivor Pool is a fan-made companion and is not affiliated with CBS or Survivor
 
 ## Keywords
 
 Survivor,pool,pickem,fantasy,contestant,elimination,leaderboard,tribe,game,friends,weekly,picks
+
+## Support/Marketing URL
+
+<https://survivorpoolapp.com>
+
+## App Review Notes
+
+There are four test accounts: test, test1, test2, and test3. They all share the same password: " " (a single space). test will be overwritten periodically but the other three accounts are long-lived. Use those for whatever testing you would like
