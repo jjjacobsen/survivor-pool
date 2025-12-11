@@ -14,6 +14,7 @@ class AppRoutes {
   static const String poolLeaderboard = '/leaderboard';
   static const String manageMembers = '/members';
   static const String contestantDetail = '/contestants/:contestantId';
+  static const String privacy = '/privacy';
 }
 
 class AppRouteNames {
@@ -27,6 +28,7 @@ class AppRouteNames {
   static const String poolLeaderboard = 'pool-leaderboard';
   static const String manageMembers = 'manage-members';
   static const String contestantDetail = 'contestant-detail';
+  static const String privacy = 'privacy';
 }
 
 class AppSession {

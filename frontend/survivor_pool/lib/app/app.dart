@@ -10,6 +10,7 @@ import 'package:survivor_pool/core/models/pool.dart';
 import 'package:survivor_pool/core/models/user.dart';
 import 'package:survivor_pool/features/auth/presentation/forgot_password_page.dart';
 import 'package:survivor_pool/features/auth/presentation/login_page.dart';
+import 'package:survivor_pool/features/legal/presentation/privacy_page.dart';
 import 'package:survivor_pool/features/picks/presentation/pages/contestant_detail_page.dart';
 import 'package:survivor_pool/features/pools/presentation/home_page.dart';
 import 'package:survivor_pool/features/pools/presentation/pages/manage_pool_members_page.dart';
@@ -35,6 +36,11 @@ class SurvivorPoolApp extends StatelessWidget {
         path: AppRoutes.forgotPassword,
         name: AppRouteNames.forgotPassword,
         builder: (context, state) => const ForgotPasswordPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.privacy,
+        name: AppRouteNames.privacy,
+        builder: (context, state) => const PrivacyPage(),
       ),
       GoRoute(
         path: AppRoutes.home,
