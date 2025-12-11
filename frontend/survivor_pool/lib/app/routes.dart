@@ -15,6 +15,7 @@ class AppRoutes {
   static const String manageMembers = '/members';
   static const String contestantDetail = '/contestants/:contestantId';
   static const String privacy = '/privacy';
+  static const String support = '/support';
 }
 
 class AppRouteNames {
@@ -29,6 +30,7 @@ class AppRouteNames {
   static const String manageMembers = 'manage-members';
   static const String contestantDetail = 'contestant-detail';
   static const String privacy = 'privacy';
+  static const String support = 'support';
 }
 
 class AppSession {
