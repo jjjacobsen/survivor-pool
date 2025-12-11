@@ -24,6 +24,10 @@ frontend2 = { run = [
   "flutter run -d \"iPhone 17 Pro\" --dart-define=API_BASE_URL=http://localhost:8000",
 ], dir = "frontend/survivor_pool", description = "Start frontend server" }
 
+frontend3 = { run = [
+  "flutter run -d \"iPad Pro 13-inch (M5)\" --dart-define=API_BASE_URL=http://localhost:8000",
+], dir = "frontend/survivor_pool", description = "Start frontend server" }
+
 web = { run = [
   "flutter run -d web-server --dart-define=API_BASE_URL=http://localhost:8000",
 ], dir = "frontend/survivor_pool", description = "Start web server" }
