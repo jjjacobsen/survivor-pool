@@ -21,6 +21,8 @@ Web is as simple as buying a domain and setting up routing properly. Mobile requ
 
 - [ios](https://docs.flutter.dev/deployment/ios)
 
+Note: If it seems like things are deploying right, Cloudflare does caching and you might need to go purge that
+
 ### Icon Composer
 
 This is how Apple wants you to build icons for their apps now. The following is the process I took to create and import the icon into Xcode
