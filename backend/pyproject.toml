@@ -39,3 +39,7 @@ select = [
     "SIM", # flake8-simplify
     "PTH", # flake8-use-pathlib
 ]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
