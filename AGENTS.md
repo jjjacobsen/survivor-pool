@@ -14,5 +14,5 @@
 ## COMMANDS
 
 - When the prompt is simply "pre-commit" I would like you to run the following command:
-  - `SKIP=uv-lock,dart-format,flutter-analyze pre-commit run -a`
+  - `pre-commit run -a`
   - If there are failures, iterate until it passes
