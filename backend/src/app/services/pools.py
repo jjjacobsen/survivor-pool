@@ -918,8 +918,7 @@ def advance_pool_week(pool_id, payload):
             },
         )
 
-        updated_pool = pools_collection.find_one({"_id": pool_oid})
-        new_week = updated_pool.get("current_week", current_week)
+        new_week = current_week
         _recalculate_pool_scores(pool_oid, season, current_week)
     else:
         updated_pool = pools_collection.find_one_and_update(

@@ -46,9 +46,19 @@ repos:
         language: system
         types: [dart]
         files: frontend/survivor_pool/
+        # Append command with list of staged files
+        pass_filenames: true
       - id: flutter-analyze
         name: flutter analyze
         entry: bash -c 'cd frontend/survivor_pool && flutter analyze'
         language: system
         files: frontend/survivor_pool/
+        # Run command exactly as written
+        pass_filenames: false
+      - id: pyright
+        name: pyright
+        entry: bash -c 'cd backend && pyright'
+        language: system
+        types: [python]
+        files: backend/
         pass_filenames: false
