@@ -10,9 +10,3 @@
 - Don't worry about unit tests or integration tests for now
 - Don't use SnackBar's in flutter
 - If you need to run python commands in the backend, use uv
-
-## COMMANDS
-
-- When the prompt is simply "pre-commit" I would like you to run the following command:
-  - `pre-commit run -a`
-  - If there are failures, iterate until it passes
