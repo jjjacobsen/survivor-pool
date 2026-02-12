@@ -45,6 +45,23 @@ This is how Apple wants you to build icons for their apps now. The following is 
   - Then under general settings change the App Icon name
   - Delete app in simulator completely before opening to remove cache
 
+#### Web favicon (.ico)
+
+1. Export a PNG from Icon Composer as `icon-1024.png`.
+2. Generate the favicon:
+
+   ```bash
+   magick icon-1024.png -define icon:auto-resize=16,32,48 favicon2.ico
+   ```
+
+3. Copy it into the web app and update the favicon link:
+   - Replace `web/favicon.ico` with the new file.
+   - Ensure `web/index.html` uses:
+
+   ```html
+   <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+   ```
+
 ### Screenshots
 
 - Can take a screenshot using the button on the simulator
