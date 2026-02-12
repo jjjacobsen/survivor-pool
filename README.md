@@ -53,32 +53,38 @@
 
 ## Getting Started
 
+Install Homebrew first: [brew.sh](https://brew.sh)
+
+```bash
+brew install mise uv pyright prettier pre-commit
+```
+
 ```bash
 # install tool versions from mise.toml
 mise install
 
 # install project dependencies
-mise run bootstrap
+mise bootstrap
 
 # run everything (MongoDB + backend + frontend) inside tmux
-mise run dev
+mise dev
 
 # or drive services individually
-mise run mongo
-mise run backend
-mise run frontend
+mise mongo
+mise backend
+mise frontend
 ```
 
 - Default Flutter target is iOS, but you can switch with `flutter run -d web-server` or any connected device.
-- `mise run bootstrap` wires up Flutter packages and uses `uv` to sync backend requirements.
-- `mise attach` drops you into the dev tmux session; `mise run stop` shuts everything down cleanly.
+- `mise bootstrap` wires up Flutter packages and uses `uv` to sync backend requirements.
+- `mise attach` drops you into the dev tmux session; `mise stop` shuts everything down cleanly.
 
 ### Environment config
 
 - `.env.dev` and `.env.prod` live in the repo root and only carry backend settings (Mongo URL, DB name, CORS rule).
-- The `backend` task in `mise.toml` loads `.env.dev`, so `mise run backend` (and `mise run dev`, which shells into that task) get their env from that file; other tasks run clean.
-- `mise run prod` delegates to Docker Compose, whose backend service references `.env.prod` through `env_file`, so production containers read the same values.
-- `mise run db-update -- --dev|--prod` seeds Mongo using the matching env file.
+- The `backend` task in `mise.toml` loads `.env.dev`, so `mise backend` (and `mise dev`, which shells into that task) get their env from that file; other tasks run clean.
+- `mise prod` delegates to Docker Compose, whose backend service references `.env.prod` through `env_file`, so production containers read the same values.
+- `mise db-update -- --dev|--prod` seeds Mongo using the matching env file.
 - don't put secrets in frontend
 
 ## Architecture Snapshot
