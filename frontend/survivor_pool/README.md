@@ -59,7 +59,7 @@ This is how Apple wants you to build icons for their apps now. The following is 
    - Ensure `web/index.html` uses:
 
    ```html
-   <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+   <link rel="icon" type="image/x-icon" href="favicon.ico" />
    ```
 
 ### Screenshots

@@ -18,21 +18,19 @@ repos:
       - id: check-symlinks
       - id: destroyed-symlinks
 
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.45.0
-    hooks:
-      - id: markdownlint
-        args: ["--fix"]
-
-  - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.8.13
-    hooks:
-      - id: uv-lock
-        files: backend/pyproject.toml
-        args: [--project, backend]
-
   - repo: local
     hooks:
+      - id: prettier-markdown
+        name: prettier markdown
+        entry: prettier --write
+        language: system
+        types: [markdown]
+      - id: uv-lock
+        name: uv lock
+        entry: bash -c 'cd backend && uv lock --check'
+        language: system
+        files: backend/pyproject.toml
+        pass_filenames: false
       - id: ruff-check
         name: ruff check
         entry: bash -c 'cd backend && uv run ruff check --fix .'

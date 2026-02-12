@@ -214,29 +214,33 @@ db.pools.aggregate([
       from: "seasons",
       localField: "seasonId",
       foreignField: "_id",
-      as: "season"
-    }
+      as: "season",
+    },
   },
-  { $unwind: "$season" }
-])
+  { $unwind: "$season" },
+]);
 ```
 
 ### Get user's picks for a pool
 
 ```javascript
-db.picks.find({
-  userId: userId,
-  poolId: poolId
-}).sort({week: 1})
+db.picks
+  .find({
+    userId: userId,
+    poolId: poolId,
+  })
+  .sort({ week: 1 });
 ```
 
 ### Get leaderboard for a pool
 
 ```javascript
-db.pool_memberships.find({
-  poolId: poolId,
-  status: "active"
-}).sort({score: -1})
+db.pool_memberships
+  .find({
+    poolId: poolId,
+    status: "active",
+  })
+  .sort({ score: -1 });
 ```
 
 ### Get all active pools for a user
@@ -249,21 +253,27 @@ db.pool_memberships.aggregate([
       from: "pools",
       localField: "poolId",
       foreignField: "_id",
-      as: "pool"
-    }
+      as: "pool",
+    },
   },
-  { $unwind: "$pool" }
-])
+  { $unwind: "$pool" },
+]);
 ```
 
 ### Get available contestants for user in pool
 
 ```javascript
 // Get season facts (contestants, eliminations, advantages)
-const season = db.seasons.findOne({_id: seasonId}, {contestants: 1, eliminations: 1, advantages: 1})
+const season = db.seasons.findOne(
+  { _id: seasonId },
+  { contestants: 1, eliminations: 1, advantages: 1 },
+);
 
 // Get user's previous picks to exclude (in this pool)
-const priorPicks = db.picks.find({ userId, poolId }, { contestant_id: 1 }).toArray().map(p => p.contestant_id)
+const priorPicks = db.picks
+  .find({ userId, poolId }, { contestant_id: 1 })
+  .toArray()
+  .map((p) => p.contestant_id);
 
 // Compute available contestants client-side or with aggregation
 // Optionally project active advantages (no end recorded yet) using $filter
@@ -277,12 +287,12 @@ db.seasons.aggregate([
         $filter: {
           input: "$advantages",
           as: "a",
-          cond: { $eq: ["$$a.end_week", null] }
-        }
-      }
-    }
-  }
-])
+          cond: { $eq: ["$$a.end_week", null] },
+        },
+      },
+    },
+  },
+]);
 
 // Filter contestants not yet eliminated and not previously picked
 ```
@@ -293,14 +303,26 @@ db.seasons.aggregate([
 // Record elimination on the season document
 db.seasons.updateOne(
   { _id: seasonId },
-  { $push: { eliminations: { week: currentWeek, eliminated_contestant_id: eliminatedContestantId } } }
-)
+  {
+    $push: {
+      eliminations: {
+        week: currentWeek,
+        eliminated_contestant_id: eliminatedContestantId,
+      },
+    },
+  },
+);
 
 // Mark an advantage as used/expired on the season document
 db.seasons.updateOne(
   { _id: seasonId, "advantages.id": advantageId },
-  { $set: { "advantages.$.end_week": currentWeek, "advantages.$.end_notes": "Played on Alice" } }
-)
+  {
+    $set: {
+      "advantages.$.end_week": currentWeek,
+      "advantages.$.end_notes": "Played on Alice",
+    },
+  },
+);
 
 // When an advantage is given to another contestant after holding it, set end_week/end_notes on the original entry
 // and add a new advantage entry for the recipient capturing when they received it.
@@ -318,8 +340,8 @@ db.picks.insertOne({
   contestant_id: contestantId,
   pick_date: new Date(),
   pick_deadline: deadlineDate,
-  result: "pending"
-})
+  result: "pending",
+});
 ```
 
 ### Process elimination (when week ends)
@@ -329,31 +351,31 @@ db.picks.insertOne({
 db.picks.updateMany(
   {
     poolId: poolId,
-      contestant_id: eliminatedContestantId,
-    result: "pending"
+    contestant_id: eliminatedContestantId,
+    result: "pending",
   },
   {
     $set: {
       result: "eliminated",
-      result_date: new Date()
-    }
-  }
-)
+      result_date: new Date(),
+    },
+  },
+);
 
 // Update pool memberships for eliminated users
 db.pool_memberships.updateMany(
   {
     poolId: poolId,
-    userId: { $in: eliminatedUserIds }
+    userId: { $in: eliminatedUserIds },
   },
   {
     $set: {
       status: "eliminated",
       eliminated_week: currentWeek,
-      eliminated_date: new Date()
-    }
-  }
-)
+      eliminated_date: new Date(),
+    },
+  },
+);
 ```
 
 ### Update available contestants cache
@@ -363,15 +385,15 @@ db.pool_memberships.updateMany(
 db.pool_memberships.updateMany(
   {
     poolId: poolId,
-    status: "active"
+    status: "active",
   },
   {
     $set: {
       available_contestants: availableContestantsArray,
-      score: availableContestantsArray.length
-    }
-  }
-)
+      score: availableContestantsArray.length,
+    },
+  },
+);
 ```
 
 > `available_contestants` is never seeded with a default; backend recomputation must populate it and inconsistencies are treated as errors.
@@ -412,32 +434,32 @@ Recommended indexes for optimal query performance:
 
 ```javascript
 // On picks collection
-db.picks.createIndex({ userId: 1, poolId: 1 })
-db.picks.createIndex({ poolId: 1, week: 1 })
-db.picks.createIndex({ poolId: 1, contestant_id: 1 })
-db.picks.createIndex({ result: 1 })
+db.picks.createIndex({ userId: 1, poolId: 1 });
+db.picks.createIndex({ poolId: 1, week: 1 });
+db.picks.createIndex({ poolId: 1, contestant_id: 1 });
+db.picks.createIndex({ result: 1 });
 
 // On pool_memberships collection
-db.pool_memberships.createIndex({ userId: 1 })
-db.pool_memberships.createIndex({ poolId: 1 })
-db.pool_memberships.createIndex({ poolId: 1, status: 1 })
-db.pool_memberships.createIndex({ userId: 1, poolId: 1 }, { unique: true })
+db.pool_memberships.createIndex({ userId: 1 });
+db.pool_memberships.createIndex({ poolId: 1 });
+db.pool_memberships.createIndex({ poolId: 1, status: 1 });
+db.pool_memberships.createIndex({ userId: 1, poolId: 1 }, { unique: true });
 
 // On pools collection
-db.pools.createIndex({ ownerId: 1 })
-db.pools.createIndex({ seasonId: 1 })
+db.pools.createIndex({ ownerId: 1 });
+db.pools.createIndex({ seasonId: 1 });
 
 // On users collection
-db.users.createIndex({ email: 1 }, { unique: true })
-db.users.createIndex({ default_pool: 1 })
+db.users.createIndex({ email: 1 }, { unique: true });
+db.users.createIndex({ default_pool: 1 });
 
 // On seasons collection
-db.seasons.createIndex({ season_number: 1 })
-db.seasons.createIndex({ season_name: 1 })
-db.seasons.createIndex({ "contestants.id": 1 })
+db.seasons.createIndex({ season_number: 1 });
+db.seasons.createIndex({ season_name: 1 });
+db.seasons.createIndex({ "contestants.id": 1 });
 
 // On seasons collection (additional nested indexes)
-db.seasons.createIndex({ "advantages.contestant_id": 1 })
+db.seasons.createIndex({ "advantages.contestant_id": 1 });
 // Note: Avoid compound indexes across multiple fields of the same array (multikey restriction)
 ```
 
