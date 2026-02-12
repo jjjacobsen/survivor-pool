@@ -83,7 +83,7 @@ def decode_access_token(token):
 
 
 def _coerce_epoch(value, claim):
-    if isinstance(value, (int, float)):  # noqa: UP038
+    if isinstance(value, (int, float)):
         return datetime.fromtimestamp(int(value), tz=UTC)
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

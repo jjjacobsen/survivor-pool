@@ -31,15 +31,22 @@ repos:
         files: backend/pyproject.toml
         args: [--project, backend]
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.10
-    hooks:
-      - id: ruff-check
-        args: [--fix]
-      - id: ruff-format
-
   - repo: local
     hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: bash -c 'cd backend && uv run ruff check --fix .'
+        language: system
+        files: backend/
+        types: [python]
+        pass_filenames: false
+      - id: ruff-format
+        name: ruff format
+        entry: bash -c 'cd backend && uv run ruff format .'
+        language: system
+        files: backend/
+        types: [python]
+        pass_filenames: false
       - id: dart-format
         name: dart format
         entry: dart format
