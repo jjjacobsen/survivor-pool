@@ -23,6 +23,50 @@ Web is as simple as buying a domain and setting up routing properly. Mobile requ
 
 Note: If it seems like things are deploying right, Cloudflare does caching and you might need to go purge that
 
+### Android / Play Store setup (current progress)
+
+1. Install Android Studio:
+
+   ```bash
+   brew install --cask android-studio
+   ```
+
+2. Open Android Studio and complete the standard setup flow.
+
+3. Install `Android SDK Command-line Tools` in Android Studio:
+   - Open Settings
+   - Go to `Languages & Frameworks -> Android SDK`
+   - Open the `SDK Tools` tab
+   - Check `Android SDK Command-line Tools (latest)`
+   - Click Apply / OK and let it install
+
+4. Accept Android licenses:
+
+   ```bash
+   flutter doctor --android-licenses
+   ```
+
+5. Verify tooling:
+   - At this point, `flutter doctor -v` should report everything healthy for Android.
+   - Flutter run/build commands must be run from this Flutter project root: `frontend/survivor_pool` (the folder that contains `pubspec.yaml`).
+
+6. Launch an emulator:
+
+   ```bash
+   flutter emulators --launch Medium_Phone_API_36.1
+   ```
+
+7. Result:
+   - This launches an Android device on macOS via QEMU.
+   - For local backend access from Android emulator, use `http://10.0.2.2:8000` instead of `http://localhost:8000`.
+   - Example:
+
+   ```bash
+   flutter run -d "sdk gphone64 arm64" --dart-define=API_BASE_URL=http://10.0.2.2:8000
+   ```
+
+This is the current checkpoint before continuing Play Store deployment setup.
+
 ### Icon Composer
 
 This is how Apple wants you to build icons for their apps now. The following is the process I took to create and import the icon into Xcode
