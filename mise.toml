@@ -16,6 +16,10 @@ frontend = { run = [
   "flutter run -d \"iPhone 17 Pro Max\" --dart-define=API_BASE_URL=http://localhost:8000",
 ], dir = "frontend/survivor_pool", description = "Start frontend server" }
 
+frontend-android = { run = [
+  "flutter run -d \"sdk gphone64 arm64\" --dart-define=API_BASE_URL=http://10.0.2.2:8000",
+], dir = "frontend/survivor_pool", description = "Start frontend server on Android emulator" }
+
 frontend-prod = { run = [
   "flutter run -d \"iPhone 17 Pro Max\" --dart-define=API_BASE_URL=https://api.survivorpoolapp.com",
 ], dir = "frontend/survivor_pool", description = "Start frontend server" }
@@ -47,6 +51,8 @@ dev = { run = [
   "if tmux has-session -t survivor-dev 2>/dev/null; then echo \"tmux session survivor-dev already running\"; exit 1; fi",
   "tmux new-session -d -s survivor-dev -n mongosh -c .",
   "tmux send-keys -t survivor-dev:mongosh \"mise run db-update -- --dev && docker exec -it survivor-mongo mongosh survivor_pool\" C-m",
+  "tmux new-window -t survivor-dev -n android -c .",
+  "tmux send-keys -t survivor-dev:android \"mise run frontend-android\" C-m",
   "tmux new-window -t survivor-dev -n backend -c .",
   "tmux send-keys -t survivor-dev:backend \"mise run backend\" C-m",
   "tmux new-window -t survivor-dev -n frontend -c .",
@@ -59,6 +65,7 @@ dev = { run = [
 stop = { run = [
   "docker compose down 2>/dev/null",
   "tmux send-keys -t survivor-dev:frontend q 2>/dev/null || true; sleep 1",
+  "tmux send-keys -t survivor-dev:android q 2>/dev/null || true; sleep 1",
   "tmux kill-session -t survivor-dev 2>/dev/null || echo \"tmux session survivor-dev not found\"",
   "docker stop survivor-mongo 2>/dev/null || echo 'MongoDB not running'",
   "echo 'All development services stopped'",
