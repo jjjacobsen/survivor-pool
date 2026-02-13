@@ -235,3 +235,6 @@ app.*.map.json
 
 # Mac related
 .DS_Store
+
+# Codex
+.codex/environments/
