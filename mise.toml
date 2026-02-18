@@ -47,6 +47,10 @@ ipa = { run = [
   "flutter build ipa --release --obfuscate --split-debug-info=build/ios_split_debug_info --dart-define=API_BASE_URL=https://api.survivorpoolapp.com",
 ], dir = "frontend/survivor_pool", description = "Build iOS IPA with obfuscation and split debug info" }
 
+aab = { run = [
+  "flutter build appbundle --release --obfuscate --split-debug-info=build/android_split_debug_info --dart-define=API_BASE_URL=https://api.survivorpoolapp.com",
+], dir = "frontend/survivor_pool", description = "Build Android App Bundle for Play Store with obfuscation and split debug info" }
+
 mongo = { run = [
   "docker run --rm --name survivor-mongo -d -p 27017:27017 -v dev-mongo-data:/data/db -v dev-mongo-config:/data/configdb mongo:8.0",
 ], description = "Start MongoDB for development" }

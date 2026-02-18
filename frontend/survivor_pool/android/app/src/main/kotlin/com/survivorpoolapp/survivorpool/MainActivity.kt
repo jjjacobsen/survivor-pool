@@ -1,4 +1,4 @@
-package com.example.survivor_pool
+package com.survivorpoolapp.survivorpool
 
 import io.flutter.embedding.android.FlutterActivity
 

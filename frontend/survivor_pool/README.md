@@ -23,7 +23,7 @@ Web is as simple as buying a domain and setting up routing properly. Mobile requ
 
 Note: If it seems like things are deploying right, Cloudflare does caching and you might need to go purge that
 
-### Android / Play Store setup (current progress)
+### Android / Play Store setup
 
 1. Install Android Studio:
 
@@ -65,7 +65,63 @@ Note: If it seems like things are deploying right, Cloudflare does caching and y
    flutter run -d "sdk gphone64 arm64" --dart-define=API_BASE_URL=http://10.0.2.2:8000
    ```
 
-This is the current checkpoint before continuing Play Store deployment setup.
+8. Use the Play Store bundle identifier:
+   - Android `namespace` and `applicationId` are set to `com.survivorpoolapp.survivorpool` in `android/app/build.gradle.kts`.
+
+9. Create and keep release signing files:
+   - `android/upload-keystore.jks`
+   - `android/key.properties`
+   - They are intentionally ignored by git in `android/.gitignore`.
+   - If you need to regenerate them:
+
+   ```bash
+   cd android
+   STORE_PASS=$(openssl rand -hex 24)
+   KEY_PASS=$(openssl rand -hex 24)
+   /Applications/Android\ Studio.app/Contents/jbr/Contents/Home/bin/keytool \
+     -genkeypair -v \
+     -keystore upload-keystore.jks \
+     -storetype JKS \
+     -storepass "$STORE_PASS" \
+     -keypass "$KEY_PASS" \
+     -alias upload \
+     -keyalg RSA \
+     -keysize 2048 \
+     -validity 10000 \
+     -dname "CN=Survivor Pool, OU=Mobile, O=Survivor Pool, L=Unknown, ST=Unknown, C=US"
+   printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=upload\nstoreFile=upload-keystore.jks\n' \
+     "$STORE_PASS" "$KEY_PASS" > key.properties
+   chmod 600 key.properties upload-keystore.jks
+   ```
+
+10. Release signing is wired in `android/app/build.gradle.kts`:
+    - `signingConfigs.release` reads from `android/key.properties`.
+    - `buildTypes.release` uses that release signing config.
+
+11. Bump version for each Play Store release:
+    - Current version is `1.0.1+3` in `pubspec.yaml`.
+    - Format is `version_name+version_code`, and Play Store requires version code to increase each upload.
+
+12. Build the Play Store `.aab` bundle:
+
+    ```bash
+    mise run aab
+    ```
+
+    - Equivalent Flutter command:
+
+    ```bash
+    flutter build appbundle --release --obfuscate --split-debug-info=build/android_split_debug_info --dart-define=API_BASE_URL=https://api.survivorpoolapp.com
+    ```
+
+13. Play Console URL:
+    - https://play.google.com/console
+
+14. In Play Console, complete:
+    - App setup + Store listing
+    - App content + Data safety forms
+    - Internal testing release upload
+    - Production release submission
 
 ### Icon Composer
 
