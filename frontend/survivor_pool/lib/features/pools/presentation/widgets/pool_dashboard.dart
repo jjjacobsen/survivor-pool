@@ -51,23 +51,23 @@ class PoolDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final estimatedHeight = availableContestants.length * 76.0;
-    final listHeight = availableContestants.isEmpty
-        ? 160.0
-        : estimatedHeight < 220.0
-        ? 220.0
-        : estimatedHeight > 420.0
-        ? 420.0
-        : estimatedHeight;
+    final hasActions =
+        onViewLeaderboard != null ||
+        onManageMembers != null ||
+        onManageSettings != null ||
+        onAdvanceWeek != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeaderCard(theme),
-        const SizedBox(height: 24),
+        _buildOverviewCard(theme),
+        if (hasActions) ...[
+          const SizedBox(height: 16),
+          _buildQuickActionsCard(theme),
+        ],
+        const SizedBox(height: 16),
         _buildWeeklyPickCard(
           theme,
-          listHeight,
           currentPick,
           isEliminated,
           eliminationReason,
@@ -78,22 +78,29 @@ class PoolDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildHeaderCard(ThemeData theme) {
+  Widget _buildOverviewCard(ThemeData theme) {
     final seasonDescription = pool.seasonNumber != null
-        ? 'Season: ${pool.seasonNumber}'
+        ? 'Season ${pool.seasonNumber}'
         : pool.seasonId.isEmpty
         ? 'Season details coming soon'
-        : 'Season: ${pool.seasonId}';
-    final scoreText = score != null ? 'Remaining choices: ${score!}' : null;
+        : 'Season ${pool.seasonId}';
     final poolCompleted = poolStatus == 'completed';
-    final completionLabel = poolCompletedWeek != null
-        ? 'Completed in week $poolCompletedWeek'
+    final scoreText = score != null ? score!.toString() : '--';
+    final statusText = isWinner
+        ? 'Winner'
+        : isEliminated
+        ? 'Eliminated'
+        : poolCompleted
+        ? 'Completed'
+        : 'Active';
+    final completionText = poolCompletedWeek != null
+        ? 'Pool ended in week $poolCompletedWeek'
         : 'Pool completed';
-
-    final hasSettings = onManageSettings != null;
-    final hasManageMembers = onManageMembers != null;
-    final hasAdvance = onAdvanceWeek != null;
-    final hasLeaderboard = onViewLeaderboard != null;
+    final statusTone = isWinner
+        ? theme.colorScheme.primary
+        : isEliminated
+        ? theme.colorScheme.error
+        : theme.colorScheme.primary;
 
     return SizedBox(
       width: double.infinity,
@@ -105,26 +112,11 @@ class PoolDashboard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      pool.name,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  if (hasSettings) ...[
-                    const SizedBox(width: 16),
-                    OutlinedButton.icon(
-                      onPressed: onManageSettings,
-                      icon: const Icon(Icons.settings_outlined),
-                      label: const Text('Pool settings'),
-                    ),
-                  ],
-                ],
+              Text(
+                pool.name,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
@@ -133,37 +125,74 @@ class PoolDashboard extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 6),
-              if (scoreText != null) ...[
-                Text(
-                  scoreText,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: isEliminated
-                        ? theme.colorScheme.error
-                        : theme.colorScheme.primary,
-                    fontWeight: FontWeight.w600,
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatChip(
+                      theme,
+                      icon: Icons.calendar_today_outlined,
+                      label: 'Week',
+                      value: '${pool.currentWeek}',
+                    ),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatChip(
+                      theme,
+                      icon: Icons.track_changes_outlined,
+                      label: 'Remaining',
+                      value: scoreText,
+                      tone: isEliminated
+                          ? theme.colorScheme.error
+                          : theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
                 ),
-                const SizedBox(height: 6),
-              ],
-              Text(
-                'Week ${pool.currentWeek}',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
+                decoration: BoxDecoration(
+                  color: statusTone.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: statusTone.withValues(alpha: 0.24)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.flag_outlined, size: 18, color: statusTone),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Status',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      statusText,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               if (poolCompleted) ...[
-                const SizedBox(height: 6),
+                const SizedBox(height: 16),
                 Text(
-                  completionLabel,
+                  completionText,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 if (poolCompletedAt != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
                     'Completed on ${_formatTimestamp(poolCompletedAt!)}',
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -172,39 +201,6 @@ class PoolDashboard extends StatelessWidget {
                   ),
                 ],
               ],
-              if (hasLeaderboard) ...[
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.tonalIcon(
-                    onPressed: onViewLeaderboard,
-                    icon: const Icon(Icons.leaderboard_outlined),
-                    label: const Text('View leaderboard'),
-                  ),
-                ),
-              ],
-              if (hasManageMembers || hasAdvance) ...[
-                const SizedBox(height: 16),
-              ],
-              if (hasManageMembers)
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: onManageMembers,
-                    icon: const Icon(Icons.group_outlined),
-                    label: const Text('Manage members'),
-                  ),
-                ),
-              if (hasManageMembers && hasAdvance) const SizedBox(height: 16),
-              if (hasAdvance)
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.tonalIcon(
-                    onPressed: onAdvanceWeek,
-                    icon: const Icon(Icons.arrow_forward_rounded),
-                    label: const Text('Advance to next week'),
-                  ),
-                ),
             ],
           ),
         ),
@@ -212,9 +208,132 @@ class PoolDashboard extends StatelessWidget {
     );
   }
 
+  Widget _buildQuickActionsCard(ThemeData theme) {
+    final hasPrimary = onViewLeaderboard != null;
+    final hasSecondary =
+        onManageMembers != null ||
+        onManageSettings != null ||
+        onAdvanceWeek != null;
+
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Quick actions',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (onViewLeaderboard != null) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: onViewLeaderboard,
+                    icon: const Icon(Icons.leaderboard_outlined),
+                    label: const Text('View leaderboard'),
+                  ),
+                ),
+              ],
+              if (hasPrimary && hasSecondary) const SizedBox(height: 10),
+              if (onManageMembers != null) ...[
+                _buildQuickActionButton(
+                  onPressed: onManageMembers,
+                  icon: Icons.group_outlined,
+                  label: 'Manage members',
+                ),
+                if (onManageSettings != null || onAdvanceWeek != null)
+                  const SizedBox(height: 10),
+              ],
+              if (onManageSettings != null) ...[
+                _buildQuickActionButton(
+                  onPressed: onManageSettings,
+                  icon: Icons.settings_outlined,
+                  label: 'Pool settings',
+                ),
+                if (onAdvanceWeek != null) const SizedBox(height: 10),
+              ],
+              if (onAdvanceWeek != null) ...[
+                _buildQuickActionButton(
+                  onPressed: onAdvanceWeek,
+                  icon: Icons.arrow_forward_rounded,
+                  label: 'Advance week',
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionButton({
+    required VoidCallback? onPressed,
+    required IconData icon,
+    required String label,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+      ),
+    );
+  }
+
+  Widget _buildStatChip(
+    ThemeData theme, {
+    required IconData icon,
+    required String label,
+    required String value,
+    Color? tone,
+  }) {
+    final accent = tone ?? theme.colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withValues(alpha: 0.24)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: accent),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildWeeklyPickCard(
     ThemeData theme,
-    double listHeight,
     CurrentPickSummary? currentPick,
     bool isEliminated,
     String? eliminationReason,
@@ -254,19 +373,26 @@ class PoolDashboard extends StatelessWidget {
               Text(
                 currentPick != null
                     ? 'Pick locked in for this week.'
-                    : 'Choose a contestant below to review their details before locking your pick.',
+                    : 'Review contestants, open one for details, then lock your pick.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              if (currentPick == null && availableContestants.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  '${availableContestants.length} contestants available',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               if (currentPick != null)
                 _buildLockedPickSummary(theme, currentPick)
               else
-                SizedBox(
-                  height: listHeight,
-                  child: _buildContestantList(theme),
-                ),
+                _buildContestantList(theme),
             ],
           ],
         ),
@@ -424,11 +550,22 @@ class PoolDashboard extends StatelessWidget {
 
   Widget _buildContestantList(ThemeData theme) {
     if (isLoadingContestants) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (availableContestants.isEmpty) {
-      return Center(
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.3,
+          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
         child: Text(
           'No available contestants yet. Check back after the next elimination.',
           style: theme.textTheme.bodyMedium?.copyWith(
@@ -448,30 +585,59 @@ class PoolDashboard extends StatelessWidget {
           _parseColorHex(group.colorHex) ?? theme.colorScheme.primary;
 
       children.add(
-        Text(
-          group.label,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: headerColor,
-          ),
+        Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: headerColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              group.label,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: headerColor,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${group.members.length}',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       );
-      children.add(const SizedBox(height: 8));
+      children.add(
+        Divider(
+          height: 18,
+          thickness: 1,
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+      );
 
       for (var i = 0; i < group.members.length; i++) {
         final contestant = group.members[i];
         children.add(_buildContestantButton(theme, contestant));
         if (i < group.members.length - 1) {
-          children.add(const SizedBox(height: 12));
+          children.add(const SizedBox(height: 10));
         }
       }
 
       if (groupIndex < groups.length - 1) {
-        children.add(const SizedBox(height: 20));
+        children.add(const SizedBox(height: 18));
       }
     }
 
-    return Scrollbar(child: ListView(children: children));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    );
   }
 
   Widget _buildLockedPickSummary(ThemeData theme, CurrentPickSummary summary) {
@@ -479,10 +645,14 @@ class PoolDashboard extends StatelessWidget {
     final lockedAt = summary.lockedAt.toLocal();
     final timestamp = _formatTimestamp(lockedAt);
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.colorScheme.primary.withAlpha(20),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.25),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

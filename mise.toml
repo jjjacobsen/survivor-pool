@@ -17,6 +17,8 @@ frontend = { run = [
 ], dir = "frontend/survivor_pool", description = "Start frontend server" }
 
 frontend-android = { run = [
+  "if [ ! -f .dart_tool/flutter_build/dart_plugin_registrant.dart ]; then flutter clean; fi",
+  "flutter pub get",
   "flutter run -d \"sdk gphone64 arm64\" --dart-define=API_BASE_URL=http://10.0.2.2:8000",
 ], dir = "frontend/survivor_pool", description = "Start frontend server on Android emulator" }
 
