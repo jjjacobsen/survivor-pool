@@ -1,0 +1,7 @@
+interface:
+  display_name: "Survivor Season Review/Add"
+  short_description: "Audit or create complete season data files"
+  default_prompt: "Use $survivor-season-review-add to audit, fix, and complete a full season file, or create it if missing."
+
+policy:
+  allow_implicit_invocation: false
