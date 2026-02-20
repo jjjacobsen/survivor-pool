@@ -40,7 +40,8 @@
     { week: 8, eliminated_contestant_id: idOf("Michelle \"MC\" Chukwujekwu") },
     { week: 9, eliminated_contestant_id: idOf("Alex Moore") },
     { week: 10, eliminated_contestant_id: idOf("Jawan Pitts") },
-    { week: 11, eliminated_contestant_id: idOf("Sophia \"Sophie\" Segreti") }
+    { week: 11, eliminated_contestant_id: idOf("Sophia \"Sophie\" Segreti") },
+    { week: 12, eliminated_contestant_id: idOf("Steven Ramm") }
   ];
 
   const tribeTimeline = [
@@ -220,8 +221,8 @@
       contestant_id: idOf("Sophia \"Sophi\" Balerdi"),
       obtained_week: 6,
       acquisition_notes: "Spotted the Knowledge is Power parchment near Hina's camp after the three-tribe expansion",
-      end_week: null,
-      end_notes: null
+      end_week: 12,
+      end_notes: "Attempted to use at the week 12 Tribal on Steven after his vote blocker was already played, so the steal failed"
     },
     {
       id: "challenge_advantage_sage_1",
@@ -270,8 +271,8 @@
       contestant_id: idOf("Steven Ramm"),
       obtained_week: 11,
       acquisition_notes: "Won the vote blocker during the Day 20 island run journey",
-      end_week: null,
-      end_notes: null
+      end_week: 12,
+      end_notes: "Played before leaving camp to block Savannah's vote at the week 12 Tribal, but Steven was voted out 4-1"
     }
   ];
 
