@@ -134,13 +134,14 @@
   const seasonsValidator = {
     $jsonSchema: {
       bsonType: "object",
-      required: ["season_name", "season_number", "air_date", "location", "format", "contestants", "eliminations", "tribe_timeline"],
+      required: ["season_name", "season_number", "air_date", "location", "format", "final_week", "contestants", "eliminations", "tribe_timeline"],
       properties: {
         season_name: { bsonType: "string" },
         season_number: { bsonType: ["int", "long", "double"] },
         air_date: { bsonType: "date" },
         location: { bsonType: "string" },
         format: { bsonType: "string" },
+        final_week: { bsonType: ["int", "long", "double", "null"] },
         created_at: { bsonType: "date" },
         contestants: {
           bsonType: "array",
@@ -226,6 +227,7 @@
           air_date: seasonDoc.air_date,
           location: seasonDoc.location,
           format: seasonDoc.format,
+          final_week: seasonDoc.final_week,
           contestants: seasonDoc.contestants,
           eliminations: seasonDoc.eliminations,
           tribe_timeline: seasonDoc.tribe_timeline,

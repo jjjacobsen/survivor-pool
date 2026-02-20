@@ -1,6 +1,6 @@
 ---
 name: survivor-season-review-add
-description: Review, fix, backfill, or create complete static Survivor season data in db/seasons/season*.js for already-finished seasons. Use when asked to validate an entire season, finish partial season data, or add a missing season file while preserving existing schema/style.
+description: Review, fix, backfill, or create complete static Survivor season data in db/seasons/season*.js for already-finished seasons. Use when asked to validate an entire season, finish partial season data, or add a missing season file while preserving existing schema/style, including final_week.
 ---
 
 # Survivor Season Review And Add
@@ -28,18 +28,22 @@ Assume the target season has already completed airing.
 7. Ensure `eliminations` is complete and accurate:
    - Include one entry per elimination event (including same-week double boots when applicable).
    - Use correct week numbers and contestant ids.
-8. Ensure `tribeTimeline` is complete and accurate:
+8. Ensure `final_week` is present and accurate:
+   - `final_week` is the final playable pick week for pool completion.
+   - If the true finale pick week is unknown, keep `final_week` as `null`.
+   - Once known, set it to the same week as the latest elimination entry.
+9. Ensure `tribeTimeline` is complete and accurate:
    - Include initial tribes and later tribe-state changes (`swap`, `merge`, etc.).
    - Keep member lists aligned with elimination order and tribe events.
-9. Ensure `advantages` is complete and accurate:
-   - Keep `acquisition_notes` limited to how the advantage was obtained; never mention play/transfer/vote outcomes there.
-   - Set `end_week` and `end_notes` when an advantage leaves the game (played, expired, transferred, voted out with it, or any other exit).
-   - Keep `end_notes` as `null` when `end_week` is `null`.
-   - When an advantage transfers in a later week, end the original entry and add a new entry for the recipient.
-10. Self-check consistency across the whole season:
+10. Ensure `advantages` is complete and accurate:
+    - Keep `acquisition_notes` limited to how the advantage was obtained; never mention play/transfer/vote outcomes there.
+    - Set `end_week` and `end_notes` when an advantage leaves the game (played, expired, transferred, voted out with it, or any other exit).
+    - Keep `end_notes` as `null` when `end_week` is `null`.
+    - When an advantage transfers in a later week, end the original entry and add a new entry for the recipient.
+11. Self-check consistency across the whole season:
+    - Contestant ids match roster ids.
+    - `final_week` is present and either `null` or equal to the latest elimination week.
+    - Elimination outcomes and tribe membership timelines do not conflict.
+    - Advantage lifecycle is internally consistent from obtain to end (or ongoing null end).
 
-- Contestant ids match roster ids.
-- Elimination outcomes and tribe membership timelines do not conflict.
-- Advantage lifecycle is internally consistent from obtain to end (or ongoing null end).
-
-11. Return a concise summary of created/changed/fixed items and include source links.
+12. Return a concise summary of created/changed/fixed items and include source links.

@@ -7,3 +7,4 @@ class SeasonResponse(BaseModel):
     id: str
     season_name: str
     season_number: int | None = None
+    final_week: int | None = None

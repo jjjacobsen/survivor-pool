@@ -42,6 +42,7 @@ Single source of truth for all Survivor season data. This data represents immuta
   _id: ObjectId("..."),
   season_name: "Survivor 47",
   season_number: 47,
+  final_week: 14, // last playable week in this season for pool completion
   air_date: ISODate("2024-09-18"),
   location: "Fiji",
   format: "new_era",
@@ -116,6 +117,8 @@ Single source of truth for all Survivor season data. This data represents immuta
   ]
 }
 ```
+
+`final_week` is the final pick week for a season. Keep it as `null` until that week is known; once known, it should match the latest elimination week. When a pool advances from `final_week`, the pool is completed and remaining active members win (or tie if all are eliminated that week).
 
 Each advantage document stores an `advantage_display_name` alongside the raw `advantage_type` so clients can render a friendly label without their own mapping layer.
 

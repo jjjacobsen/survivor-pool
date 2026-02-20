@@ -1,5 +1,6 @@
 (function () {
   const seasonNumber = 48;
+  const finalWeek = 13;
 
   const contestants = [
     { name: "Kyle Fraser", age: 30, hometown: "Brooklyn, NY", occupation: "Digital Strategist" },
@@ -198,6 +199,7 @@
     air_date: new Date("2025-02-26T00:00:00Z"),
     location: "Fiji",
     format: "new_era",
+    final_week: finalWeek,
     contestants,
     eliminations,
     tribe_timeline: tribeTimeline,

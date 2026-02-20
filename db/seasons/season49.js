@@ -1,5 +1,6 @@
 (function () {
   const seasonNumber = 49;
+  const finalWeek = 12;
 
   const contestants = [
     { name: "Nicole Mazullo", age: 26, hometown: "Philadelphia, PA", occupation: "Financial crime consultant" },
@@ -282,6 +283,7 @@
     air_date: new Date("2025-09-24T00:00:00Z"),
     location: "Fiji",
     format: "new_era",
+    final_week: finalWeek,
     contestants,
     eliminations,
     tribe_timeline: tribeTimeline,
