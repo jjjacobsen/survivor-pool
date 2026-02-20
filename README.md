@@ -98,20 +98,6 @@ mise frontend
 
 - ✅ `semgrep scan` was run to find and fix security vulnerabilities; rerun it after meaningful backend changes.
 
-## AI Prompt for Week Updates
-
-Whenever I want AI to extend the static Survivor data, this prompt nails the next week's events:
-
-```text
-I have the information of survivor events in db/seasons/season__.js up through week x. I'd like you to add the events for week y. Make sure to get all eliminations, tribe changes, and advantages.
-
-Advantage rules:
-- Use the acquisition_notes field to describe only how the advantage was obtained; never mention when it was played, transferred, or a vote outcome.
-- Add `end_week` for when the advantage leaves the game (played, expired, transferred, voted out with it, or anything else) and `end_notes` with a brief explanation of what happened.
-
-Use fetch mcp. Double check yourself to make sure the data is accurate. Use sources like [Survivor Wiki](https://survivor.fandom.com/) or [Survivor recaps, reviews, data, and records](https://www.truedorktimes.com/)
-```
-
 ## Project Layout
 
 ```text

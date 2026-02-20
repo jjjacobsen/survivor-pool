@@ -1,0 +1,7 @@
+interface:
+  display_name: "Survivor Week Updates"
+  short_description: "Add weekly Survivor season data updates"
+  default_prompt: "Use $survivor-week-updates to add the next week of eliminations, tribe changes, and advantages to a season file."
+
+policy:
+  allow_implicit_invocation: false
