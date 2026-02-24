@@ -1,6 +1,6 @@
 (function () {
   const seasonNumber = 49;
-  const finalWeek = 12;
+  const finalWeek = 13;
 
   const contestants = [
     { name: "Nicole Mazullo", age: 26, hometown: "Philadelphia, PA", occupation: "Financial crime consultant" },
@@ -8,12 +8,12 @@
     { name: "Sage Ahrens-Nichols", age: 30, hometown: "Olympia, WA", occupation: "Clinical social worker" },
     { name: "Sophia \"Sophi\" Balerdi", age: 27, hometown: "Miami, FL", occupation: "Entrepreneur" },
     { name: "Michelle \"MC\" Chukwujekwu", age: 29, hometown: "San Diego, CA", occupation: "Fitness trainer" },
-    { name: "Shannon Fairweather", age: 28, hometown: "Boston, MA", occupation: "Wellness specialist" },
-    { name: "Jeremiah Ing", age: 39, hometown: "Toronto, Ontario", occupation: "Global events manager" },
-    { name: "Jake Latimer", age: 36, hometown: "St. Albert, Alberta", occupation: "Correctional officer" },
+    { name: "Shannon Fairweather", age: 27, hometown: "Boston, MA", occupation: "Wellness specialist" },
+    { name: "Jeremiah Ing", age: 38, hometown: "Toronto, Ontario", occupation: "Global events manager" },
+    { name: "Jake Latimer", age: 35, hometown: "St. Albert, Alberta", occupation: "Correctional officer" },
     { name: "Savannah Louie", age: 31, hometown: "Atlanta, GA", occupation: "Former reporter" },
-    { name: "Kristina Mills", age: 36, hometown: "Edmond, OK", occupation: "MBA career coach" },
-    { name: "Alex Moore", age: 27, hometown: "Washington, DC", occupation: "Political comms director" },
+    { name: "Kristina Mills", age: 35, hometown: "Edmond, OK", occupation: "MBA career coach" },
+    { name: "Alex Moore", age: 26, hometown: "Washington, DC", occupation: "Political comms director" },
     { name: "Nate Moore", age: 47, hometown: "Hermosa Beach, CA", occupation: "Film producer" },
     { name: "Jawan Pitts", age: 28, hometown: "Los Angeles, CA", occupation: "Video editor" },
     { name: "Steven Ramm", age: 35, hometown: "Denver, CO", occupation: "Rocket scientist" },
@@ -42,7 +42,9 @@
     { week: 9, eliminated_contestant_id: idOf("Alex Moore") },
     { week: 10, eliminated_contestant_id: idOf("Jawan Pitts") },
     { week: 11, eliminated_contestant_id: idOf("Sophia \"Sophie\" Segreti") },
-    { week: 12, eliminated_contestant_id: idOf("Steven Ramm") }
+    { week: 12, eliminated_contestant_id: idOf("Steven Ramm") },
+    { week: 13, eliminated_contestant_id: idOf("Kristina Mills") },
+    { week: 13, eliminated_contestant_id: idOf("Rizo Velovic") }
   ];
 
   const tribeTimeline = [
@@ -103,7 +105,7 @@
             idOf("Nate Moore"),
             idOf("Rizo Velovic"),
             idOf("Savannah Louie"),
-            idOf("Sophia \"Sophi\" Balerdi")
+            idOf("Sophia \"Sophie\" Segreti")
           ]
         },
         {
@@ -115,7 +117,7 @@
             idOf("Michelle \"MC\" Chukwujekwu"),
             idOf("Sage Ahrens-Nichols"),
             idOf("Shannon Fairweather"),
-            idOf("Sophia \"Sophie\" Segreti"),
+            idOf("Sophia \"Sophi\" Balerdi"),
             idOf("Steven Ramm")
           ]
         }
@@ -212,8 +214,8 @@
       contestant_id: idOf("Rizo Velovic"),
       obtained_week: 4,
       acquisition_notes: "Retrieved the idol from Hina's underwater chest after allies dug up the beware clue and key",
-      end_week: null,
-      end_notes: null
+      end_week: 13,
+      end_notes: "Played at the final-five Tribal; the idol recipient received no votes"
     },
     {
       id: "kip_sophi_balerdi_1",
@@ -274,6 +276,16 @@
       acquisition_notes: "Won the vote blocker during the Day 20 island run journey",
       end_week: 12,
       end_notes: "Played before leaving camp to block Savannah's vote at the week 12 Tribal, but Steven was voted out 4-1"
+    },
+    {
+      id: "challenge_advantage_sophi_balerdi_1",
+      advantage_type: "challenge_advantage",
+      advantage_display_name: "Challenge Advantage",
+      contestant_id: idOf("Sophia \"Sophi\" Balerdi"),
+      obtained_week: 13,
+      acquisition_notes: "Found a clue while collecting firewood on day 24 and won the final-five advantage race",
+      end_week: 13,
+      end_notes: "Used in the final-five immunity challenge"
     }
   ];
 
