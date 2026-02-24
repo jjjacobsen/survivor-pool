@@ -3,24 +3,24 @@
   const finalWeek = 13;
 
   const contestants = [
-    { name: "Kyle Fraser", age: 30, hometown: "Brooklyn, NY", occupation: "Digital Strategist" },
-    { name: "Eva Erickson", age: 23, hometown: "Providence, RI", occupation: "Biotech Researcher" },
-    { name: "Joe Hunter", age: 45, hometown: "West Sacramento, CA", occupation: "Firefighter" },
-    { name: "Kamilla Karthigesu", age: 30, hometown: "Foster City, CA", occupation: "Product Manager" },
-    { name: "David Kinne", age: 38, hometown: "Buena Park, CA", occupation: "Elementary Teacher" },
-    { name: "Chrissy Sarnowsky", age: 54, hometown: "Chicago, IL", occupation: "Tax Consultant" },
-    { name: "Mitch Guerra", age: 34, hometown: "Waco, TX", occupation: "Fitness Coach" },
-    { name: "Shauhin Davari", age: 37, hometown: "Costa Mesa, CA", occupation: "Sports Agent" },
-    { name: "Mary Zheng", age: 30, hometown: "Philadelphia, PA", occupation: "Data Analyst" },
-    { name: "Star Toomey", age: 27, hometown: "Augusta, GA", occupation: "Graphic Designer" },
-    { name: "Cedrek McFadden", age: 45, hometown: "Greenville, SC", occupation: "Youth Pastor" },
-    { name: "Saiounia Hughley", age: 29, hometown: "Simi Valley, CA", occupation: "Marketing Specialist" },
-    { name: "Charity Nelms", age: 33, hometown: "St. Petersburg, FL", occupation: "Real Estate Broker" },
-    { name: "Bianca Roses", age: 32, hometown: "Arlington, VA", occupation: "Public Defender" },
-    { name: "Thomas Krottinger", age: 34, hometown: "Los Angeles, CA", occupation: "Entrepreneur" },
-    { name: "Justin Pioppi", age: 29, hometown: "Winthrop, MA", occupation: "Bartender" },
-    { name: "Kevin Leung", age: 33, hometown: "Livermore, CA", occupation: "Mechanical Engineer" },
-    { name: "Stephanie Berger", age: 37, hometown: "Brooklyn, NY", occupation: "Nurse Practitioner" }
+    { name: "Kyle Fraser", age: 31, hometown: "Brooklyn, NY", occupation: "Attorney" },
+    { name: "Eva Erickson", age: 24, hometown: "Providence, RI", occupation: "PhD Candidate" },
+    { name: "Joe Hunter", age: 45, hometown: "West Sacramento, CA", occupation: "Fire Captain" },
+    { name: "Kamilla Karthigesu", age: 31, hometown: "Foster City, CA", occupation: "Software Engineer" },
+    { name: "David Kinne", age: 39, hometown: "Long Beach, CA", occupation: "Stunt Performer" },
+    { name: "Chrissy Sarnowsky", age: 55, hometown: "Chicago, IL", occupation: "Fire Lieutenant" },
+    { name: "Mitch Guerra", age: 34, hometown: "Waco, TX", occupation: "P.E. Coach" },
+    { name: "Shauhin Davari", age: 37, hometown: "Costa Mesa, CA", occupation: "Debate Professor" },
+    { name: "Mary Zheng", age: 31, hometown: "Philadelphia, PA", occupation: "Substance Abuse Counselor" },
+    { name: "Star Toomey", age: 28, hometown: "Augusta, GA", occupation: "Sales Expert" },
+    { name: "Cedrek McFadden", age: 45, hometown: "Greenville, SC", occupation: "Surgeon" },
+    { name: "Saiounia Hughley", age: 30, hometown: "Simi Valley, CA", occupation: "Marketing Professional" },
+    { name: "Charity Nelms", age: 34, hometown: "St. Petersburg, FL", occupation: "Flight Attendant" },
+    { name: "Bianca Roses", age: 33, hometown: "Arlington, VA", occupation: "PR Consultant" },
+    { name: "Thomas Krottinger", age: 34, hometown: "Los Angeles, CA", occupation: "Music Executive" },
+    { name: "Justin Pioppi", age: 29, hometown: "Winthrop, MA", occupation: "Pizzeria Manager" },
+    { name: "Kevin Leung", age: 34, hometown: "Livermore, CA", occupation: "Finance Manager" },
+    { name: "Stephanie Berger", age: 38, hometown: "Brooklyn, NY", occupation: "Tech Product Lead" }
   ].map(c => ({
     id: idOf(c.name),
     name: c.name,
@@ -66,16 +66,16 @@
     {
       week: 4,
       event: "swap",
-      notes: "Three-tribe swap to 5-5-5; membership best-effort from aired data",
+      notes: "Day 8 tribe switch into three tribes of five",
       tribes: [
         { name: "Lagi", color: "purple", members: [
-          idOf("Joe Hunter"), idOf("Eva Erickson"), idOf("Kyle Fraser"), idOf("Kamilla Karthigesu"), idOf("David Kinne")
+          idOf("Charity Nelms"), idOf("David Kinne"), idOf("Eva Erickson"), idOf("Mary Zheng"), idOf("Star Toomey")
         ]},
         { name: "Civa", color: "orange", members: [
-          idOf("Mitch Guerra"), idOf("Chrissy Sarnowsky"), idOf("Bianca Roses"), idOf("Saiounia Hughley"), idOf("Cedrek McFadden")
+          idOf("Bianca Roses"), idOf("Cedrek McFadden"), idOf("Chrissy Sarnowsky"), idOf("Mitch Guerra"), idOf("Saiounia Hughley")
         ]},
         { name: "Vula", color: "green", members: [
-          idOf("Mary Zheng"), idOf("Shauhin Davari"), idOf("Star Toomey"), idOf("Thomas Krottinger"), idOf("Charity Nelms")
+          idOf("Joe Hunter"), idOf("Kamilla Karthigesu"), idOf("Kyle Fraser"), idOf("Shauhin Davari"), idOf("Thomas Krottinger")
         ]}
       ]
     },
@@ -98,8 +98,8 @@
       contestant_id: idOf("Saiounia Hughley"),
       obtained_week: 1,
       acquisition_notes: "Found via Beware Advantage on Vula",
-      end_week: 3,
-      end_notes: "Played at Vula's week 3 Tribal during the null-vote chaos; Justin was idoled out"
+      end_week: 2,
+      end_notes: "Played at Vula's week 2 Tribal Council"
     },
     {
       id: "idol_kyle_1",
@@ -169,7 +169,17 @@
       obtained_week: 3,
       acquisition_notes: "Won an extra vote on the day 7 dice-roll journey",
       end_week: 4,
-      end_notes: "Burned the extra vote against Thomas at the first post-swap Tribal"
+      end_notes: "Transferred to Kyle before the post-swap Vula Tribal Council"
+    },
+    {
+      id: "extra_vote_kyle_1",
+      advantage_type: "extra_vote",
+      advantage_display_name: "Extra Vote",
+      contestant_id: idOf("Kyle Fraser"),
+      obtained_week: 4,
+      acquisition_notes: "Received from Kamilla before the post-swap Vula Tribal Council",
+      end_week: 4,
+      end_notes: "Used at the post-swap Vula Tribal Council where Thomas was voted out"
     },
     {
       id: "safety_without_power_eva_1",
