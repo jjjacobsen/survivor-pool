@@ -48,7 +48,7 @@ Single source of truth for all Survivor season data. This data represents immuta
   format: "new_era",
   created_at: ISODate("..."),
 
-  // Cast roster (immutable identity details)
+  // Cast roster (immutable identity details; age is at time of this season, not current age)
   contestants: [
     {
       id: "teeny_chirichillo",

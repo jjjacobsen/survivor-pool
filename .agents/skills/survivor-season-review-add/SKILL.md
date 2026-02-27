@@ -24,6 +24,7 @@ Assume the target season has already completed airing.
    - Preserve naming patterns for arrays and fields.
 6. Enforce contestant schema exactly:
    - `id`, `name`, `age`, `occupation`, `hometown`
+   - `age` must be the contestant's age at the time of that season (cast age), not their current age.
    - Do not add or remove contestant fields.
 7. Ensure `eliminations` is complete and accurate:
    - Include one entry per elimination event (including same-week double boots when applicable).

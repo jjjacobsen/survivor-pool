@@ -29,6 +29,7 @@ Use this workflow to extend season files with new weekly show events.
 8. Preserve file style and structure:
    - Use `idOf("Name")` for contestant references.
    - Keep existing field names and ordering.
+   - Keep `contestants[].age` as age at the time of that season (cast age), not current age; only change it if the stored season-time age is incorrect.
    - Do not rename existing constants or restructure the file.
 9. Self-check:
    - Week numbers are correct and consistent.
