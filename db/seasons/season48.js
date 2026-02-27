@@ -3,24 +3,24 @@
   const finalWeek = 13;
 
   const contestants = [
-    { name: "Kyle Fraser", age: 31, hometown: "Brooklyn, NY", occupation: "Attorney" },
-    { name: "Eva Erickson", age: 24, hometown: "Providence, RI", occupation: "PhD Candidate" },
+    { name: "Kyle Fraser", age: 30, hometown: "Brooklyn, NY", occupation: "Attorney" },
+    { name: "Eva Erickson", age: 23, hometown: "Providence, RI", occupation: "PhD Candidate" },
     { name: "Joe Hunter", age: 45, hometown: "West Sacramento, CA", occupation: "Fire Captain" },
-    { name: "Kamilla Karthigesu", age: 31, hometown: "Foster City, CA", occupation: "Software Engineer" },
-    { name: "David Kinne", age: 39, hometown: "Long Beach, CA", occupation: "Stunt Performer" },
-    { name: "Chrissy Sarnowsky", age: 55, hometown: "Chicago, IL", occupation: "Fire Lieutenant" },
+    { name: "Kamilla Karthigesu", age: 30, hometown: "Foster City, CA", occupation: "Software Engineer" },
+    { name: "David Kinne", age: 38, hometown: "Buena Park, CA", occupation: "Stunt Performer" },
+    { name: "Chrissy Sarnowsky", age: 54, hometown: "Chicago, IL", occupation: "Fire Lieutenant" },
     { name: "Mitch Guerra", age: 34, hometown: "Waco, TX", occupation: "P.E. Coach" },
     { name: "Shauhin Davari", age: 37, hometown: "Costa Mesa, CA", occupation: "Debate Professor" },
-    { name: "Mary Zheng", age: 31, hometown: "Philadelphia, PA", occupation: "Substance Abuse Counselor" },
-    { name: "Star Toomey", age: 28, hometown: "Augusta, GA", occupation: "Sales Expert" },
+    { name: "Mary Zheng", age: 30, hometown: "Philadelphia, PA", occupation: "Substance Abuse Counselor" },
+    { name: "Star Toomey", age: 27, hometown: "Augusta, GA", occupation: "Sales Expert" },
     { name: "Cedrek McFadden", age: 45, hometown: "Greenville, SC", occupation: "Surgeon" },
-    { name: "Saiounia Hughley", age: 30, hometown: "Simi Valley, CA", occupation: "Marketing Professional" },
-    { name: "Charity Nelms", age: 34, hometown: "St. Petersburg, FL", occupation: "Flight Attendant" },
-    { name: "Bianca Roses", age: 33, hometown: "Arlington, VA", occupation: "PR Consultant" },
+    { name: "Saiounia Hughley", age: 29, hometown: "Simi Valley, CA", occupation: "Marketing Professional" },
+    { name: "Charity Nelms", age: 33, hometown: "St. Petersburg, FL", occupation: "Flight Attendant" },
+    { name: "Bianca Roses", age: 32, hometown: "Arlington, VA", occupation: "PR Consultant" },
     { name: "Thomas Krottinger", age: 34, hometown: "Los Angeles, CA", occupation: "Music Executive" },
     { name: "Justin Pioppi", age: 29, hometown: "Winthrop, MA", occupation: "Pizzeria Manager" },
-    { name: "Kevin Leung", age: 34, hometown: "Livermore, CA", occupation: "Finance Manager" },
-    { name: "Stephanie Berger", age: 38, hometown: "Brooklyn, NY", occupation: "Tech Product Lead" }
+    { name: "Kevin Leung", age: 33, hometown: "Livermore, CA", occupation: "Finance Manager" },
+    { name: "Stephanie Berger", age: 37, hometown: "Brooklyn, NY", occupation: "Tech Product Lead" }
   ].map(c => ({
     id: idOf(c.name),
     name: c.name,
