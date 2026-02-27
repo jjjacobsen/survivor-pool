@@ -215,7 +215,7 @@
       obtained_week: 4,
       acquisition_notes: "Retrieved the idol from Hina's underwater chest after allies dug up the beware clue and key",
       end_week: 13,
-      end_notes: "Played at the final-five Tribal; the idol recipient received no votes"
+      end_notes: "Played on Savannah at the final-five Tribal Council and all votes landed on Kristina instead"
     },
     {
       id: "kip_sophi_balerdi_1",
@@ -258,12 +258,22 @@
       end_notes: "Played on Steven at Jawan's boot; no votes were cast for him"
     },
     {
+      id: "challenge_advantage_savannah_louie_1",
+      advantage_type: "challenge_advantage",
+      advantage_display_name: "Challenge Advantage",
+      contestant_id: idOf("Savannah Louie"),
+      obtained_week: 8,
+      acquisition_notes: "Won the overall individual reward and immunity challenge to claim a challenge advantage",
+      end_week: 9,
+      end_notes: "Cashed in by banking her vote at the week 9 Tribal Council to receive an extra vote"
+    },
+    {
       id: "extra_vote_savannah_louie_1",
       advantage_type: "extra_vote",
       advantage_display_name: "Extra Vote",
       contestant_id: idOf("Savannah Louie"),
-      obtained_week: 8,
-      acquisition_notes: "Banked her vote at the week 8 Tribal to earn an extra vote",
+      obtained_week: 9,
+      acquisition_notes: "Received after banking her vote at the week 9 Tribal Council",
       end_week: 10,
       end_notes: "Used to cast two votes at the week 10 Tribal where Jawan left (5-3-1)"
     },
