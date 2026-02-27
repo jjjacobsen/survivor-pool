@@ -194,8 +194,8 @@
       contestant_id: idOf("Alex Moore"),
       obtained_week: 2,
       acquisition_notes: "Opened the Kele beware idol on Day 4, lost his vote, then dug by the well after the Ep2 loss to unearth the idol",
-      end_week: 9,
-      end_notes: "Blindsided with the idol unplayed at the week 9 Tribal (6-2-1 vote on Alex)"
+      end_week: 3,
+      end_notes: "Played on himself at week 3 Tribal Council and negated the votes against him as Jeremiah was voted out"
     },
     {
       id: "idol_mc_chukwujekwu_1",
