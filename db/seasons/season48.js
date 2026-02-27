@@ -182,6 +182,16 @@
       end_notes: "Used at the post-swap Vula Tribal Council where Thomas was voted out"
     },
     {
+      id: "extra_vote_eva_1",
+      advantage_type: "extra_vote",
+      advantage_display_name: "Extra Vote",
+      contestant_id: idOf("Eva Erickson"),
+      obtained_week: 9,
+      acquisition_notes: "Took the extra vote option first from the Night 16 advantage stash",
+      end_week: 9,
+      end_notes: "Risked it on the second pull from the stash and swapped it for Safety Without Power"
+    },
+    {
       id: "safety_without_power_eva_1",
       advantage_type: "safety_without_power",
       advantage_display_name: "Safety Without Power",

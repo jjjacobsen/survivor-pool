@@ -3,24 +3,24 @@
   const finalWeek = 13;
 
   const contestants = [
-    { name: "Nicole Mazullo", age: 26, hometown: "Philadelphia, PA", occupation: "Financial crime consultant" },
-    { name: "Kimberly \"Annie\" Davis", age: 49, hometown: "Austin, TX", occupation: "Musician" },
-    { name: "Sage Ahrens-Nichols", age: 30, hometown: "Olympia, WA", occupation: "Clinical social worker" },
-    { name: "Sophia \"Sophi\" Balerdi", age: 27, hometown: "Miami, FL", occupation: "Entrepreneur" },
-    { name: "Michelle \"MC\" Chukwujekwu", age: 29, hometown: "San Diego, CA", occupation: "Fitness trainer" },
-    { name: "Shannon Fairweather", age: 27, hometown: "Boston, MA", occupation: "Wellness specialist" },
-    { name: "Jeremiah Ing", age: 38, hometown: "Toronto, Ontario", occupation: "Global events manager" },
-    { name: "Jake Latimer", age: 35, hometown: "St. Albert, Alberta", occupation: "Correctional officer" },
-    { name: "Savannah Louie", age: 31, hometown: "Atlanta, GA", occupation: "Former reporter" },
-    { name: "Kristina Mills", age: 35, hometown: "Edmond, OK", occupation: "MBA career coach" },
-    { name: "Alex Moore", age: 26, hometown: "Washington, DC", occupation: "Political comms director" },
-    { name: "Nate Moore", age: 47, hometown: "Hermosa Beach, CA", occupation: "Film producer" },
-    { name: "Jawan Pitts", age: 28, hometown: "Los Angeles, CA", occupation: "Video editor" },
-    { name: "Steven Ramm", age: 35, hometown: "Denver, CO", occupation: "Rocket scientist" },
-    { name: "Sophia \"Sophie\" Segreti", age: 31, hometown: "New York City, NY", occupation: "Strategy associate" },
-    { name: "Jason Treul", age: 32, hometown: "Santa Ana, CA", occupation: "Law clerk" },
-    { name: "Rizo Velovic", age: 25, hometown: "Yonkers, NY", occupation: "Tech sales" },
-    { name: "Matthew \"Matt\" Williams", age: 52, hometown: "St. George, UT", occupation: "Airport ramp agent" }
+    { name: "Nicole Mazullo", age: 26, hometown: "Philadelphia, PA", occupation: "Financial Crime Consultant" },
+    { name: "Annie Davis", age: 49, hometown: "Austin, TX", occupation: "Musician" },
+    { name: "Sage Ahrens-Nichols", age: 30, hometown: "Olympia, WA", occupation: "Clinical Social Worker" },
+    { name: "Sophi Balerdi", age: 27, hometown: "Miami, FL", occupation: "Entrepreneur" },
+    { name: "MC Chukwujekwu", age: 29, hometown: "San Diego, CA", occupation: "Fitness Trainer" },
+    { name: "Shannon Fairweather", age: 27, hometown: "Boston, MA", occupation: "Wellness Specialist" },
+    { name: "Jeremiah Ing", age: 38, hometown: "Toronto, ON", occupation: "Global Events Manager" },
+    { name: "Jake Latimer", age: 35, hometown: "St. Albert, AB", occupation: "Correctional Officer" },
+    { name: "Savannah Louie", age: 31, hometown: "Atlanta, GA", occupation: "Former Reporter" },
+    { name: "Kristina Mills", age: 35, hometown: "Edmond, OK", occupation: "MBA Career Coach" },
+    { name: "Alex Moore", age: 26, hometown: "Washington, DC", occupation: "Political Comms Director" },
+    { name: "Nate Moore", age: 47, hometown: "Hermosa Beach, CA", occupation: "Film Producer" },
+    { name: "Jawan Pitts", age: 28, hometown: "Los Angeles, CA", occupation: "Video Editor" },
+    { name: "Steven Ramm", age: 35, hometown: "Denver, CO", occupation: "Rocket Scientist" },
+    { name: "Sophie Segreti", age: 31, hometown: "New York, NY", occupation: "Strategy Associate" },
+    { name: "Jason Treul", age: 32, hometown: "Santa Ana, CA", occupation: "Law Clerk" },
+    { name: "Rizo Velovic", age: 25, hometown: "Yonkers, NY", occupation: "Tech Sales" },
+    { name: "Matt Williams", age: 52, hometown: "St. George, UT", occupation: "Airport Ramp Agent" }
   ].map(c => ({
     id: idOf(c.name),
     name: c.name,
@@ -31,17 +31,17 @@
 
   const eliminations = [
     { week: 1, eliminated_contestant_id: idOf("Nicole Mazullo") },
-    { week: 2, eliminated_contestant_id: idOf("Kimberly \"Annie\" Davis") },
+    { week: 2, eliminated_contestant_id: idOf("Annie Davis") },
     { week: 3, eliminated_contestant_id: idOf("Jake Latimer") },
     { week: 3, eliminated_contestant_id: idOf("Jeremiah Ing") },
-    { week: 4, eliminated_contestant_id: idOf("Matthew \"Matt\" Williams") },
+    { week: 4, eliminated_contestant_id: idOf("Matt Williams") },
     { week: 5, eliminated_contestant_id: idOf("Jason Treul") },
     { week: 6, eliminated_contestant_id: idOf("Shannon Fairweather") },
     { week: 7, eliminated_contestant_id: idOf("Nate Moore") },
-    { week: 8, eliminated_contestant_id: idOf("Michelle \"MC\" Chukwujekwu") },
+    { week: 8, eliminated_contestant_id: idOf("MC Chukwujekwu") },
     { week: 9, eliminated_contestant_id: idOf("Alex Moore") },
     { week: 10, eliminated_contestant_id: idOf("Jawan Pitts") },
-    { week: 11, eliminated_contestant_id: idOf("Sophia \"Sophie\" Segreti") },
+    { week: 11, eliminated_contestant_id: idOf("Sophie Segreti") },
     { week: 12, eliminated_contestant_id: idOf("Steven Ramm") },
     { week: 13, eliminated_contestant_id: idOf("Kristina Mills") },
     { week: 13, eliminated_contestant_id: idOf("Rizo Velovic") }
@@ -57,8 +57,8 @@
           color: "#32AAD6",
           members: [
             idOf("Nicole Mazullo"),
-            idOf("Kimberly \"Annie\" Davis"),
-            idOf("Sophia \"Sophi\" Balerdi"),
+            idOf("Annie Davis"),
+            idOf("Sophi Balerdi"),
             idOf("Jeremiah Ing"),
             idOf("Jake Latimer"),
             idOf("Alex Moore")
@@ -80,12 +80,12 @@
           name: "Hina",
           color: "#FEDA47",
           members: [
-            idOf("Michelle \"MC\" Chukwujekwu"),
+            idOf("MC Chukwujekwu"),
             idOf("Kristina Mills"),
             idOf("Steven Ramm"),
-            idOf("Sophia \"Sophie\" Segreti"),
+            idOf("Sophie Segreti"),
             idOf("Jason Treul"),
-            idOf("Matthew \"Matt\" Williams")
+            idOf("Matt Williams")
           ]
         }
       ]
@@ -101,11 +101,11 @@
           members: [
             idOf("Jason Treul"),
             idOf("Jawan Pitts"),
-            idOf("Matthew \"Matt\" Williams"),
+            idOf("Matt Williams"),
             idOf("Nate Moore"),
             idOf("Rizo Velovic"),
             idOf("Savannah Louie"),
-            idOf("Sophia \"Sophie\" Segreti")
+            idOf("Sophi Balerdi")
           ]
         },
         {
@@ -114,10 +114,10 @@
           members: [
             idOf("Alex Moore"),
             idOf("Kristina Mills"),
-            idOf("Michelle \"MC\" Chukwujekwu"),
+            idOf("MC Chukwujekwu"),
             idOf("Sage Ahrens-Nichols"),
             idOf("Shannon Fairweather"),
-            idOf("Sophia \"Sophi\" Balerdi"),
+            idOf("Sophie Segreti"),
             idOf("Steven Ramm")
           ]
         }
@@ -132,10 +132,10 @@
           name: "Hina",
           color: "#FEDA47",
           members: [
-            idOf("Michelle \"MC\" Chukwujekwu"),
+            idOf("MC Chukwujekwu"),
             idOf("Rizo Velovic"),
             idOf("Savannah Louie"),
-            idOf("Sophia \"Sophi\" Balerdi")
+            idOf("Sophi Balerdi")
           ]
         },
         {
@@ -155,7 +155,7 @@
             idOf("Alex Moore"),
             idOf("Kristina Mills"),
             idOf("Nate Moore"),
-            idOf("Sophia \"Sophie\" Segreti")
+            idOf("Sophie Segreti")
           ]
         }
       ]
@@ -172,13 +172,13 @@
             idOf("Alex Moore"),
             idOf("Jawan Pitts"),
             idOf("Kristina Mills"),
-            idOf("Michelle \"MC\" Chukwujekwu"),
+            idOf("MC Chukwujekwu"),
             idOf("Nate Moore"),
             idOf("Rizo Velovic"),
             idOf("Sage Ahrens-Nichols"),
             idOf("Savannah Louie"),
-            idOf("Sophia \"Sophi\" Balerdi"),
-            idOf("Sophia \"Sophie\" Segreti"),
+            idOf("Sophi Balerdi"),
+            idOf("Sophie Segreti"),
             idOf("Steven Ramm")
           ]
         }
@@ -201,7 +201,7 @@
       id: "idol_mc_chukwujekwu_1",
       advantage_type: "hidden_immunity_idol",
       advantage_display_name: "Hidden Immunity Idol",
-      contestant_id: idOf("Michelle \"MC\" Chukwujekwu"),
+      contestant_id: idOf("MC Chukwujekwu"),
       obtained_week: 7,
       acquisition_notes: "Unlocked the merge rehidden idol with the massive key ring after her RC-losing group couldn't compete for immunity",
       end_week: 7,
@@ -221,7 +221,7 @@
       id: "kip_sophi_balerdi_1",
       advantage_type: "knowledge_is_power",
       advantage_display_name: "Knowledge is Power",
-      contestant_id: idOf("Sophia \"Sophi\" Balerdi"),
+      contestant_id: idOf("Sophi Balerdi"),
       obtained_week: 6,
       acquisition_notes: "Spotted the Knowledge is Power parchment near Hina's camp after the three-tribe expansion",
       end_week: 12,
@@ -281,9 +281,9 @@
       id: "challenge_advantage_sophi_balerdi_1",
       advantage_type: "challenge_advantage",
       advantage_display_name: "Challenge Advantage",
-      contestant_id: idOf("Sophia \"Sophi\" Balerdi"),
+      contestant_id: idOf("Sophi Balerdi"),
       obtained_week: 13,
-      acquisition_notes: "Found a clue while collecting firewood on day 24 and won the final-five advantage race",
+      acquisition_notes: "Solved the Day 24 boat-puzzle table clue and found the challenge advantage marker in a tree",
       end_week: 13,
       end_notes: "Used in the final-five immunity challenge"
     }
