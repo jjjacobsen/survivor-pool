@@ -54,6 +54,7 @@ class _HomePageState extends State<HomePage> {
   List<PendingInvite> _pendingInvites = const [];
   bool _isLoadingInvites = false;
   final Set<String> _inviteRequests = <String>{};
+  final Map<String, DateTime> _messageBoardSeenAt = <String, DateTime>{};
 
   Uri _apiUri(String path) => Uri.parse('${ApiConfig.baseUrl}$path');
 
@@ -480,6 +481,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _refreshHome() async {
     await _fetchSeasons();
+    await _loadPools(force: true, loadDefaultContestants: false);
     await _loadInvites();
     final selected = _defaultPoolId;
     if (selected != null) {
@@ -547,6 +549,7 @@ class _HomePageState extends State<HomePage> {
     PoolOption pool,
     bool isOwnerView,
   ) async {
+    _markMessageBoardSeen(pool);
     AppSession.cacheRouteExtra(AppRouteNames.poolMessageBoard, (
       pool: pool,
       userId: widget.user.id,
@@ -556,6 +559,59 @@ class _HomePageState extends State<HomePage> {
       AppRouteNames.poolMessageBoard,
       extra: (pool: pool, userId: widget.user.id, isOwner: isOwnerView),
     );
+  }
+
+  bool _isMessageBoardUpdated(PoolOption pool) {
+    if (pool.ownerId == widget.user.id) {
+      return false;
+    }
+    final updatedAt = pool.announcementUpdatedAt;
+    if (updatedAt == null) {
+      return false;
+    }
+    final seenAt = _messageBoardSeenAt[pool.id];
+    if (seenAt == null) {
+      return true;
+    }
+    return seenAt.isBefore(updatedAt);
+  }
+
+  List<PoolOption> _messageBoardUpdatedPools() {
+    return _pools.where(_isMessageBoardUpdated).toList(growable: false);
+  }
+
+  PoolOption? _resolveMessageBoardUpdatePool(PoolOption? selectedPool) {
+    final updatedPools = _messageBoardUpdatedPools();
+    if (updatedPools.isEmpty) {
+      return null;
+    }
+
+    if (selectedPool != null &&
+        updatedPools.any((pool) => pool.id == selectedPool.id)) {
+      return selectedPool;
+    }
+
+    return updatedPools.first;
+  }
+
+  void _markMessageBoardSeen(PoolOption pool) {
+    final updatedAt = pool.announcementUpdatedAt;
+    if (updatedAt == null) {
+      return;
+    }
+
+    final seenAt = _messageBoardSeenAt[pool.id];
+    if (seenAt != null && !seenAt.isBefore(updatedAt)) {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _messageBoardSeenAt[pool.id] = updatedAt;
+    });
   }
 
   void _handleMissingPool(String poolId) {
@@ -978,14 +1034,15 @@ class _HomePageState extends State<HomePage> {
     final currentPick = (_contestantsForPoolId == selectedPool?.id)
         ? _currentPick
         : null;
-    final hasInvites = _pendingInvites.isNotEmpty;
+    final messageBoardUpdateCount = _messageBoardUpdatedPools().length;
+    final drawerBadgeCount = _pendingInvites.length + messageBoardUpdateCount;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= AppBreakpoints.medium;
         final appBar = isWide
             ? _buildDesktopAppBar(theme: theme)
-            : _buildMobileAppBar(theme, hasInvites: hasInvites);
+            : _buildMobileAppBar(theme, badgeCount: drawerBadgeCount);
 
         final body = isWide
             ? _buildDesktopBody(
@@ -1026,12 +1083,12 @@ class _HomePageState extends State<HomePage> {
 
   PreferredSizeWidget _buildMobileAppBar(
     ThemeData theme, {
-    required bool hasInvites,
+    required int badgeCount,
   }) {
     return AppBar(
       automaticallyImplyLeading: false,
       leadingWidth: 56,
-      leading: _buildMobileDrawerButton(theme, hasInvites: hasInvites),
+      leading: _buildMobileDrawerButton(theme, badgeCount: badgeCount),
       title: const Text('Survivor Pool'),
       backgroundColor: theme.colorScheme.primary,
       foregroundColor: theme.colorScheme.onPrimary,
@@ -1039,11 +1096,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildMobileDrawerButton(ThemeData theme, {required bool hasInvites}) {
+  Widget _buildMobileDrawerButton(ThemeData theme, {required int badgeCount}) {
     final icon = Icon(Icons.menu, color: theme.colorScheme.onPrimary);
-    final showBadge = hasInvites && _pendingInvites.isNotEmpty;
+    final showBadge = badgeCount > 0;
     final buttonIcon = showBadge
-        ? Badge.count(count: _pendingInvites.length, child: icon)
+        ? Badge.count(count: badgeCount, child: icon)
         : icon;
 
     final isBusy = _isUpdatingDefault || _isLoadingPools;
@@ -1088,7 +1145,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildWebRefreshButton(ThemeData theme) {
-    final isBusy = _isLoadingInvites || _isLoadingContestants;
+    final isBusy =
+        _isLoadingInvites || _isLoadingContestants || _isLoadingPools;
     final icon = isBusy
         ? SizedBox(
             width: 20,
@@ -1219,10 +1277,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   List<Widget> _buildSidebarItems(ThemeData theme, PoolOption? selectedPool) {
+    final updatedPool = _resolveMessageBoardUpdatePool(selectedPool);
     return [
       _buildPoolListCard(theme, selectedPool),
       const SizedBox(height: 16),
       _buildInvitesBanner(theme),
+      if (updatedPool != null) ...[
+        const SizedBox(height: 16),
+        _buildMessageBoardUpdateBanner(theme, updatedPool),
+      ],
     ];
   }
 
@@ -1572,6 +1635,53 @@ class _HomePageState extends State<HomePage> {
               ..._pendingInvites.map(
                 (invite) => _buildInviteRow(theme, invite),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageBoardUpdateBanner(ThemeData theme, PoolOption pool) {
+    final isOwnerView = pool.ownerId == null || pool.ownerId == widget.user.id;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.forum_outlined, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
+                Text(
+                  'Message board updated',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              pool.name,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonal(
+                onPressed: () {
+                  _scaffoldKey.currentState?.closeDrawer();
+                  _handleViewMessageBoard(pool, isOwnerView);
+                },
+                child: const Text('View message board'),
+              ),
+            ),
           ],
         ),
       ),

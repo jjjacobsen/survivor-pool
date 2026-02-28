@@ -57,7 +57,7 @@ repos:
         pass_filenames: true
       - id: flutter-analyze
         name: flutter analyze
-        entry: bash -c 'cd frontend/survivor_pool && flutter analyze'
+        entry: bash -c 'cd frontend/survivor_pool && mise x flutter@3.35 -- flutter analyze'
         language: system
         files: frontend/survivor_pool/
         # Run command exactly as written
