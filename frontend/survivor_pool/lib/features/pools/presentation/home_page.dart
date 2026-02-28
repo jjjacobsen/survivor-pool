@@ -477,6 +477,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _refreshHome() async {
+    await _fetchSeasons();
     await _loadInvites();
     final selected = _defaultPoolId;
     if (selected != null) {
@@ -593,15 +594,6 @@ class _HomePageState extends State<HomePage> {
       });
       unawaited(_loadPools(force: true));
     }
-  }
-
-  Future<bool> _ensureSeasonsLoaded() async {
-    if (_seasons.isNotEmpty) {
-      return true;
-    }
-
-    final loaded = await _fetchSeasons();
-    return loaded;
   }
 
   Future<ContestantDetailResponse?> _fetchContestantDetail(
@@ -827,7 +819,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _showCreatePoolDialog() async {
-    final ready = await _ensureSeasonsLoaded();
+    final ready = await _fetchSeasons();
     if (!mounted || !ready) {
       return;
     }
