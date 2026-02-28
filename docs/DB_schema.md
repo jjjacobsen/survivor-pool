@@ -140,7 +140,9 @@ Clean game containers that reference season data. No embedded cast data.
   ownerId: ObjectId("..."), // reference to user who owns the pool
   seasonId: ObjectId("..."), // reference to seasons collection
   created_at: ISODate("..."),
+  start_week: 3, // week where this pool begins play
   current_week: 3,
+  status: "invite", // invite | open | completed
   settings: {
     pick_deadline_hours: 2, // hours before weekly deadline
     max_members: 50,
@@ -151,6 +153,15 @@ Clean game containers that reference season data. No embedded cast data.
   announcement_updated_at: ISODate("...") // null when never posted
 }
 ```
+
+Pool lifecycle is:
+
+1. create pool
+2. invite stage (`status: "invite"`)
+3. picking stage (`status: "open"`)
+4. completed (`status: "completed"`)
+
+Membership is locked once a pool leaves invite stage.
 
 ### 4. `picks` Collection
 
@@ -186,7 +197,7 @@ Manages the many-to-many relationship between users and pools, with added game s
   joinedAt: ISODate("..."),
 
   // Game status tracking
-  status: "active", // invited, active, eliminated, declined
+  status: "active", // invited, active (joined), eliminated, declined, winner
   announcement_seen_at: ISODate("..."), // when this user last viewed the pool message board, null if never viewed
   elimination_reason: null, // missed_pick | contestant_voted_out | no_options_left
   eliminated_week: null,

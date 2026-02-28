@@ -275,6 +275,25 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= AppBreakpoints.medium;
         if (!isWide) {
+          if (widget.embedded) {
+            return PlatformRefresh(
+              onRefresh: kIsWeb ? null : _loadMembers,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildSearchCard(theme),
+                  const SizedBox(height: 16),
+                  ..._buildMemberSections(
+                    theme,
+                    activeMembers: activeMembers,
+                    pendingMembers: pendingMembers,
+                    otherMembers: otherMembers,
+                  ),
+                ],
+              ),
+            );
+          }
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -355,14 +374,40 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
     required List<PoolMemberSummary> pendingMembers,
     required List<PoolMemberSummary> otherMembers,
   }) {
+    return PlatformRefresh(
+      onRefresh: kIsWeb ? null : _loadMembers,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: padding,
+        children: _buildMemberSections(
+          theme,
+          activeMembers: activeMembers,
+          pendingMembers: pendingMembers,
+          otherMembers: otherMembers,
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildMemberSections(
+    ThemeData theme, {
+    required List<PoolMemberSummary> activeMembers,
+    required List<PoolMemberSummary> pendingMembers,
+    required List<PoolMemberSummary> otherMembers,
+  }) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const [
+        SizedBox(
+          height: 180,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ];
     }
 
     final sections = <Widget>[
       _buildSection(
         theme,
-        title: 'Active members',
+        title: 'Members',
         members: activeMembers,
         emptyText: 'No active members yet.',
       ),
@@ -389,14 +434,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
         );
     }
 
-    return PlatformRefresh(
-      onRefresh: kIsWeb ? null : _loadMembers,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: padding,
-        children: sections,
-      ),
-    );
+    return sections;
   }
 
   Widget _buildSearchCard(ThemeData theme) {
@@ -665,7 +703,7 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
     final label = pendingLabel != null && member.status == 'invited'
         ? pendingLabel
         : member.status == 'active'
-        ? (member.role == 'owner' ? 'Owner' : 'Active')
+        ? (member.role == 'owner' ? 'Owner' : 'Joined')
         : member.status == 'declined'
         ? 'Declined'
         : member.status == 'eliminated'

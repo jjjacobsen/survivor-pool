@@ -12,6 +12,16 @@ An elimination pool application for the TV show Survivor, where players pick con
 4. **Scoring**: Player scores are calculated by how many contestants they can still choose from remaining active contestants
 5. **Winner**: Last player with valid picks remaining wins the pool
 
+## Pool Setup Lifecycle
+
+Pool setup always follows this flow:
+
+1. **Create pool**: Owner creates a pool with name, season, and start week
+2. **Invite stage**: Owner invites members and invited users accept or decline
+3. **Picking stage**: Owner starts the pool, membership locks, and weekly picks begin
+
+During invite stage, picks are unavailable. After the owner starts the pool, new members cannot be added.
+
 ## User Types
 
 - **User**: All users have the same account type. Users can join pools, make picks, and create their own pools. Any user can create a pool and invite anybody on the app to join these pools. Pool creators have control over their own pools, including managing contestants and season progression for their pools.
@@ -28,7 +38,7 @@ An elimination pool application for the TV show Survivor, where players pick con
 
 - Pool creation with names and season association (any user can create pools)
 - Pool membership tracking
-- Pool status management (active, completed)
+- Pool status management (`invite`, `open`, `completed`)
 - Pool creator permissions for managing their own pools
 
 ### Contestant Database
@@ -62,7 +72,7 @@ An elimination pool application for the TV show Survivor, where players pick con
 
 ### Pool Interface
 
-- Pool creation and joining workflow
+- Pool creation, invite stage, and joining workflow
 - Pool member listing and management
 - Pool-specific leaderboards
 - Pool settings and configuration
@@ -100,6 +110,7 @@ An elimination pool application for the TV show Survivor, where players pick con
 
 - Pool creation and configuration
 - Member invitation and joining
+- Pool start transition (invite stage -> picking stage)
 - Pool status and settings management
 - Permission-based access control
 

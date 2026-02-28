@@ -39,6 +39,7 @@
 
 ## Game Highlights
 
+- 👥 Pool setup flow is explicit: `create pool -> invite stage -> picking stage`
 - ✅ Weekly picks with no-repeat rules and instant eliminations
 - 📊 Live leaderboards powered by cached pick availability
 - 🧭 Pool owners control their seasons, contestants, and eliminations
