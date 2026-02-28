@@ -41,6 +41,7 @@ ELIMINATION_REASON_CONTESTANT = "contestant_voted_out"
 ELIMINATION_REASON_NO_OPTIONS = "no_options_left"
 
 POOL_STATUS_OPEN = "open"
+POOL_STATUS_INVITE = "invite"
 POOL_STATUS_COMPLETED = "completed"
 MEMBERSHIP_STATUS_WINNER = "winner"
 
@@ -276,7 +277,7 @@ def create_pool(pool_data):
         "current_week": start_week,
         "start_week": start_week,
         "settings": {},
-        "status": POOL_STATUS_OPEN,
+        "status": POOL_STATUS_INVITE,
         "is_competitive": False,
         "competitive_since_week": None,
         "completed_week": None,
@@ -360,7 +361,7 @@ def create_pool(pool_data):
         start_week=start_week,
         settings=pool_doc["settings"],
         invited_user_ids=invited_user_ids,
-        status=POOL_STATUS_OPEN,
+        status=POOL_STATUS_INVITE,
         is_competitive=False,
         competitive_since_week=None,
         completed_week=None,
@@ -474,6 +475,30 @@ def get_available_contestants(pool_id, user_id):
             did_tie=did_tie,
         )
 
+    if pool_status == POOL_STATUS_INVITE:
+        if membership_status != "active":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User is not an active member of this pool",
+            )
+        return AvailableContestantsResponse(
+            pool_id=str(pool_oid),
+            user_id=str(user_oid),
+            current_week=current_week,
+            contestants=[],
+            score=score_value,
+            current_pick=None,
+            is_eliminated=False,
+            elimination_reason=None,
+            eliminated_week=None,
+            is_winner=False,
+            pool_status=pool_status,
+            pool_completed_week=pool_completed_week,
+            pool_completed_at=pool_completed_at,
+            winners=winner_summaries,
+            did_tie=did_tie,
+        )
+
     if membership_status != "active":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -561,6 +586,12 @@ def get_contestant_detail(pool_id, contestant_id, user_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Pool not found",
+        )
+
+    if pool.get("status") == POOL_STATUS_INVITE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pool has not started yet",
         )
 
     membership = pool_memberships_collection.find_one(
@@ -678,6 +709,11 @@ def get_contestant_detail(pool_id, contestant_id, user_id):
 
 def get_pool_advance_status(pool_id, user_id):
     pool, pool_oid, _ = _require_pool_owner(pool_id, user_id)
+    if pool.get("status") == POOL_STATUS_INVITE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pool has not started yet",
+        )
     if pool.get("status") == POOL_STATUS_COMPLETED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -707,6 +743,12 @@ def get_pool_advance_status(pool_id, user_id):
 
 def advance_pool_week(pool_id, payload):
     pool, pool_oid, _ = _require_pool_owner(pool_id, payload.user_id)
+
+    if pool.get("status") == POOL_STATUS_INVITE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pool has not started yet",
+        )
 
     if pool.get("status") == POOL_STATUS_COMPLETED:
         raise HTTPException(
@@ -1205,7 +1247,13 @@ def update_pool_announcement(pool_id, payload: PoolAnnouncementUpdateRequest):
 
 
 def invite_user_to_pool(pool_id, payload):
-    _, pool_oid, owner_oid = _require_pool_owner(pool_id, payload.owner_id)
+    pool, pool_oid, owner_oid = _require_pool_owner(pool_id, payload.owner_id)
+
+    if pool.get("status") != POOL_STATUS_INVITE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pool already started",
+        )
 
     invited_oid = parse_object_id(payload.invited_user_id, "invited_user_id")
     if invited_oid == owner_oid:
@@ -1313,6 +1361,12 @@ def respond_to_invite(pool_id, payload):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Unsupported action",
+        )
+
+    if action == "accept" and pool.get("status") != POOL_STATUS_INVITE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pool already started",
         )
 
     membership = pool_memberships_collection.find_one(
@@ -1465,6 +1519,101 @@ def get_pending_invites_for_user(user_id):
     )
 
     return PendingInvitesResponse(invites=invites)
+
+
+def start_pool(pool_id, payload):
+    pool, pool_oid, _ = _require_pool_owner(pool_id, payload.owner_id)
+
+    if pool.get("status") == POOL_STATUS_COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pool already completed",
+        )
+
+    if pool.get("status") != POOL_STATUS_INVITE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pool already started",
+        )
+
+    season_id = pool.get("seasonId")
+    if not season_id:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Pool season not configured",
+        )
+
+    season = seasons_collection.find_one(
+        {"_id": season_id},
+        {"contestants": 1, "eliminations": 1},
+    )
+    if not season:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Season not found",
+        )
+
+    updated_pool = pools_collection.find_one_and_update(
+        {"_id": pool_oid, "status": POOL_STATUS_INVITE},
+        {"$set": {"status": POOL_STATUS_OPEN}},
+        return_document=ReturnDocument.AFTER,
+    )
+    if not updated_pool:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Pool already started",
+        )
+
+    pool_memberships_collection.update_many(
+        {"poolId": pool_oid, "status": "invited"},
+        {
+            "$set": {
+                "status": "declined",
+                "joinedAt": None,
+                "elimination_reason": None,
+                "eliminated_week": None,
+                "eliminated_date": None,
+                "score": 0,
+                "available_contestants": [],
+                "final_rank": None,
+                "finished_week": None,
+                "finished_date": None,
+            }
+        },
+    )
+
+    current_week = updated_pool.get("current_week", 1)
+    _recalculate_pool_scores(pool_oid, season, current_week)
+
+    winners_raw = updated_pool.get("winners", []) or []
+    winner_user_ids = [str(candidate) for candidate in winners_raw]
+    start_week = updated_pool.get("start_week", 1)
+    if start_week < 1:
+        start_week = 1
+
+    return PoolResponse(
+        id=str(updated_pool["_id"]),
+        name=updated_pool.get("name", ""),
+        owner_id=(
+            str(updated_pool.get("ownerId")) if updated_pool.get("ownerId") else ""
+        ),
+        season_id=(
+            str(updated_pool.get("seasonId")) if updated_pool.get("seasonId") else ""
+        ),
+        created_at=updated_pool["created_at"],
+        current_week=updated_pool["current_week"],
+        start_week=start_week,
+        settings=updated_pool.get("settings", {}),
+        invited_user_ids=[],
+        status=updated_pool.get("status", POOL_STATUS_OPEN),
+        is_competitive=bool(updated_pool.get("is_competitive")),
+        competitive_since_week=updated_pool.get("competitive_since_week"),
+        completed_week=updated_pool.get("completed_week"),
+        completed_at=updated_pool.get("completed_at"),
+        winner_user_ids=winner_user_ids,
+        announcement_message=updated_pool.get("announcement_message", ""),
+        announcement_updated_at=updated_pool.get("announcement_updated_at"),
+    )
 
 
 def _require_pool_owner(pool_id, user_id):

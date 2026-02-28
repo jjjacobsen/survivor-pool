@@ -29,6 +29,12 @@ def create_pick(pool_id, payload):
             detail="Pool already completed",
         )
 
+    if pool.get("status") == "invite":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pool has not started yet",
+        )
+
     membership = pool_memberships_collection.find_one(
         {"poolId": pool_oid, "userId": user_oid}
     )

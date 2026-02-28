@@ -16,6 +16,7 @@ import 'package:survivor_pool/core/models/season.dart';
 import 'package:survivor_pool/core/models/user.dart';
 import 'package:survivor_pool/core/network/auth_client.dart';
 import 'package:survivor_pool/core/layout/adaptive_page.dart';
+import 'package:survivor_pool/features/pools/presentation/pages/manage_pool_members_page.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/create_pool_dialog.dart';
 import 'package:survivor_pool/features/pools/presentation/widgets/pool_dashboard.dart';
 
@@ -55,6 +56,8 @@ class _HomePageState extends State<HomePage> {
   bool _isLoadingInvites = false;
   final Set<String> _inviteRequests = <String>{};
   final Map<String, DateTime> _messageBoardSeenAt = <String, DateTime>{};
+  bool _isStartingPool = false;
+  String? _startPoolError;
 
   Uri _apiUri(String path) => Uri.parse('${ApiConfig.baseUrl}$path');
 
@@ -293,6 +296,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   String _parseErrorMessage(String body) {
+    return _parseApiDetail(body, 'Failed to create pool. Please try again.');
+  }
+
+  String _parseApiDetail(String body, String fallback) {
     try {
       final decoded = json.decode(body);
       if (decoded is Map<String, dynamic>) {
@@ -304,7 +311,7 @@ class _HomePageState extends State<HomePage> {
     } catch (_) {
       // Ignore JSON parsing issues and fall through to default message.
     }
-    return 'Failed to create pool. Please try again.';
+    return fallback;
   }
 
   Future<bool> _fetchSeasons() async {
@@ -399,6 +406,14 @@ class _HomePageState extends State<HomePage> {
                 seasonId: pool.seasonId,
                 ownerId: pool.ownerId,
                 seasonNumber: pool.seasonNumber,
+                currentWeek: pool.currentWeek,
+                startWeek: pool.startWeek,
+                status: pool.status,
+                isCompetitive: pool.isCompetitive,
+                competitiveSinceWeek: pool.competitiveSinceWeek,
+                completedWeek: pool.completedWeek,
+                completedAt: pool.completedAt,
+                winnerUserIds: pool.winnerUserIds,
                 announcementMessage: pool.announcementMessage,
                 announcementUpdatedAt: pool.announcementUpdatedAt,
               );
@@ -532,6 +547,84 @@ class _HomePageState extends State<HomePage> {
       AppRouteNames.manageMembers,
       extra: (pool: pool, ownerId: widget.user.id),
     );
+  }
+
+  Future<void> _handleStartPool(PoolOption pool) async {
+    if (_isStartingPool) {
+      return;
+    }
+
+    setState(() {
+      _isStartingPool = true;
+      _startPoolError = null;
+    });
+
+    try {
+      final response = await AuthHttpClient.post(
+        _apiUri('/pools/${pool.id}/start'),
+        headers: const {'Content-Type': 'application/json'},
+        body: json.encode({'owner_id': widget.user.id}),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          final startedPool = PoolOption.fromJson(decoded);
+          if (startedPool.id.isNotEmpty && mounted) {
+            setState(() {
+              _pools = _pools
+                  .map(
+                    (candidate) => candidate.id == startedPool.id
+                        ? candidate.copyWith(
+                            name: startedPool.name,
+                            seasonId: startedPool.seasonId,
+                            ownerId: startedPool.ownerId,
+                            seasonNumber: startedPool.seasonNumber,
+                            currentWeek: startedPool.currentWeek,
+                            startWeek: startedPool.startWeek,
+                            status: startedPool.status,
+                            isCompetitive: startedPool.isCompetitive,
+                            competitiveSinceWeek:
+                                startedPool.competitiveSinceWeek,
+                            completedWeek: startedPool.completedWeek,
+                            completedAt: startedPool.completedAt,
+                            winnerUserIds: startedPool.winnerUserIds,
+                            announcementMessage:
+                                startedPool.announcementMessage,
+                            announcementUpdatedAt:
+                                startedPool.announcementUpdatedAt,
+                          )
+                        : candidate,
+                  )
+                  .toList();
+              _poolStatus = startedPool.status;
+              _startPoolError = null;
+            });
+          }
+        }
+        unawaited(_loadPools(force: true, loadDefaultContestants: false));
+        await _loadAvailableContestants(pool.id);
+      } else if (mounted) {
+        setState(() {
+          _startPoolError = _parseApiDetail(
+            response.body,
+            'Failed to start pool.',
+          );
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _startPoolError = 'Failed to start pool.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isStartingPool = false;
+        });
+      }
+    }
   }
 
   Future<void> _handleViewLeaderboard(PoolOption pool) async {
@@ -917,6 +1010,7 @@ class _HomePageState extends State<HomePage> {
           _availableContestants = const [];
           _contestantsForPoolId = null;
           _isLoadingContestants = true;
+          _startPoolError = null;
         });
       }
 
@@ -934,6 +1028,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _isUpdatingDefault = true;
       _defaultPoolId = poolId;
+      _startPoolError = null;
     });
     unawaited(_loadAvailableContestants(poolId));
     unawaited(_loadInvites());
@@ -1019,6 +1114,8 @@ class _HomePageState extends State<HomePage> {
         selectedPool != null &&
         (selectedPool.ownerId == null ||
             selectedPool.ownerId == widget.user.id);
+    final isInviteStage = selectedPool?.status == 'invite';
+    final showOwnerInviteStage = isInviteStage && isOwnerView;
     List<AvailableContestant> availableContestants;
     var isLoadingContestants = false;
     if (selectedPool == null) {
@@ -1049,6 +1146,7 @@ class _HomePageState extends State<HomePage> {
                 theme: theme,
                 selectedPool: selectedPool,
                 isOwnerView: isOwnerView,
+                showOwnerInviteStage: showOwnerInviteStage,
                 availableContestants: availableContestants,
                 isLoadingContestants: isLoadingContestants,
                 currentPick: currentPick,
@@ -1058,6 +1156,7 @@ class _HomePageState extends State<HomePage> {
                 theme: theme,
                 selectedPool: selectedPool,
                 isOwnerView: isOwnerView,
+                showOwnerInviteStage: showOwnerInviteStage,
                 availableContestants: availableContestants,
                 isLoadingContestants: isLoadingContestants,
                 currentPick: currentPick,
@@ -1228,11 +1327,39 @@ class _HomePageState extends State<HomePage> {
     required ThemeData theme,
     required PoolOption? selectedPool,
     required bool isOwnerView,
+    required bool showOwnerInviteStage,
     required List<AvailableContestant> availableContestants,
     required bool isLoadingContestants,
     required CurrentPickSummary? currentPick,
     required int? score,
   }) {
+    if (showOwnerInviteStage && selectedPool != null) {
+      return SafeArea(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 360,
+              child: _buildDesktopSidebar(
+                theme: theme,
+                selectedPool: selectedPool,
+              ),
+            ),
+            const VerticalDivider(width: 1),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
+                child: _buildOwnerInviteStage(theme, selectedPool),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return SafeArea(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1460,11 +1587,21 @@ class _HomePageState extends State<HomePage> {
     required ThemeData theme,
     required PoolOption? selectedPool,
     required bool isOwnerView,
+    required bool showOwnerInviteStage,
     required List<AvailableContestant> availableContestants,
     required bool isLoadingContestants,
     required CurrentPickSummary? currentPick,
     required int? score,
   }) {
+    if (showOwnerInviteStage && selectedPool != null) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: _buildOwnerInviteStage(theme, selectedPool),
+        ),
+      );
+    }
+
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1494,6 +1631,77 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildOwnerInviteStage(ThemeData theme, PoolOption pool) {
+    final startButtonLabel = _isStartingPool ? 'Starting...' : 'Start pool';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Card(
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Invite stage',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Invite members now. Once you start the pool, membership is locked.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (_startPoolError != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _startPoolError!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _isStartingPool
+                        ? null
+                        : () => _handleStartPool(pool),
+                    child: _isStartingPool
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(startButtonLabel),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: ManagePoolMembersPage(
+            pool: pool,
+            ownerId: widget.user.id,
+            embedded: true,
+          ),
+        ),
+      ],
+    );
+  }
+
   void _openProfile() {
     context.pushNamed(AppRouteNames.profile, extra: widget.user);
   }
@@ -1515,6 +1723,10 @@ class _HomePageState extends State<HomePage> {
     }
 
     if (_defaultPoolId != null && selectedPool != null) {
+      if (selectedPool.status == 'invite' && !isOwnerView) {
+        return _buildPoolNotStartedCard(theme, selectedPool);
+      }
+
       return PoolDashboard(
         pool: selectedPool,
         availableContestants: availableContestants,
@@ -1530,19 +1742,25 @@ class _HomePageState extends State<HomePage> {
         poolCompletedAt: _poolCompletedAt,
         winners: _winners,
         didTie: _didTie,
-        onManageMembers: isOwnerView
+        onManageMembers: isOwnerView && selectedPool.status == 'invite'
             ? () => _handleManageMembers(selectedPool)
             : null,
         onManageSettings: isOwnerView
             ? () => _handlePoolSettings(selectedPool)
             : null,
-        onAdvanceWeek: isOwnerView && _poolStatus != 'completed'
+        onAdvanceWeek:
+            isOwnerView &&
+                selectedPool.status == 'open' &&
+                _poolStatus != 'completed'
             ? () => _handleAdvanceWeek(selectedPool)
             : null,
         onViewLeaderboard: () => _handleViewLeaderboard(selectedPool),
         onViewUpdates: () => _handleViewMessageBoard(selectedPool, isOwnerView),
         onContestantSelected:
-            _isEliminated || _isWinner || _poolStatus == 'completed'
+            _isEliminated ||
+                _isWinner ||
+                _poolStatus == 'completed' ||
+                selectedPool.status != 'open'
             ? null
             : (contestant) {
                 _handleContestantSelected(selectedPool, contestant);
@@ -1590,6 +1808,42 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPoolNotStartedCard(ThemeData theme, PoolOption pool) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Card(
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  pool.name,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'This pool is still in the invite stage. Picks unlock when the owner starts the pool.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

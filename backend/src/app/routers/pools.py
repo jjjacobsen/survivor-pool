@@ -19,6 +19,7 @@ from ..schemas.pools import (
     PoolLeaderboardResponse,
     PoolMembershipListResponse,
     PoolResponse,
+    PoolStartRequest,
 )
 from ..services import pools as pools_service
 
@@ -151,6 +152,19 @@ def invite_user_to_pool(
 ):
     _ensure_same_user(payload.owner_id, current_user)
     return pools_service.invite_user_to_pool(pool_id, payload)
+
+
+@router.post(
+    "/pools/{pool_id}/start",
+    response_model=PoolResponse,
+)
+def start_pool(
+    pool_id,
+    payload: PoolStartRequest,
+    current_user: CurrentUser,
+):
+    _ensure_same_user(payload.owner_id, current_user)
+    return pools_service.start_pool(pool_id, payload)
 
 
 @router.post(

@@ -14,11 +14,13 @@ import 'package:survivor_pool/core/network/auth_client.dart';
 class ManagePoolMembersPage extends StatefulWidget {
   final PoolOption pool;
   final String ownerId;
+  final bool embedded;
 
   const ManagePoolMembersPage({
     super.key,
     required this.pool,
     required this.ownerId,
+    this.embedded = false,
   });
 
   @override
@@ -215,6 +217,9 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
   }
 
   Future<void> _inviteUser(UserSearchResult user) async {
+    if (widget.pool.status != 'invite') {
+      return;
+    }
     if (_isInviting || user.id.isEmpty) {
       return;
     }
@@ -266,76 +271,80 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
         )
         .toList(growable: false);
 
+    final content = LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= AppBreakpoints.medium;
+        if (!isWide) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildSearchCard(theme),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: _buildMembersPanel(
+                    theme,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    activeMembers: activeMembers,
+                    pendingMembers: pendingMembers,
+                    otherMembers: otherMembers,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 360,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 24,
+                  ),
+                  child: _buildSearchCard(theme),
+                ),
+              ),
+            ),
+            const VerticalDivider(width: 1),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
+                child: _buildMembersPanel(
+                  theme,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 8,
+                  ),
+                  activeMembers: activeMembers,
+                  pendingMembers: pendingMembers,
+                  otherMembers: otherMembers,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Manage members — ${widget.pool.name}'),
         automaticallyImplyLeading: !kIsWeb,
       ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= AppBreakpoints.medium;
-            if (!isWide) {
-              return Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _buildSearchCard(theme),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: _buildMembersPanel(
-                        theme,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        activeMembers: activeMembers,
-                        pendingMembers: pendingMembers,
-                        otherMembers: otherMembers,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 360,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 24,
-                      ),
-                      child: _buildSearchCard(theme),
-                    ),
-                  ),
-                ),
-                const VerticalDivider(width: 1),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 24,
-                    ),
-                    child: _buildMembersPanel(
-                      theme,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 8,
-                      ),
-                      activeMembers: activeMembers,
-                      pendingMembers: pendingMembers,
-                      otherMembers: otherMembers,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+      body: SafeArea(child: content),
     );
   }
 
@@ -391,6 +400,22 @@ class _ManagePoolMembersPageState extends State<ManagePoolMembersPage> {
   }
 
   Widget _buildSearchCard(ThemeData theme) {
+    if (widget.pool.status != 'invite') {
+      return Card(
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'Pool already started. New members cannot be invited.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      );
+    }
+
     final normalized = _currentNormalizedQuery;
     final hasQuery = normalized.length >= 2;
     final latestMatches = _latestDeliveredQuery == normalized;

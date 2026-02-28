@@ -185,6 +185,10 @@ class PoolInviteRequest(BaseModel):
     invited_user_id: str
 
 
+class PoolStartRequest(BaseModel):
+    owner_id: str
+
+
 class PoolInviteResponse(BaseModel):
     member: PoolMemberSummary
 
