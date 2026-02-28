@@ -32,7 +32,7 @@
   function registerSeason(doc) { seasonDocs.push(doc); }
 
   const seasonsDir = "/app/mongo-init/seasons";
-  const seasonFiles = ["season48.js", "season49.js"];
+  const seasonFiles = ["season48.js", "season49.js", "season50.js"];
 
   globalThis.idOf = idOf;
   globalThis.registerSeason = registerSeason;
