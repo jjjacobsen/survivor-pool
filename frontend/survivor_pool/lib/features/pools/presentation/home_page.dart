@@ -674,21 +674,26 @@ class _HomePageState extends State<HomePage> {
   }
 
   List<PoolOption> _messageBoardUpdatedPools() {
-    return _pools.where(_isMessageBoardUpdated).toList(growable: false);
-  }
-
-  PoolOption? _resolveMessageBoardUpdatePool(PoolOption? selectedPool) {
-    final updatedPools = _messageBoardUpdatedPools();
-    if (updatedPools.isEmpty) {
-      return null;
-    }
-
-    if (selectedPool != null &&
-        updatedPools.any((pool) => pool.id == selectedPool.id)) {
-      return selectedPool;
-    }
-
-    return updatedPools.first;
+    final updated = _pools.where(_isMessageBoardUpdated).toList();
+    updated.sort((a, b) {
+      final aUpdatedAt = a.announcementUpdatedAt;
+      final bUpdatedAt = b.announcementUpdatedAt;
+      if (aUpdatedAt == null && bUpdatedAt == null) {
+        return a.name.compareTo(b.name);
+      }
+      if (aUpdatedAt == null) {
+        return 1;
+      }
+      if (bUpdatedAt == null) {
+        return -1;
+      }
+      final updatedAtCompare = bUpdatedAt.compareTo(aUpdatedAt);
+      if (updatedAtCompare != 0) {
+        return updatedAtCompare;
+      }
+      return a.name.compareTo(b.name);
+    });
+    return updated;
   }
 
   Future<void> _markMessageBoardSeen(PoolOption pool) async {
@@ -1452,14 +1457,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   List<Widget> _buildSidebarItems(ThemeData theme, PoolOption? selectedPool) {
-    final updatedPool = _resolveMessageBoardUpdatePool(selectedPool);
+    final updatedPools = _messageBoardUpdatedPools();
     return [
       _buildPoolListCard(theme, selectedPool),
       const SizedBox(height: 16),
       _buildInvitesBanner(theme),
-      if (updatedPool != null) ...[
+      if (updatedPools.isNotEmpty) ...[
         const SizedBox(height: 16),
-        _buildMessageBoardUpdateBanner(theme, updatedPool),
+        _buildMessageBoardUpdateBanner(theme, updatedPools),
       ],
     ];
   }
@@ -1943,9 +1948,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildMessageBoardUpdateBanner(ThemeData theme, PoolOption pool) {
-    final isOwnerView = pool.ownerId == null || pool.ownerId == widget.user.id;
-
+  Widget _buildMessageBoardUpdateBanner(
+    ThemeData theme,
+    List<PoolOption> pools,
+  ) {
     return Card(
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -1959,33 +1965,54 @@ class _HomePageState extends State<HomePage> {
                 Icon(Icons.forum_outlined, color: theme.colorScheme.primary),
                 const SizedBox(width: 12),
                 Text(
-                  'Message board updated',
+                  'Message board updates',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              pool.name,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.tonal(
-                onPressed: () {
-                  _scaffoldKey.currentState?.closeDrawer();
-                  _handleViewMessageBoard(pool, isOwnerView);
-                },
-                child: const Text('View message board'),
-              ),
-            ),
+            const SizedBox(height: 16),
+            for (var i = 0; i < pools.length; i++) ...[
+              _buildMessageBoardUpdateRow(theme, pools[i]),
+              if (i != pools.length - 1) const SizedBox(height: 12),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMessageBoardUpdateRow(ThemeData theme, PoolOption pool) {
+    final isOwnerView = pool.ownerId == null || pool.ownerId == widget.user.id;
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            pool.name,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonal(
+              onPressed: () {
+                _scaffoldKey.currentState?.closeDrawer();
+                _handleViewMessageBoard(pool, isOwnerView);
+              },
+              child: const Text('View message board'),
+            ),
+          ),
+        ],
       ),
     );
   }
