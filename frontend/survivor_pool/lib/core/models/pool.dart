@@ -14,6 +14,7 @@ class PoolOption {
   final List<String> winnerUserIds;
   final String announcementMessage;
   final DateTime? announcementUpdatedAt;
+  final DateTime? announcementSeenAt;
 
   const PoolOption({
     required this.id,
@@ -31,6 +32,7 @@ class PoolOption {
     this.winnerUserIds = const <String>[],
     this.announcementMessage = '',
     this.announcementUpdatedAt,
+    this.announcementSeenAt,
   });
 
   factory PoolOption.fromJson(Map<String, dynamic> json) {
@@ -109,6 +111,9 @@ class PoolOption {
     final announcementUpdatedAt = _parseIsoDate(
       json['announcement_updated_at'] ?? json['announcementUpdatedAt'],
     );
+    final announcementSeenAt = _parseIsoDate(
+      json['announcement_seen_at'] ?? json['announcementSeenAt'],
+    );
     return PoolOption(
       id: (rawId as String?) ?? '',
       name: json['name'] as String? ?? 'Untitled Pool',
@@ -125,6 +130,7 @@ class PoolOption {
       winnerUserIds: winnerUserIds,
       announcementMessage: announcementMessage,
       announcementUpdatedAt: announcementUpdatedAt,
+      announcementSeenAt: announcementSeenAt,
     );
   }
 
@@ -144,6 +150,7 @@ class PoolOption {
     List<String>? winnerUserIds,
     String? announcementMessage,
     DateTime? announcementUpdatedAt,
+    DateTime? announcementSeenAt,
   }) {
     return PoolOption(
       id: id ?? this.id,
@@ -162,6 +169,7 @@ class PoolOption {
       announcementMessage: announcementMessage ?? this.announcementMessage,
       announcementUpdatedAt:
           announcementUpdatedAt ?? this.announcementUpdatedAt,
+      announcementSeenAt: announcementSeenAt ?? this.announcementSeenAt,
     );
   }
 }

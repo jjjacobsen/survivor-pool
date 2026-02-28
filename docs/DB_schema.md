@@ -187,6 +187,7 @@ Manages the many-to-many relationship between users and pools, with added game s
 
   // Game status tracking
   status: "active", // invited, active, eliminated, declined
+  announcement_seen_at: ISODate("..."), // when this user last viewed the pool message board, null if never viewed
   elimination_reason: null, // missed_pick | contestant_voted_out | no_options_left
   eliminated_week: null,
   eliminated_date: null,

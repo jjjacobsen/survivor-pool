@@ -421,13 +421,18 @@ def update_default_pool(user_id, payload):
 def list_user_pools(user_id):
     user_oid = parse_object_id(user_id, "user_id")
 
-    memberships = pool_memberships_collection.find(
-        {
-            "userId": user_oid,
-            "status": {"$in": ["active", "eliminated", "winner"]},
-        }
+    membership_docs = list(
+        pool_memberships_collection.find(
+            {
+                "userId": user_oid,
+                "status": {"$in": ["active", "eliminated", "winner"]},
+            }
+        )
     )
-    pool_ids = {membership["poolId"] for membership in memberships}
+    pool_ids = {membership["poolId"] for membership in membership_docs}
+    memberships_by_pool = {
+        membership.get("poolId"): membership for membership in membership_docs
+    }
     if not pool_ids:
         return []
 
@@ -435,6 +440,8 @@ def list_user_pools(user_id):
 
     responses = []
     for pool in pools:
+        membership = memberships_by_pool.get(pool.get("_id"), {})
+        announcement_seen_at = membership.get("announcement_seen_at")
         winners_raw = pool.get("winners", []) or []
         winner_user_ids = [str(candidate) for candidate in winners_raw]
 
@@ -466,6 +473,7 @@ def list_user_pools(user_id):
                 winner_user_ids=winner_user_ids,
                 announcement_message=pool.get("announcement_message", ""),
                 announcement_updated_at=pool.get("announcement_updated_at"),
+                announcement_seen_at=announcement_seen_at,
             )
         )
 

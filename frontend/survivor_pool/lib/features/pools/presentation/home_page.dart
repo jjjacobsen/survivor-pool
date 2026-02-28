@@ -55,7 +55,6 @@ class _HomePageState extends State<HomePage> {
   List<PendingInvite> _pendingInvites = const [];
   bool _isLoadingInvites = false;
   final Set<String> _inviteRequests = <String>{};
-  final Map<String, DateTime> _messageBoardSeenAt = <String, DateTime>{};
   bool _isStartingPool = false;
   String? _startPoolError;
 
@@ -416,6 +415,7 @@ class _HomePageState extends State<HomePage> {
                 winnerUserIds: pool.winnerUserIds,
                 announcementMessage: pool.announcementMessage,
                 announcementUpdatedAt: pool.announcementUpdatedAt,
+                announcementSeenAt: pool.announcementSeenAt,
               );
             }).toList();
             var nextDefault = _defaultPoolId;
@@ -593,6 +593,7 @@ class _HomePageState extends State<HomePage> {
                                 startedPool.announcementMessage,
                             announcementUpdatedAt:
                                 startedPool.announcementUpdatedAt,
+                            announcementSeenAt: startedPool.announcementSeenAt,
                           )
                         : candidate,
                   )
@@ -642,7 +643,10 @@ class _HomePageState extends State<HomePage> {
     PoolOption pool,
     bool isOwnerView,
   ) async {
-    _markMessageBoardSeen(pool);
+    await _markMessageBoardSeen(pool);
+    if (!mounted) {
+      return;
+    }
     AppSession.cacheRouteExtra(AppRouteNames.poolMessageBoard, (
       pool: pool,
       userId: widget.user.id,
@@ -662,7 +666,7 @@ class _HomePageState extends State<HomePage> {
     if (updatedAt == null) {
       return false;
     }
-    final seenAt = _messageBoardSeenAt[pool.id];
+    final seenAt = pool.announcementSeenAt;
     if (seenAt == null) {
       return true;
     }
@@ -687,13 +691,13 @@ class _HomePageState extends State<HomePage> {
     return updatedPools.first;
   }
 
-  void _markMessageBoardSeen(PoolOption pool) {
+  Future<void> _markMessageBoardSeen(PoolOption pool) async {
     final updatedAt = pool.announcementUpdatedAt;
     if (updatedAt == null) {
       return;
     }
 
-    final seenAt = _messageBoardSeenAt[pool.id];
+    final seenAt = pool.announcementSeenAt;
     if (seenAt != null && !seenAt.isBefore(updatedAt)) {
       return;
     }
@@ -703,8 +707,52 @@ class _HomePageState extends State<HomePage> {
     }
 
     setState(() {
-      _messageBoardSeenAt[pool.id] = updatedAt;
+      _pools = _pools
+          .map(
+            (candidate) => candidate.id == pool.id
+                ? candidate.copyWith(announcementSeenAt: updatedAt)
+                : candidate,
+          )
+          .toList();
     });
+
+    try {
+      final response = await AuthHttpClient.post(
+        _apiUri('/pools/${pool.id}/announcement/seen'),
+        headers: const {'Content-Type': 'application/json'},
+        body: json.encode({'user_id': widget.user.id}),
+      );
+      if (response.statusCode != 200) {
+        return;
+      }
+
+      final decoded = json.decode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        return;
+      }
+
+      final seenAtRaw = decoded['seen_at'];
+      if (seenAtRaw is! String || seenAtRaw.isEmpty) {
+        return;
+      }
+
+      final persistedSeenAt = DateTime.tryParse(seenAtRaw);
+      if (persistedSeenAt == null || !mounted) {
+        return;
+      }
+
+      setState(() {
+        _pools = _pools
+            .map(
+              (candidate) => candidate.id == pool.id
+                  ? candidate.copyWith(announcementSeenAt: persistedSeenAt)
+                  : candidate,
+            )
+            .toList();
+      });
+    } catch (_) {
+      // Ignore and keep optimistic local seen state.
+    }
   }
 
   void _handleMissingPool(String poolId) {

@@ -23,6 +23,8 @@ from ..schemas.pools import (
     PoolAdvanceResponse,
     PoolAdvanceStatusResponse,
     PoolAnnouncementResponse,
+    PoolAnnouncementSeenRequest,
+    PoolAnnouncementSeenResponse,
     PoolAnnouncementUpdateRequest,
     PoolEliminatedMember,
     PoolInviteDecisionResponse,
@@ -302,6 +304,7 @@ def create_pool(pool_data):
             "role": "owner",
             "joinedAt": now,
             "status": "active",
+            "announcement_seen_at": None,
             "elimination_reason": None,
             "eliminated_week": None,
             "eliminated_date": None,
@@ -337,6 +340,7 @@ def create_pool(pool_data):
                 },
                 "$setOnInsert": {
                     "score": 0,
+                    "announcement_seen_at": None,
                 },
             },
             upsert=True,
@@ -369,6 +373,7 @@ def create_pool(pool_data):
         winner_user_ids=[],
         announcement_message="",
         announcement_updated_at=None,
+        announcement_seen_at=None,
     )
 
 
@@ -1246,6 +1251,39 @@ def update_pool_announcement(pool_id, payload: PoolAnnouncementUpdateRequest):
     )
 
 
+def mark_pool_announcement_seen(pool_id, payload: PoolAnnouncementSeenRequest):
+    pool_oid = parse_object_id(pool_id, "pool_id")
+    user_oid = parse_object_id(payload.user_id, "user_id")
+
+    pool = pools_collection.find_one({"_id": pool_oid}, {"_id": 1})
+    if not pool:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pool not found",
+        )
+
+    now = datetime.now()
+    membership = pool_memberships_collection.find_one_and_update(
+        {
+            "poolId": pool_oid,
+            "userId": user_oid,
+            "status": {"$in": ["active", "eliminated", MEMBERSHIP_STATUS_WINNER]},
+        },
+        {"$set": {"announcement_seen_at": now}},
+        return_document=ReturnDocument.AFTER,
+    )
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Message board only available to pool members",
+        )
+
+    return PoolAnnouncementSeenResponse(
+        pool_id=str(pool_oid),
+        seen_at=membership.get("announcement_seen_at") or now,
+    )
+
+
 def invite_user_to_pool(pool_id, payload):
     pool, pool_oid, owner_oid = _require_pool_owner(pool_id, payload.owner_id)
 
@@ -1613,6 +1651,7 @@ def start_pool(pool_id, payload):
         winner_user_ids=winner_user_ids,
         announcement_message=updated_pool.get("announcement_message", ""),
         announcement_updated_at=updated_pool.get("announcement_updated_at"),
+        announcement_seen_at=None,
     )
 
 

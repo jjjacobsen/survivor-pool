@@ -10,6 +10,8 @@ from ..schemas.pools import (
     PoolAdvanceResponse,
     PoolAdvanceStatusResponse,
     PoolAnnouncementResponse,
+    PoolAnnouncementSeenRequest,
+    PoolAnnouncementSeenResponse,
     PoolAnnouncementUpdateRequest,
     PoolCreateRequest,
     PoolInviteDecisionRequest,
@@ -113,6 +115,19 @@ def update_pool_announcement(
 ):
     _ensure_same_user(payload.owner_id, current_user)
     return pools_service.update_pool_announcement(pool_id, payload)
+
+
+@router.post(
+    "/pools/{pool_id}/announcement/seen",
+    response_model=PoolAnnouncementSeenResponse,
+)
+def mark_pool_announcement_seen(
+    pool_id,
+    payload: PoolAnnouncementSeenRequest,
+    current_user: CurrentUser,
+):
+    _ensure_same_user(payload.user_id, current_user)
+    return pools_service.mark_pool_announcement_seen(pool_id, payload)
 
 
 @router.post(

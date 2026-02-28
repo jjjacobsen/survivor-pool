@@ -105,6 +105,7 @@
         status: { bsonType: "string" },
         joinedAt: { bsonType: ["date", "null"] },
         invitedAt: { bsonType: ["date", "null"] },
+        announcement_seen_at: { bsonType: ["date", "null"] },
         elimination_reason: { bsonType: ["string", "null"] },
         eliminated_week: { bsonType: ["int", "long", "null"] },
         eliminated_date: { bsonType: ["date", "null"] },

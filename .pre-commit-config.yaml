@@ -57,7 +57,7 @@ repos:
         pass_filenames: true
       - id: flutter-analyze
         name: flutter analyze
-        entry: flutter analyze frontend/survivor_pool
+        entry: /opt/homebrew/bin/mise x -- flutter analyze frontend/survivor_pool
         language: system
         files: frontend/survivor_pool/
         # Run command exactly as written

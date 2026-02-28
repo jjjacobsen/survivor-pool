@@ -32,6 +32,7 @@ class PoolResponse(BaseModel):
     winner_user_ids: list[str] = Field(default_factory=list)
     announcement_message: str = ""
     announcement_updated_at: datetime | None = None
+    announcement_seen_at: datetime | None = None
 
 
 class AvailableContestantResponse(BaseModel):
@@ -211,6 +212,15 @@ class PoolAnnouncementResponse(BaseModel):
 class PoolAnnouncementUpdateRequest(BaseModel):
     owner_id: str
     message: str
+
+
+class PoolAnnouncementSeenRequest(BaseModel):
+    user_id: str
+
+
+class PoolAnnouncementSeenResponse(BaseModel):
+    pool_id: str
+    seen_at: datetime
 
 
 class PendingInviteSummary(BaseModel):
