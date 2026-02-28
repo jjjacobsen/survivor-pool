@@ -30,6 +30,8 @@ class PoolResponse(BaseModel):
     completed_week: int | None = None
     completed_at: datetime | None = None
     winner_user_ids: list[str] = Field(default_factory=list)
+    announcement_message: str = ""
+    announcement_updated_at: datetime | None = None
 
 
 class AvailableContestantResponse(BaseModel):
@@ -194,6 +196,17 @@ class PoolInviteDecisionRequest(BaseModel):
 
 class PoolInviteDecisionResponse(BaseModel):
     member: PoolMemberSummary
+
+
+class PoolAnnouncementResponse(BaseModel):
+    pool_id: str
+    message: str = ""
+    updated_at: datetime | None = None
+
+
+class PoolAnnouncementUpdateRequest(BaseModel):
+    owner_id: str
+    message: str
 
 
 class PendingInviteSummary(BaseModel):

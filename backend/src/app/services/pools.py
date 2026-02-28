@@ -22,6 +22,8 @@ from ..schemas.pools import (
     PoolAdvanceMissingMember,
     PoolAdvanceResponse,
     PoolAdvanceStatusResponse,
+    PoolAnnouncementResponse,
+    PoolAnnouncementUpdateRequest,
     PoolEliminatedMember,
     PoolInviteDecisionResponse,
     PoolInviteResponse,
@@ -280,6 +282,8 @@ def create_pool(pool_data):
         "completed_week": None,
         "completed_at": None,
         "winners": [],
+        "announcement_message": "",
+        "announcement_updated_at": None,
     }
 
     pool_result = pools_collection.insert_one(pool_doc)
@@ -362,6 +366,8 @@ def create_pool(pool_data):
         completed_week=None,
         completed_at=None,
         winner_user_ids=[],
+        announcement_message="",
+        announcement_updated_at=None,
     )
 
 
@@ -1133,6 +1139,69 @@ def list_pool_memberships(pool_id, owner_id):
     )
 
     return PoolMembershipListResponse(pool_id=str(pool_oid), members=summaries)
+
+
+def get_pool_announcement(pool_id, user_id):
+    pool_oid = parse_object_id(pool_id, "pool_id")
+    user_oid = parse_object_id(user_id, "user_id")
+
+    pool = pools_collection.find_one({"_id": pool_oid})
+    if not pool:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pool not found",
+        )
+
+    membership = pool_memberships_collection.find_one(
+        {"poolId": pool_oid, "userId": user_oid}
+    )
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not a member of this pool",
+        )
+
+    member_status = membership.get("status")
+    if member_status not in {"active", "eliminated", MEMBERSHIP_STATUS_WINNER}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Message board only available to pool members",
+        )
+
+    return PoolAnnouncementResponse(
+        pool_id=str(pool_oid),
+        message=pool.get("announcement_message", ""),
+        updated_at=pool.get("announcement_updated_at"),
+    )
+
+
+def update_pool_announcement(pool_id, payload: PoolAnnouncementUpdateRequest):
+    _, pool_oid, _ = _require_pool_owner(pool_id, payload.owner_id)
+
+    message = payload.message.strip()
+    now = datetime.now()
+
+    updated_pool = pools_collection.find_one_and_update(
+        {"_id": pool_oid},
+        {
+            "$set": {
+                "announcement_message": message,
+                "announcement_updated_at": now,
+            }
+        },
+        return_document=ReturnDocument.AFTER,
+    )
+    if not updated_pool:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pool not found",
+        )
+
+    return PoolAnnouncementResponse(
+        pool_id=str(pool_oid),
+        message=updated_pool.get("announcement_message", ""),
+        updated_at=updated_pool.get("announcement_updated_at"),
+    )
 
 
 def invite_user_to_pool(pool_id, payload):

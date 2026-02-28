@@ -12,6 +12,7 @@ class AppRoutes {
   static const String poolSettings = '/settings';
   static const String poolAdvance = '/advance';
   static const String poolLeaderboard = '/leaderboard';
+  static const String poolMessageBoard = '/message-board';
   static const String manageMembers = '/members';
   static const String contestantDetail = '/contestants/:contestantId';
   static const String marketing = '/marketing';
@@ -28,6 +29,7 @@ class AppRouteNames {
   static const String poolSettings = 'pool-settings';
   static const String poolAdvance = 'pool-advance';
   static const String poolLeaderboard = 'pool-leaderboard';
+  static const String poolMessageBoard = 'pool-message-board';
   static const String manageMembers = 'manage-members';
   static const String contestantDetail = 'contestant-detail';
   static const String marketing = 'marketing';

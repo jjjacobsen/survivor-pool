@@ -12,6 +12,8 @@ class PoolOption {
   final int? completedWeek;
   final DateTime? completedAt;
   final List<String> winnerUserIds;
+  final String announcementMessage;
+  final DateTime? announcementUpdatedAt;
 
   const PoolOption({
     required this.id,
@@ -27,6 +29,8 @@ class PoolOption {
     this.completedWeek,
     this.completedAt,
     this.winnerUserIds = const <String>[],
+    this.announcementMessage = '',
+    this.announcementUpdatedAt,
   });
 
   factory PoolOption.fromJson(Map<String, dynamic> json) {
@@ -97,6 +101,14 @@ class PoolOption {
     final winnerUserIds = winnersRaw is List
         ? winnersRaw.whereType<String>().where((id) => id.isNotEmpty).toList()
         : <String>[];
+    final announcementMessageRaw =
+        json['announcement_message'] ?? json['announcementMessage'];
+    final announcementMessage = announcementMessageRaw is String
+        ? announcementMessageRaw
+        : '';
+    final announcementUpdatedAt = _parseIsoDate(
+      json['announcement_updated_at'] ?? json['announcementUpdatedAt'],
+    );
     return PoolOption(
       id: (rawId as String?) ?? '',
       name: json['name'] as String? ?? 'Untitled Pool',
@@ -111,6 +123,8 @@ class PoolOption {
       completedWeek: completedWeek,
       completedAt: completedAt,
       winnerUserIds: winnerUserIds,
+      announcementMessage: announcementMessage,
+      announcementUpdatedAt: announcementUpdatedAt,
     );
   }
 
@@ -128,6 +142,8 @@ class PoolOption {
     int? completedWeek,
     DateTime? completedAt,
     List<String>? winnerUserIds,
+    String? announcementMessage,
+    DateTime? announcementUpdatedAt,
   }) {
     return PoolOption(
       id: id ?? this.id,
@@ -143,6 +159,9 @@ class PoolOption {
       completedWeek: completedWeek ?? this.completedWeek,
       completedAt: completedAt ?? this.completedAt,
       winnerUserIds: winnerUserIds ?? this.winnerUserIds,
+      announcementMessage: announcementMessage ?? this.announcementMessage,
+      announcementUpdatedAt:
+          announcementUpdatedAt ?? this.announcementUpdatedAt,
     );
   }
 }

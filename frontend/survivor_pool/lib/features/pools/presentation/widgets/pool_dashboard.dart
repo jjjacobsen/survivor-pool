@@ -23,6 +23,7 @@ class PoolDashboard extends StatelessWidget {
   final VoidCallback? onManageSettings;
   final VoidCallback? onAdvanceWeek;
   final VoidCallback? onViewLeaderboard;
+  final VoidCallback? onViewUpdates;
   final void Function(AvailableContestant contestant)? onContestantSelected;
 
   const PoolDashboard({
@@ -45,6 +46,7 @@ class PoolDashboard extends StatelessWidget {
     this.onManageSettings,
     this.onAdvanceWeek,
     this.onViewLeaderboard,
+    this.onViewUpdates,
     this.onContestantSelected,
   });
 
@@ -53,6 +55,7 @@ class PoolDashboard extends StatelessWidget {
     final theme = Theme.of(context);
     final hasActions =
         onViewLeaderboard != null ||
+        onViewUpdates != null ||
         onManageMembers != null ||
         onManageSettings != null ||
         onAdvanceWeek != null;
@@ -211,6 +214,7 @@ class PoolDashboard extends StatelessWidget {
   Widget _buildQuickActionsCard(ThemeData theme) {
     final hasPrimary = onViewLeaderboard != null;
     final hasSecondary =
+        onViewUpdates != null ||
         onManageMembers != null ||
         onManageSettings != null ||
         onAdvanceWeek != null;
@@ -240,6 +244,14 @@ class PoolDashboard extends StatelessWidget {
                     icon: const Icon(Icons.leaderboard_outlined),
                     label: const Text('View leaderboard'),
                   ),
+                ),
+              ],
+              if (onViewUpdates != null) ...[
+                if (onViewLeaderboard != null) const SizedBox(height: 10),
+                _buildQuickActionButton(
+                  onPressed: onViewUpdates,
+                  icon: Icons.forum_outlined,
+                  label: 'Message board',
                 ),
               ],
               if (hasPrimary && hasSecondary) const SizedBox(height: 10),

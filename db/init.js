@@ -87,7 +87,9 @@
         competitive_since_week: { bsonType: ["int", "long", "null"] },
         completed_week: { bsonType: ["int", "long", "null"] },
         completed_at: { bsonType: ["date", "null"] },
-        winners: { bsonType: "array", items: { bsonType: "objectId" } }
+        winners: { bsonType: "array", items: { bsonType: "objectId" } },
+        announcement_message: { bsonType: ["string", "null"] },
+        announcement_updated_at: { bsonType: ["date", "null"] }
       }
     }
   };

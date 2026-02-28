@@ -398,6 +398,8 @@ class _HomePageState extends State<HomePage> {
                 seasonId: pool.seasonId,
                 ownerId: pool.ownerId,
                 seasonNumber: pool.seasonNumber,
+                announcementMessage: pool.announcementMessage,
+                announcementUpdatedAt: pool.announcementUpdatedAt,
               );
             }).toList();
             var nextDefault = _defaultPoolId;
@@ -538,6 +540,21 @@ class _HomePageState extends State<HomePage> {
     await context.pushNamed(
       AppRouteNames.poolLeaderboard,
       extra: (pool: pool, userId: widget.user.id),
+    );
+  }
+
+  Future<void> _handleViewMessageBoard(
+    PoolOption pool,
+    bool isOwnerView,
+  ) async {
+    AppSession.cacheRouteExtra(AppRouteNames.poolMessageBoard, (
+      pool: pool,
+      userId: widget.user.id,
+      isOwner: isOwnerView,
+    ));
+    await context.pushNamed(
+      AppRouteNames.poolMessageBoard,
+      extra: (pool: pool, userId: widget.user.id, isOwner: isOwnerView),
     );
   }
 
@@ -1460,6 +1477,7 @@ class _HomePageState extends State<HomePage> {
             ? () => _handleAdvanceWeek(selectedPool)
             : null,
         onViewLeaderboard: () => _handleViewLeaderboard(selectedPool),
+        onViewUpdates: () => _handleViewMessageBoard(selectedPool, isOwnerView),
         onContestantSelected:
             _isEliminated || _isWinner || _poolStatus == 'completed'
             ? null

@@ -9,6 +9,8 @@ from ..schemas.pools import (
     PoolAdvanceRequest,
     PoolAdvanceResponse,
     PoolAdvanceStatusResponse,
+    PoolAnnouncementResponse,
+    PoolAnnouncementUpdateRequest,
     PoolCreateRequest,
     PoolInviteDecisionRequest,
     PoolInviteDecisionResponse,
@@ -84,6 +86,32 @@ def get_pool_leaderboard(
 ):
     _ensure_same_user(user_id, current_user)
     return pools_service.get_pool_leaderboard(pool_id, user_id)
+
+
+@router.get(
+    "/pools/{pool_id}/announcement",
+    response_model=PoolAnnouncementResponse,
+)
+def get_pool_announcement(
+    pool_id,
+    user_id,
+    current_user: CurrentUser,
+):
+    _ensure_same_user(user_id, current_user)
+    return pools_service.get_pool_announcement(pool_id, user_id)
+
+
+@router.patch(
+    "/pools/{pool_id}/announcement",
+    response_model=PoolAnnouncementResponse,
+)
+def update_pool_announcement(
+    pool_id,
+    payload: PoolAnnouncementUpdateRequest,
+    current_user: CurrentUser,
+):
+    _ensure_same_user(payload.owner_id, current_user)
+    return pools_service.update_pool_announcement(pool_id, payload)
 
 
 @router.post(

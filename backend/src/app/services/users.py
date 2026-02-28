@@ -464,6 +464,8 @@ def list_user_pools(user_id):
                 completed_week=completed_week,
                 completed_at=completed_at,
                 winner_user_ids=winner_user_ids,
+                announcement_message=pool.get("announcement_message", ""),
+                announcement_updated_at=pool.get("announcement_updated_at"),
             )
         )
 

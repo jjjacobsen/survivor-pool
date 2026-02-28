@@ -146,7 +146,9 @@ Clean game containers that reference season data. No embedded cast data.
     max_members: 50,
     late_pick_penalty: false
     // other pool-specific configuration
-  }
+  },
+  announcement_message: "", // owner-posted one-way pool update
+  announcement_updated_at: ISODate("...") // null when never posted
 }
 ```
 

@@ -19,6 +19,7 @@ import 'package:survivor_pool/features/pools/presentation/pages/manage_pool_memb
 import 'package:survivor_pool/features/pools/presentation/pages/pool_advance_page.dart';
 import 'package:survivor_pool/features/pools/presentation/pages/pool_leaderboard_page.dart';
 import 'package:survivor_pool/features/pools/presentation/pages/pool_settings_page.dart';
+import 'package:survivor_pool/features/pools/presentation/pages/pool_updates_page.dart';
 import 'package:survivor_pool/features/profile/presentation/pages/profile_page.dart';
 import 'package:survivor_pool/features/profile/presentation/pages/reset_password_page.dart';
 
@@ -140,6 +141,24 @@ class SurvivorPoolApp extends StatelessWidget {
           if (extra is ({PoolOption pool, String userId})) {
             AppSession.cacheRouteExtra(AppRouteNames.poolLeaderboard, extra);
             return PoolLeaderboardPage(pool: extra.pool, userId: extra.userId);
+          }
+          return const LoginPage();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.poolMessageBoard,
+        name: AppRouteNames.poolMessageBoard,
+        builder: (context, state) {
+          final extra =
+              state.extra ??
+              AppSession.getRouteExtra(AppRouteNames.poolMessageBoard);
+          if (extra is ({PoolOption pool, String userId, bool isOwner})) {
+            AppSession.cacheRouteExtra(AppRouteNames.poolMessageBoard, extra);
+            return PoolUpdatesPage(
+              pool: extra.pool,
+              userId: extra.userId,
+              isOwner: extra.isOwner,
+            );
           }
           return const LoginPage();
         },
