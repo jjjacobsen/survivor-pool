@@ -29,20 +29,20 @@ repos:
         types: [markdown]
       - id: uv-lock
         name: uv lock
-        entry: bash -c 'cd backend && uv lock --check'
+        entry: uv lock --check --project backend
         language: system
         files: backend/pyproject.toml
         pass_filenames: false
       - id: ruff-check
         name: ruff check
-        entry: bash -c 'cd backend && uv run ruff check --fix .'
+        entry: uv run --project backend ruff check --fix backend
         language: system
         files: backend/
         types: [python]
         pass_filenames: false
       - id: ruff-format
         name: ruff format
-        entry: bash -c 'cd backend && uv run ruff format .'
+        entry: uv run --project backend ruff format backend
         language: system
         files: backend/
         types: [python]
@@ -57,14 +57,14 @@ repos:
         pass_filenames: true
       - id: flutter-analyze
         name: flutter analyze
-        entry: bash -c 'cd frontend/survivor_pool && mise x flutter@3.35 -- flutter analyze'
+        entry: flutter analyze frontend/survivor_pool
         language: system
         files: frontend/survivor_pool/
         # Run command exactly as written
         pass_filenames: false
       - id: pyright
         name: pyright
-        entry: bash -c 'cd backend && pyright'
+        entry: pyright --project backend
         language: system
         types: [python]
         files: backend/
